@@ -1,5 +1,5 @@
 % 衛星振動をシミュレーションするメイン関数。初期状態設定、シミュレーションパラメータ設定、シミュレーション実行、結果プロット、アニメーション作成の手順を実行します。
-function simulateSatelliteOscillation()
+function simulateSatellite()
     % シミュレーションパラメータを設定
     param = setSimulationParameters();
     
