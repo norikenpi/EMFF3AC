@@ -8,7 +8,7 @@ function param = setSimulationParameters()
 
 
     param.dt = 1; % サンプリング間隔
-    param.t = 700; % シミュレーション時間
+    param.t = 1000; % シミュレーション時間
     param.Kp = 10^(-6); % 比例ゲイン
     param.Kd = 0.01; % 微分ゲイン
 
@@ -24,8 +24,8 @@ function param = setSimulationParameters()
     param.N = 20; % 衛星の数
 
     %描画パラメータ
-    param.force_arrow_scale = 5*10^4; 
-    param.magnetic_moment_arrow_scale = 100;
+    param.force_arrow_scale = 1; %5*10^4
+    param.magnetic_moment_arrow_scale = 1;%100
     param.axis_norm = 1;
 
 

@@ -1,10 +1,8 @@
 function createAnimation(histories, param, satellites)
-    
-
     fps = 30;
     pause = 600;
     dateformat = 'yyyy-MM-dd-HH-mm-ss';
-    filename = sprintf('"C:/Users/masam/lab/30_simscape/20_磁石/EMFF3/movie/dynamics2record_%s.avi', datetime('now','Format', dateformat));
+    filename = sprintf('C:/Users/masam/lab/30_simscape/20_磁石/EMFF3/movie/dynamics2record_%s.avi', datetime('now','Format', dateformat));
 
     writerObj = VideoWriter(filename);
     writerObj.Quality = 100;
