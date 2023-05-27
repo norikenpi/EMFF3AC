@@ -8,13 +8,13 @@ function param = setSimulationParameters()
 
 
     param.dt = 1; % サンプリング間隔
-    param.t = 1000; % シミュレーション時間
-    param.Kp = 10^(-6); % 比例ゲイン
-    param.Kd = 0.01; % 微分ゲイン
+    param.t = 7200; % シミュレーション時間
+    param.Kp = 10^(-6); % 比例ゲイン10^(-6)
+    param.Kd = 0.05; % 微分ゲイン
 
     param.C1_min = 10^-7; % 最小ドリフト
-    param.j = 17;
-    param.C1_ini = 0.1;%初期C1の最大値
+    param.j = 9; %シード値
+    param.C1_ini = 0.01;%初期C1の最大値
     param.safety_distance = 0.05; % 衝突回避制御を実施するための距離
     param.avoid_collision_magnetic_moment = 0.00005; % 衝突回避制御を行うときの磁気ダイポールゲイン
     param.max_distance = 2; % 通信可能距離

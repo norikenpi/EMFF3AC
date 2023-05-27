@@ -4,6 +4,7 @@ function magnetic_moment = setSatelliteDipole(satellites, u, i, nearest_drift_sa
 
     if isequal(u, [0;0;0])
         satellites{i}.magnetic_moment = [0;0;0];
+        magnetic_moment = [0;0;0];
     else
         r = satellites{nearest_drift_satellite_idx}.position - satellites{i}.position;
         r_norm = norm(r);
