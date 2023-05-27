@@ -8,7 +8,7 @@ function param = setSimulationParameters()
 
 
     param.dt = 1; % サンプリング間隔
-    param.t = 7200; % シミュレーション時間
+    param.t = 1000; % シミュレーション時間
     param.Kp = 10^(-6); % 比例ゲイン10^(-6)
     param.Kd = 0.05; % 微分ゲイン
 

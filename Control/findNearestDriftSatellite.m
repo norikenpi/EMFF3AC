@@ -7,9 +7,9 @@ function [nearest_drift_satellite_idx, C1, relative_position, converge, relative
     disp(target_idx)
     disp(nearest_drift_satellite_idx)
     nearest_satellite = satellites{nearest_drift_satellite_idx}; % 最も近い衛星の座標を取得
-    relative_position = nearest_satellite.position - target_satellite.position; % 相対位置を計算
+    relative_position = - nearest_satellite.position + target_satellite.position; % 相対位置を計算
     relative_position_min = relative_position;
-    relative_velocity = nearest_satellite.velocity - target_satellite.velocity; % 相対速度を計算    
+    relative_velocity = - nearest_satellite.velocity + target_satellite.velocity; % 相対速度を計算    
     C1 = relative_velocity(1)/param.n - 2*relative_position(3); % C1値を計算
 
     

@@ -25,6 +25,8 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
     
      % 各衛星に発生した磁気トルクと磁気力を計算
     [magnetic_forces, magnetic_torques] = calculateF_total(satellites, param);
+    disp("magneic_force")
+    disp(magnetic_forces{1})
 
     % 各衛星に発生した磁気トルクと磁気力から、dt秒後の各衛星の状態量を計算。
     satellites = updateSatelliteStates(satellites, param, magnetic_torques, magnetic_forces);
