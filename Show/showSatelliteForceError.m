@@ -1,4 +1,4 @@
-%各衛星のC1の時間変化のグラフ
+%発生させようとした力と実際に発生した力を比較
 
 assignin('base', 'u', histories.u_histories);
 assignin('base', 'u_real', histories.u_real_histories);
