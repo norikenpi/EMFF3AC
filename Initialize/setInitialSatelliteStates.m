@@ -12,7 +12,7 @@ function satellites = setInitialSatelliteStates(param)
         [position, velocity] = getSatellitePosition(i, param);
 
         %衛星の目標値を設定
-        [position_d, velocity_d] = getSatellitePosition(i, param);
+        [position_d, velocity_d] = getSatelliteDesiredPosition(i, param);
 
 
         disp("position and velocity")
@@ -32,7 +32,9 @@ function satellites = setInitialSatelliteStates(param)
 
     end
 
-    adjustCenterOfMass(satellites, param)
+
+    adjustSatelliteState(satellites, param)
+    adjustSatelliteDesiredState(satellites, param)
     
 end
 

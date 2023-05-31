@@ -1,4 +1,8 @@
 function adjustCenterOfMass(satellites, param)
+%
+%使っていない関数です。
+%adjustSatelliteState(satellites,param)とadjustSatelliteDesiredState(satellites, param)に代替
+%
 
 
 %初期値の重心位置と重心速度を計算

@@ -21,7 +21,7 @@ function param = setSimulationParameters()
     param.min_distance_nopair = 0.05; % ペアリングした衛星よりも近くに別の衛星があるとき、この距離以内にある場合、制御しない。
     
 
-    param.N = 8; % 衛星の数
+    param.N = 16; % 衛星の数
 
     %{
     param.timetable = {[5,9];

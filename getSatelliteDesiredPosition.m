@@ -1,7 +1,7 @@
 % 衛星を2x2x(param.N/4)の配列に配置する
-function [pos, vel] = getSatellitePosition(i, param)
+function [pos, vel] = getSatelliteDesiredPosition(i, param)
     
-    [m, n, p] = size(reshape(1:param.N, param.N/4, 2, 2));
+    [m, n, p] = size(reshape(1:param.N, param.N/4, 4, 1));
     % インデックスiに対応するx, y, z座標を計算
     [ix, iy, iz] = ind2sub([m, n, p], i);
     rng(i)

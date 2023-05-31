@@ -2,7 +2,6 @@ clear
 addpath("C:\Users\masam\lab\30_simscape\20_磁石\EMFF3\Control")
 addpath("C:\Users\masam\lab\30_simscape\20_磁石\EMFF3\Control\Danil")
 addpath("C:\Users\masam\lab\30_simscape\20_磁石\EMFF3\Control\Stepbystep")
-addpath("C:\Users\masam\lab\30_simscape\20_磁石\EMFF3\Control\Kubota")
 addpath("C:\Users\masam\lab\30_simscape\20_磁石\EMFF3\Initialize")
 addpath("C:\Users\masam\lab\30_simscape\20_磁石\EMFF3\Magneticforce\")
 addpath("C:\Users\masam\lab\30_simscape\20_磁石\EMFF3\Show")

@@ -10,11 +10,13 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
 
     %各衛星に関して制御アルゴリズムを実行して、各衛星の磁気モーメントを計算。
     for i = 1:param.N
-        [u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param);
 
-        %[u, pair_satellite_idx] = controlAlgorithmStepbystep(histories, i, satellites, param, time);
+        %Danil式かStepbystepのどちらかを選択。
+        %[u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param);
+
+        [u, pair_satellite_idx] = controlAlgorithmStepbystep(histories, i, satellites, param, time);
         
-        fprintf('pair_satellite_idx %d\n', pair_satellite_idx)
+        %fprintf('pair_satellite_idx %d\n', pair_satellite_idx)
 
         %uに基づいて衛星の磁気モーメントを計算
         satellites{i}.magnetic_moment = setSatelliteDipole(satellites, u, i, pair_satellite_idx);
@@ -25,7 +27,7 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
         histories.u_histories{i} = [histories.u_histories{i}, u];
         histories.u_real_histories{i} = [histories.u_real_histories{i}, u_real];
         histories.pair_idx{i} = [histories.pair_idx{i}, pair_satellite_idx];
-        fprintf('final pair %d %d\n', i, pair_satellite_idx)
+        %fprintf('final pair %d %d\n', i, pair_satellite_idx)
     end
     
      % 各衛星に発生した磁気トルクと磁気力を計算
@@ -35,6 +37,8 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
 
     % 各衛星に発生した磁気トルクと磁気力から、dt秒後の各衛星の状態量を計算。
     satellites = updateSatelliteStates(satellites, param, magnetic_torques, magnetic_forces);
+    %重心位置のずれを修正
+    adjustSatelliteState(satellites, param)
     %force_sum = zeros(3,1);
 
 
