@@ -5,7 +5,7 @@ function histories = runSimulation(satellites, param, histories)
         % 各衛星の状態を更新する
         disp("time")
         disp(time)
-        [satellites, histories] = simulateTimeStep(satellites, histories, param);
+        [satellites, histories] = simulateTimeStep(satellites, histories, param, time);
     end
 end
 

@@ -3,7 +3,7 @@ function simulateSatellite()
     % シミュレーションパラメータを設定
     param = setSimulationParameters();
     
-    % N個の衛星の初期状態を設定
+    %N個の衛星の初期状態を設定
     satellites = setInitialSatelliteStates(param);
 
     % 衛星の位置、力、および磁気モーメントの履歴を格納するためのセル配列を初期化する

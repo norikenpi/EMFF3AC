@@ -1,4 +1,4 @@
-function [u, nearest_drift_satellite_idx] = controlAlgorithm(histories, i, satellites, param)
+function [u, nearest_drift_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param)
     [nearest_drift_satellite_idx, C1, relative_position, converge, relative_position_min] = findNearestDriftSatellite(satellites, param, i);
     histories.C1_histories{i} = [histories.C1_histories{i}, C1];
     histories.pair_idx{i} = [histories.pair_idx{i}, nearest_drift_satellite_idx];

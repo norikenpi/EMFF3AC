@@ -1,5 +1,5 @@
 % シミュレーションの各タイムステップで衛星の状態を更新する関数
-function [satellites, histories] = simulateTimeStep(satellites, histories, param)
+function [satellites, histories] = simulateTimeStep(satellites, histories, param, time)
     % 以下の手順を実行する:
     % 1. 最も近いドリフト衛星のインデックスを取得
     % 2. C1を低減するような必要な加速度を計算
@@ -10,17 +10,22 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
 
     %各衛星に関して制御アルゴリズムを実行して、各衛星の磁気モーメントを計算。
     for i = 1:param.N
-        [u, nearest_drift_satellite_idx] = controlAlgorithm(histories, i, satellites, param);
+        [u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param);
+
+        %[u, pair_satellite_idx] = controlAlgorithmStepbystep(histories, i, satellites, param, time);
+        
+        fprintf('pair_satellite_idx %d\n', pair_satellite_idx)
 
         %uに基づいて衛星の磁気モーメントを計算
-        satellites{i}.magnetic_moment = setSatelliteDipole(satellites, u, i, nearest_drift_satellite_idx);
+        satellites{i}.magnetic_moment = setSatelliteDipole(satellites, u, i, pair_satellite_idx);
         
         %計算された磁気モーメントに基づいて、磁力を計算しなおす（磁気モーメントには上限があるから）
-        u_real = magneticForceSatellite(i, nearest_drift_satellite_idx, satellites)/satellites{i}.mass;
+        u_real = magneticForceSatellite(i, pair_satellite_idx, satellites)/satellites{i}.mass;
 
         histories.u_histories{i} = [histories.u_histories{i}, u];
         histories.u_real_histories{i} = [histories.u_real_histories{i}, u_real];
-        histories.pair_idx{i} = [histories.pair_idx{i}, nearest_drift_satellite_idx];
+        histories.pair_idx{i} = [histories.pair_idx{i}, pair_satellite_idx];
+        fprintf('final pair %d %d\n', i, pair_satellite_idx)
     end
     
      % 各衛星に発生した磁気トルクと磁気力を計算

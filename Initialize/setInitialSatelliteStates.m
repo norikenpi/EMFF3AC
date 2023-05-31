@@ -5,10 +5,16 @@ function satellites = setInitialSatelliteStates(param)
     for i = 1:param.N
         % ここで、各衛星の初期状態を設定してください
         
-        %position = getSatellitePosition(i, param); % 位置
-        %velocity = [0; 0; 0]; % 速度
-        
-        [position, velocity] = getSatellitePositionRandom(i, satellites, param);
+        %既定の範囲内で衛星の初期位置を設定
+        %[position, velocity] = getSatellitePositionRandom(i, satellites, param);
+
+        %衛星を2x2x(param.N/4)の配列に配置する
+        [position, velocity] = getSatellitePosition(i, param);
+
+        %衛星の目標値を設定
+        [position_d, velocity_d] = getSatellitePosition(i, param);
+
+
         disp("position and velocity")
         disp(position);
         disp(velocity);
@@ -18,31 +24,15 @@ function satellites = setInitialSatelliteStates(param)
         magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
         mass = 0.01; % 衛星質量
         moment_of_inertia = 1; % 慣性モーメント
-        max_magnetic_moment = 0.01; % 最大磁気モーメント
+        max_magnetic_moment = 0.1; % 最大磁気モーメント
         radius = 0.05;
 
-        satellites{i} = Satellite(position, velocity, orientation, angular_velocity, magnetic_moment, mass, moment_of_inertia, max_magnetic_moment, radius);
-    end
-
-    CoM = zeros(3,1);
-    CoMV = zeros(3,1);
-    for i = 1:param.N
-        CoM = CoM + satellites{i}.position/param.N;
-        CoMV = CoMV + satellites{i}.velocity/param.N;
-        disp('CoM')
-        disp(CoM)
-        disp('CoMV')
-        disp(CoMV)
-    end
-    
-    for i = 1:param.N
-        satellites{i}.position = satellites{i}.position - CoM;
-        satellites{i}.velocity = satellites{i}.velocity - CoMV;
-        disp("修正済み")
-        disp(satellites{i}.position)
-        disp(satellites{i}.velocity)
+        satellites{i} = Satellite(position, velocity, orientation, angular_velocity, magnetic_moment, ...
+            mass, moment_of_inertia, max_magnetic_moment, radius, position_d, velocity_d);
 
     end
+
+    adjustCenterOfMass(satellites, param)
     
 end
 
