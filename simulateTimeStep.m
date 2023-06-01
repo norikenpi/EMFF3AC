@@ -38,7 +38,7 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
     % 各衛星に発生した磁気トルクと磁気力から、dt秒後の各衛星の状態量を計算。
     satellites = updateSatelliteStates(satellites, param, magnetic_torques, magnetic_forces);
     %重心位置のずれを修正
-    adjustSatelliteState(satellites, param)
+    %satellites = adjustSatelliteState(satellites, param);
     %force_sum = zeros(3,1);
 
 

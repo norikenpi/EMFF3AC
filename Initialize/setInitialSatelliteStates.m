@@ -33,8 +33,8 @@ function satellites = setInitialSatelliteStates(param)
     end
 
 
-    adjustSatelliteState(satellites, param)
-    adjustSatelliteDesiredState(satellites, param)
+    satellites = adjustSatelliteState(satellites, param);
+    satellites = adjustSatelliteDesiredState(satellites, param);
     
 end
 

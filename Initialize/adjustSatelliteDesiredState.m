@@ -1,4 +1,4 @@
-function adjustSatelliteDesiredState(satellites, param)
+function satellites = adjustSatelliteDesiredState(satellites, param)
 
 %目標値の重心位置と重心速度を計算
     CoM = zeros(3,1);

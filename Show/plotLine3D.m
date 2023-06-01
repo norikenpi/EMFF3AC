@@ -1,4 +1,4 @@
-function plotLine3D(point1, point2)
+function h = plotLine3D(point1, point2)
     % point1: 最初の点の座標 [x1; y1; z1]
     % point2: 最後の点の座標 [x2; y2; z2]
 
@@ -12,6 +12,6 @@ function plotLine3D(point1, point2)
     z = [point1(3), point2(3)];
 
     % 点と線を図示
-    plot3(x, y, z, '-');
+    h = plot3(x, y, z,'LineWidth',1,'Color', [0.1 0.1 0.8]);
     
 end

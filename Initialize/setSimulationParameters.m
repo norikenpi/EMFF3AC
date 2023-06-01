@@ -80,7 +80,31 @@ function param = setSimulationParameters()
                        [3,4];
                        [1,3];
                        [2,4]};
-   %}
+    %}
+    param.timetable = {[1,9];
+                       [2,10];
+                       [3,11];
+                       [4,12];
+                       [9,13];
+                       [10,14];
+                       [11,15];
+                       [12,16];
+                       [5,13];
+                       [6,14];
+                       [7,15];
+                       [8,16];
+                       [1,2];
+                       [2,3];
+                       [3,4];
+                       [9,10];
+                       [10,11];
+                       [11,12];
+                       [13,14];
+                       [14,15];
+                       [15,16];
+                       [5,6];
+                       [6,7];
+                       [7,8]};
 
 
     
@@ -88,7 +112,7 @@ function param = setSimulationParameters()
     %描画パラメータ
     param.force_arrow_scale = 10^-9; %5*10^4
     param.magnetic_moment_arrow_scale = 10^-9;%100
-    param.axis_norm = 1;
+    param.axis_norm = 0.5;
 
 
 end

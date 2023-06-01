@@ -1,6 +1,6 @@
 function createAnimation(histories, param, satellites)
-    fps = 30;
-    pause = 600;
+    fps = 31;
+    pause = 300;
     dateformat = 'yyyy-MM-dd-HH-mm-ss';
     filename = sprintf('C:/Users/masam/lab/30_simscape/20_磁石/EMFF3/movie/dynamics2record_%s.avi', datetime('now','Format', dateformat));
 
@@ -22,7 +22,8 @@ function createAnimation(histories, param, satellites)
         disp(i)
         h_traj = cell(1, length(histories.position_histories));
         h_force = cell(1, length(histories.position_histories));
-        [h1, h4, h5] = plotSatelliteTrajectory(histories, param, i, colors(1, :), sprintf('Satellite %d', 1), 1);
+        [h1, h4, h5, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(1, :), sprintf('Satellite %d', 1), 1);
+        
         for j = 2:length(histories.position_histories)
             [h_traj{j}, h_force{j}] = plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
         end
@@ -42,7 +43,8 @@ function createAnimation(histories, param, satellites)
         set(gca,'ZDir','reverse')
         str = append('(', string(pause), ' times speed)');
         title(append('Satellite Relative Motion with Trajectory ',str))
-        legend([h1, h4, h5], 'Satellite trajectory', 'Satellite force', 'magnetic moment');
+        %legend([h1, h4, h5], 'Satellite trajectory', 'Satellite force', 'magnetic moment');
+        legend(h_pair, 'Pair satellite');
         drawnow;
 
         frame = getframe(fig);
