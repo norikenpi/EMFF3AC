@@ -24,7 +24,7 @@ function satellites = setInitialSatelliteStates(param)
         magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
         mass = 0.01; % 衛星質量
         moment_of_inertia = 1; % 慣性モーメント
-        max_magnetic_moment = 0.1; % 最大磁気モーメント
+        max_magnetic_moment = 0.01; % 最大磁気モーメント
         radius = 0.05;
 
         satellites{i} = Satellite(position, velocity, orientation, angular_velocity, magnetic_moment, ...

@@ -6,18 +6,21 @@ function param = setSimulationParameters()
     r_star = earth_radius + altitude; % 地心からの距離
     param.n = sqrt(myu/r_star^3); % 地球を周回する衛星の角速度
 
+    param.dt = 0.1; % シミュレーションタイムステップ
+    param.time_step = 1; % 制御タイムステップ
+    param.pair_time = 1000; % ペアリングされてる時間
 
-    param.dt = 0.1; % サンプリング間隔
     param.t = 1000; % シミュレーション時間
     param.Kp = 10^(-6); % 比例ゲイン10^(-6)
     param.Kd = 0.05; % 微分ゲイン
 
     param.C1_min = 10^-7; % 最小ドリフト
     param.j = 9; %シード値
-    param.C1_ini = 0.01;%初期C1の最大値
+    param.C1_ini = 0.1;%初期C1の最大値
+    param.initial_error = 0.004;%初期誤差
     param.safety_distance = 0.05; % 衝突回避制御を実施するための距離
     param.avoid_collision_magnetic_moment = 0.00005; % 衝突回避制御を行うときの磁気ダイポールゲイン
-    param.max_distance = 2; % 通信可能距離
+    param.max_distance = 1; % 通信可能距離
     param.min_distance_nopair = 0.05; % ペアリングした衛星よりも近くに別の衛星があるとき、この距離以内にある場合、制御しない。
     
 

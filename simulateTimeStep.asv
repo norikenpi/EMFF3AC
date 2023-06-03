@@ -12,15 +12,15 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
     for i = 1:param.N
 
         %Danil式かStepbystepのどちらかを選択。
-        %[u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param);
+        [u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param);
 
-        [u, pair_satellite_idx] = controlAlgorithmStepbystep(histories, i, satellites, param, time);
+        %[u, pair_satellite_idx] = controlAlgorithmStepbystep(histories, i, satellites, param, time);
         
         %fprintf('pair_satellite_idx %d\n', pair_satellite_idx)
         
         %シミュレーションタイムステップの間は変えない。
         %uに基づいて衛星の磁気モーメントを計算
-        if mod(time, param.time_step) == 0
+        if 
             satellites{i}.magnetic_moment = setSatelliteDipole(satellites, u, i, pair_satellite_idx);
         end
         

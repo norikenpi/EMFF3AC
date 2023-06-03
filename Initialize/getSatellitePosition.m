@@ -5,9 +5,9 @@ function [pos, vel] = getSatellitePosition(i, param)
     % インデックスiに対応するx, y, z座標を計算
     [ix, iy, iz] = ind2sub([m, n, p], i);
     rng(i)
-    x = 0.15 * (ix) + rand() * 0.004 - 0.02; % -0.15から0.15の範囲で衛星を配置
-    y = 0.15 * (iy) + rand() * 0.004 - 0.02;
-    z = 0.15 * (iz) + rand() * 0.004 - 0.02;
+    x = 0.15 * (ix) + rand() * param.initial_error - 0.02; % -0.15から0.15の範囲で衛星を配置
+    y = 0.15 * (iy) + rand() * param.initial_error - 0.02;
+    z = 0.15 * (iz) + rand() * param.initial_error - 0.02;
     %x = 0.15 * (ix - (m+1)/2);
     %y = 0.15 * (iy - (n+1)/2);
     %z = 0.15 * (iz - (p+1)/2);
