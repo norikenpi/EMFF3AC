@@ -2,7 +2,10 @@
 function simulateSatellite()
     % シミュレーションパラメータを設定
     param = setSimulationParameters();
-    
+
+    %パスを通す
+    addPath(param);
+
     %N個の衛星の初期状態を設定
     satellites = setInitialSatelliteStates(param);
 

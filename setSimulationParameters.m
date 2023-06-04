@@ -10,11 +10,11 @@ function param = setSimulationParameters()
     param.time_step = 0.1; % 制御タイムステップ
 
     %保存先
-    param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/movie/';
+    param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/';
     %param.path = '';
     param.pair_time = 1; % ペアリングされてる時間
 
-    param.t = 100; % シミュレーション時間
+    param.t = 10; % シミュレーション時間
     param.initial_error = 0.004;%初期誤差
     param.satellite_distance = 0.15; %衛星間距離
 

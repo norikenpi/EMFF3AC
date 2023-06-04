@@ -2,9 +2,9 @@ function createAnimation(histories, param, satellites)
     fps = 31;
     pause = 300;
     dateformat = 'yyyy-MM-dd-HH-mm-ss';
-    
     date = datetime('now','Format', dateformat);
-    path_data = sprintf(strcat(param.path, '/%s'), date);
+
+    path_data = sprintf(strcat(param.path, '/movie/%s'), date);
 
     %データを入れるフォルダを作る。
     mkdir(path_data)
