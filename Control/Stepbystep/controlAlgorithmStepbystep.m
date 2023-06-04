@@ -8,10 +8,8 @@ function [u, pair_satellite_idx] = controlAlgorithmStepbystep(histories, i, sate
     %該当する衛星だった場合、特定の衛星と相対位置を取ってフィードバック制御して入力を決める。
     if pair_satellite_idx ~= i
         u = relativeFeedback(i, pair_satellite_idx, satellites, param);
-        fprintf('pair %d %d\n', i, pair_satellite_idx)
 
     %該当しない衛星だった場合、入力0
     else
         u = [0;0;0];
-        disp('no pair')
     end

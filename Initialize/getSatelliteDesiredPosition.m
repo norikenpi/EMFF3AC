@@ -9,7 +9,7 @@ function [pos, vel] = getSatelliteDesiredPosition(i, param)
     rng(i)
     x = 0.15 * (ix); % -0.15から0.15の範囲で衛星を配置
     y = 0.15 * (iy);
-    z = rand() * 0.004;
+    z = 0;
     %x = 0.15 * (ix - (m+1)/2);
     %y = 0.15 * (iy - (n+1)/2);
     %z = 0.15 * (iz - (p+1)/2);

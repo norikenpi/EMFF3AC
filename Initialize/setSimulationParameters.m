@@ -7,29 +7,33 @@ function param = setSimulationParameters()
     param.n = sqrt(myu/r_star^3); % 地球を周回する衛星の角速度
 
     param.dt = 0.01; % シミュレーションタイムステップ
-    param.time_step = 1; % 制御タイムステップ
-    param.pair_time = 5; % ペアリングされてる時間
+    param.time_step = 0.1; % 制御タイムステップ
 
-    param.t = 1000; % シミュレーション時間
-    param.Kp = 10^(-6); % 比例ゲイン10^(-6)
-    param.Kd = 0.05; % 微分ゲイン
+    %保存先
+    param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/movie/';
+    %Stepbystep式
+    param.pair_time = 1; % ペアリングされてる時間
 
-    param.C1_min = 10^-7; % 最小ドリフト
-    param.j = 9; %シード値
-    param.C1_ini = 0.1;%初期C1の最大値
+    param.t = 10; % シミュレーション時間
     param.initial_error = 0.004;%初期誤差
     param.satellite_distance = 0.15; %衛星間距離
 
+    %Danil式パラメータ
+    param.Kp = 10^(-6); % 比例ゲイン10^(-6)
+    param.Kd = 0.05; % 微分ゲイン
+    param.C1_min = 10^-7; % 最小ドリフト
+    param.j = 9; %シード値
+    param.C1_ini = 0.1;%初期C1の最大値
     param.safety_distance = 0.05; % 衝突回避制御を実施するための距離
     param.avoid_collision_magnetic_moment = 0.00005; % 衝突回避制御を行うときの磁気ダイポールゲイン
     param.max_distance = 1; % 通信可能距離
     param.min_distance_nopair = 0.05; % ペアリングした衛星よりも近くに別の衛星があるとき、この距離以内にある場合、制御しない。
 
-
+    %衛星の初期パラメータ
     param.angular_velocity = [0; 0; 0.1]; % 角速度
-    param.angular_moment = [0; 0.01; 0]; % 磁気モーメント
+    param.magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
     param.mass = 0.01; % 衛星質量
-    param.momoent_of_inertia = 1; % 慣性モーメント
+    param.moment_of_inertia = 1; % 慣性モーメント
     param.max_magnetic_moment = 0.01; % 最大磁気モーメント
     param.radius = 0.05; %衛星半径
 
@@ -93,7 +97,7 @@ function param = setSimulationParameters()
                        [1,3];
                        [2,4]};
     %}
-    param.timetable = {[1,9];
+    param.timetable = [[1,9];
                        [2,10];
                        [3,11];
                        [4,12];
@@ -116,7 +120,7 @@ function param = setSimulationParameters()
                        [15,16];
                        [5,6];
                        [6,7];
-                       [7,8]};
+                       [7,8]];
 
 
     

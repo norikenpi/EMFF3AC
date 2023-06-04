@@ -3,9 +3,12 @@ function createAnimation(histories, param, satellites)
     pause = 300;
     dateformat = 'yyyy-MM-dd-HH-mm-ss';
     
-    foldername = datetime('now','Format', dateformat);
-    mkdir(sprintf('C:/Users/masam/lab/30_simscape/20_磁石/EMFF3/movie/%s', foldername))
-    filename_movie = sprintf('C:/Users/masam/lab/30_simscape/20_磁石/EMFF3/movie/%s/movie.avi', foldername);
+    date = datetime('now','Format', dateformat);
+    path_data = sprintf(strcat(param.path, '/%s'), date);
+
+    %データを入れるフォルダを作る。
+    mkdir(path_data)
+    filename_movie = strcat(path_data, '/movie.avi');
 
     writerObj = VideoWriter(filename_movie);
     writerObj.Quality = 100;
@@ -32,8 +35,8 @@ function createAnimation(histories, param, satellites)
         end
 
         dim = [0.65 0.5 0.3 0.3];
-        str = append('質量 ', string(m), 'kg ','衛星半径', string(a), 'm');
-        annotation('textbox',dim,'String',str,'FitBoxToText','on')
+        path_parent = append('質量 ', string(m), 'kg ','衛星半径', string(a), 'm');
+        annotation('textbox',dim,'String',path_parent,'FitBoxToText','on')
 
         
         axis([-param.axis_norm,param.axis_norm,-param.axis_norm,param.axis_norm,-param.axis_norm,param.axis_norm])
@@ -44,8 +47,8 @@ function createAnimation(histories, param, satellites)
         zlabel('Z(m)（地心方向）');
         set(gca,'YDir','reverse')
         set(gca,'ZDir','reverse')
-        str = append('(', string(pause), ' times speed)');
-        title(append('Satellite Relative Motion with Trajectory ',str))
+        path_parent = append('(', string(pause), ' times speed)');
+        title(append('Satellite Relative Motion with Trajectory ',path_parent))
         %legend([h1, h4, h5], 'Satellite trajectory', 'Satellite force', 'magnetic moment');
         legend(h_pair, 'Pair satellite');
         drawnow;
@@ -58,6 +61,6 @@ function createAnimation(histories, param, satellites)
 
 
     %パラメータをテキストファイル化
-    filename_param = sprintf('C:/Users/masam/lab/30_simscape/20_磁石/EMFF3/movie/%s/param.txt', foldername);
+    filename_param = strcat(path_data, '/param.txt');
     outputStructToTextFile(param, filename_param)
 end

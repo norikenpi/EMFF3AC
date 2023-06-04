@@ -1,20 +1,18 @@
 function pair_satellite_idx = selectSatellitePair(i, time, param)
-    
-    param.pair_time
 
 
     %現在何周期目か
     T_counter = int64(time/param.pair_time);
     remainder = int64(mod(T_counter, param.N) + 1);
-    [row, col] = find(param.timetable{remainder} == i);
+    [row, col] = find(param.timetable(remainder) == i);
     % 時間に応じてくじの数字をチェック
 
 
 
     if col == 1
-        pair_satellite_idx = param.timetable{remainder}(row, 2);
+        pair_satellite_idx = param.timetable(row, 2);
     elseif col == 2
-        pair_satellite_idx = param.timetable{remainder}(row, 1);
+        pair_satellite_idx = param.timetable(row, 1);
     elseif isempty(col)
         pair_satellite_idx = i;
     end
