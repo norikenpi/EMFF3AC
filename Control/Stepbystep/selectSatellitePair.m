@@ -3,8 +3,9 @@ function pair_satellite_idx = selectSatellitePair(i, time, param)
 
     %現在何周期目か
     T_counter = int64(time/param.pair_time);
-    remainder = int64(mod(T_counter, param.N) + 1);
-    [row, col] = find(param.timetable(remainder) == i);
+    pair_number =  size(param.timetable,1);
+    row = int64(mod(T_counter, pair_number) + 1);
+    col = find(param.timetable(row,:) == i);
     % 時間に応じてくじの数字をチェック
 
 
