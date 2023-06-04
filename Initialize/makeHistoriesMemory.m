@@ -3,10 +3,14 @@ function histories = makeHistoriesMemory(param)
     histories.position_histories = cell(1, param.N);
     histories.force_histories = cell(1, param.N);
     histories.magnetic_moment_histories = cell(1, param.N);
-    histories.C1_histories = cell(1, param.N);
     histories.magnetic_forces_histories = cell(1, param.N);
+    
+    
     histories.u_histories = cell(1, param.N);
     histories.u_real_histories = cell(1, param.N);
     histories.pair_idx = cell(1, param.N);
+
+    %Danilのみ
+    histories.C1_histories = cell(1, param.N);
 end
 

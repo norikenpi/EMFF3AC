@@ -14,6 +14,10 @@ function pair_satellite_idx = selectSatellitePair(i, time, param)
         pair_satellite_idx = param.timetable(row, 2);
     elseif col == 2
         pair_satellite_idx = param.timetable(row, 1);
+    elseif col == 3
+        pair_satellite_idx = param.timetable(row, 4);
+    elseif col == 4
+        pair_satellite_idx = param.timetable(row, 3);
     elseif isempty(col)
         pair_satellite_idx = i;
     end

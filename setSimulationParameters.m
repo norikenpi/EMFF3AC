@@ -11,12 +11,12 @@ function param = setSimulationParameters()
 
     %保存先
     param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/';
-    %param.path = '';
+    %param.path = 'C:/Users/nakan/OneDrive/デスクトップ/kubota';
     param.pair_time = 1; % ペアリングされてる時間
 
-    param.t = 10; % シミュレーション時間
+    param.t = 100; % シミュレーション時間
     param.initial_error = 0.004;%初期誤差
-    param.satellite_distance = 0.15; %衛星間距離
+    param.satellite_distance = 0.20; %衛星間距離
 
     %Danil式パラメータ
     param.Kp = 10^(-6); % 比例ゲイン10^(-6)
@@ -32,10 +32,15 @@ function param = setSimulationParameters()
     %衛星の初期パラメータ
     param.angular_velocity = [0; 0; 0.1]; % 角速度
     param.magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
-    param.mass = 0.01; % 衛星質量
+    param.mass = 0.03; % 衛星質量
     param.moment_of_inertia = 1; % 慣性モーメント
-    param.max_magnetic_moment = 0.01; % 最大磁気モーメント
-    param.radius = 0.05; %衛星半径
+
+    %2018年の野田さんの宇科連準拠
+    N = 17; % 巻き数
+    I_max = 1; % 最大電流
+    param.radius = 0.015; %衛星半径
+    param.max_magnetic_moment = N*I_max*pi*param.radius^2; % 最大磁気モーメント
+    
 
     param.N = 16; % 衛星の数
 
@@ -97,30 +102,27 @@ function param = setSimulationParameters()
                        [1,3];
                        [2,4]};
     %}
-    param.timetable = [[1,9];
-                       [2,10];
-                       [3,11];
-                       [4,12];
-                       [9,13];
-                       [10,14];
-                       [11,15];
-                       [12,16];
-                       [5,13];
-                       [6,14];
-                       [7,15];
-                       [8,16];
-                       [1,2];
-                       [2,3];
-                       [3,4];
-                       [9,10];
-                       [10,11];
-                       [11,12];
-                       [13,14];
-                       [14,15];
-                       [15,16];
-                       [5,6];
-                       [6,7];
-                       [7,8]];
+    param.timetable = [[[1,9],[4,12]];
+                       [[2,10],[0,0]];
+                       [[3,11],[0,0]];
+                       [[9,13],[12,16]];
+                       [[10,14],[0,0]];
+                       [[11,15],[0,0]];
+                       [[5,13],[8,16]];
+                       [[6,14],[0,0]];
+                       [[7,15],[0,0]];
+                       [[1,2],[0,0]];
+                       [[2,3],[0,0]];
+                       [[3,4],[0,0]];
+                       [[9,10],[0,0]];
+                       [[10,11],[0,0]];
+                       [[11,12],[0,0]];
+                       [[13,14],[0,0]];
+                       [[14,15],[0,0]];
+                       [[15,16],[0,0]];
+                       [[5,6],[0,0]];
+                       [[6,7],[0,0]];
+                       [[7,8],[0,0]]];
 
 
     
