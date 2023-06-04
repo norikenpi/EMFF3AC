@@ -57,7 +57,7 @@ function createAnimation(histories, param, satellites)
     close(writerObj);
 
 
-    %パラメータをテキストファイル化
+    %パラメータをテキスファイル化
     filename_param = sprintf('C:/Users/masam/lab/30_simscape/20_磁石/EMFF3/movie/%s/param.txt', foldername);
-    outputStructToTextFile(param, filename_param)
+    outputStructToTextFile(param, filename)
 end

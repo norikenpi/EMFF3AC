@@ -20,12 +20,12 @@ function satellites = setInitialSatelliteStates(param)
         disp(velocity);
         %velocity = [0.002*i; 0.001*i; 0.001*i]; % 速度
         orientation = [0; 0; i*pi/180]; % オイラー角
-        angular_velocity = [0; 0; 0.1*i]; % 角速度
-        magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
-        mass = 0.01; % 衛星質量
-        moment_of_inertia = 1; % 慣性モーメント
-        max_magnetic_moment = 0.01; % 最大磁気モーメント
-        radius = 0.05;
+        angular_velocity = param.angular_velocity; % 角速度
+        magnetic_moment = param.magnetic_moment; % 磁気モーメント
+        mass = param.mass; % 衛星質量
+        moment_of_inertia = param.moment_of_inertia; % 慣性モーメント
+        max_magnetic_moment = param.max_magnetic_moment; % 最大磁気モーメント
+        radius = param.radius; %衛星半径
 
         satellites{i} = Satellite(position, velocity, orientation, angular_velocity, magnetic_moment, ...
             mass, moment_of_inertia, max_magnetic_moment, radius, position_d, velocity_d);
