@@ -3,7 +3,7 @@
 %iは時間を表す
 function [h_traj, h_force, h_mag, h_pair] = plotSatelliteTrajectory(histories, param, time_i, color, name, satellite_j)
 
-    h_traj = plot3(histories.position_histories(satellite_j, time_i, 1), histories.position_histories(satellite_j, time_i, 2), histories.position_histories(satellite_j, time_i, 3),'LineWidth',1,'Color', [0.7 0.7 0.7]);
+    h_traj = plot3(histories.position_histories(satellite_j, 1:time_i, 1), histories.position_histories(satellite_j, 1:time_i, 2), histories.position_histories(satellite_j, 1:time_i, 3),'LineWidth',1,'Color', [0.7 0.7 0.7]);
     hold on;
     plot3(histories.position_histories(satellite_j, time_i, 1), histories.position_histories(satellite_j, time_i, 2), histories.position_histories(satellite_j, time_i, 3), 'o', 'MarkerSize', 10, 'MarkerFaceColor', color, 'DisplayName', name);
 

@@ -9,11 +9,12 @@ function showLastFrame(histories, param, satellites)
     i = size(histories.position_histories, 2);
     
 
-    %h_traj = cell(1, length(histories.position_histories));
-    %h_force = cell(1, length(histories.position_histories));
+    h_traj = cell(1, length(histories.position_histories));
+    h_force = cell(1, length(histories.position_histories));
     [h1, h4, h5] = plotSatelliteTrajectory(histories, param, i, colors(1, :), sprintf('Satellite %d', 1), 1);
+    disp(size(histories.position_histories, 1))
     for j = 2:size(histories.position_histories, 1)
-        plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
+        [h_traj{j}, h_force{j}] = plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
     end
 
 

@@ -31,7 +31,7 @@ function createAnimation(histories, param, satellites)
         [h1, h4, h5, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(1, :), sprintf('Satellite %d', 1), 1);
         
         for j = 2:size(histories.position_histories, 1)
-            plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
+            [h_traj, h_force, h_mag, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
         end
 
         dim = [0.65 0.5 0.3 0.3];
