@@ -49,9 +49,9 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
 
     % 各衛星に関して位置と力の履歴を更新
     for i = 1:param.N
-        histories.position_histories(i,int16(time/param.dt)+1, :) = satellites{i}.position;
-        histories.force_histories(i,int16(time/param.dt)+1, :) = magnetic_forces{i};
-        histories.magnetic_moment_histories(i,int16(time/param.dt)+1, :) = satellites{i}.magnetic_moment;
+        histories.position_histories{i} = [histories.position_histories{i}, satellites{i}.position];
+        histories.force_histories{i} = [histories.force_histories{i}, magnetic_forces{i}];
+        histories.magnetic_moment_histories(i,int16(time/param.dt)+1, :) = satellites{i}.magnetic_moment];
         histories.magnetic_forces_histories(i,int16(time/param.dt)+1, :) = magnetic_forces{i};
      
         %force_sum = force_sum + magnetic_forces{i};
