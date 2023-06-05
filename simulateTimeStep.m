@@ -28,9 +28,9 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
         %計算された磁気モーメントに基づいて、磁力を計算しなおす（磁気モーメントには上限があるから）
         u_real = magneticForceSatellite(i, pair_satellite_idx, satellites)/satellites{i}.mass;
 
-        histories.u_histories(i,int16(time/param.dt)+1, :) = u;
-        histories.u_real_histories(i,int16(time/param.dt)+1, :) = u_real;
-        histories.pair_idx(i,int16(time/param.dt)+1) = pair_satellite_idx;
+        histories.u_histories(i,int32(time/param.dt)+1, :) = u;
+        histories.u_real_histories(i,int32(time/param.dt)+1, :) = u_real;
+        histories.pair_idx(i,int32(time/param.dt)+1) = pair_satellite_idx;
         %fprintf('final pair %d %d\n', i, pair_satellite_idx)
     end
     
@@ -49,10 +49,10 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
 
     % 各衛星に関して位置と力の履歴を更新
     for i = 1:param.N
-        histories.position_histories(i,int16(time/param.dt)+1, :) = satellites{i}.position;
-        histories.force_histories(i,int16(time/param.dt)+1, :) = magnetic_forces{i};
-        histories.magnetic_moment_histories(i,int16(time/param.dt)+1, :) = satellites{i}.magnetic_moment;
-        histories.magnetic_forces_histories(i,int16(time/param.dt)+1, :) = magnetic_forces{i};
+        histories.position_histories(i,int32(time/param.dt)+1, :) = satellites{i}.position;
+        histories.force_histories(i,int32(time/param.dt)+1, :) = magnetic_forces{i};
+        histories.magnetic_moment_histories(i,int32(time/param.dt)+1, :) = satellites{i}.magnetic_moment;
+        histories.magnetic_forces_histories(i,int32(time/param.dt)+1, :) = magnetic_forces{i};
      
         %force_sum = force_sum + magnetic_forces{i};
     end
