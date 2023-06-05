@@ -16,10 +16,11 @@ function simulateSatellite()
     histories = runSimulation(satellites, param, histories);
 
     %最終結果を表示
-    showLastFrame(histories, param, satellites);
     assignin('base', 'satellites', satellites);
     assignin('base', 'param', param);
     assignin('base', 'histories', histories);
+    showLastFrame(histories, param, satellites);
+    
   
     % アニメーションを作成
     %createAnimation(histories, param, satellites);

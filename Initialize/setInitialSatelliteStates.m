@@ -9,7 +9,7 @@ function satellites = setInitialSatelliteStates(param)
         %[position, velocity] = getSatellitePositionRandom(i, satellites, param);
 
         %衛星を2x2x(param.N/4)の配列に配置する
-        [position, velocity] = getSatellitePositionPlane(i, param);
+        [position, velocity] = getSatellitePosition(i, param);
 
         %衛星の目標値を設定
         [position_d, velocity_d] = getSatelliteDesiredPosition(i, param);

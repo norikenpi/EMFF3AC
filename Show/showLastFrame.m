@@ -2,6 +2,11 @@ function showLastFrame(histories, param, satellites)
     figcolor = [1 1 1];
     fig = figure('color', figcolor);
 
+    figure
+    x = 0:pi/100:2*pi;
+    y = sin(x);
+    plot(x,y)
+
     m = satellites{1}.mass;
     a = satellites{1}.radius;
 
@@ -16,7 +21,7 @@ function showLastFrame(histories, param, satellites)
         plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
     end
 
-    
+
 
     dim = [0.65 0.5 0.3 0.3];
     str = append('質量 ', string(m), 'kg ','衛星半径', string(a), 'm');

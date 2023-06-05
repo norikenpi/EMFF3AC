@@ -14,7 +14,7 @@ function param = setSimulationParameters()
     %param.path = 'C:/Users/nakan/OneDrive/デスクトップ/kubota';
     param.pair_time = 1; % ペアリングされてる時間
 
-    param.t = 1; % シミュレーション時間
+    param.t = 100; % シミュレーション時間
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.065; %初期衛星間距離
     param.satellite_desired_distance = 0.15; %衛星間距離
@@ -37,13 +37,17 @@ function param = setSimulationParameters()
     param.moment_of_inertia = 1; % 慣性モーメント
 
     %2018年の野田さんの宇科連準拠
-    N = 17; % 巻き数
-    I_max = 1; % 最大電流
+    param.coilN = 17; % 巻き数
+    param.I_max = 1; % 最大電流
     param.radius = 0.015; %衛星半径
-    param.max_magnetic_moment = N*I_max*pi*param.radius^2; % 最大磁気モーメント
+    param.max_magnetic_moment = param.coilN * param.I_max * pi * param.radius^2; % 最大磁気モーメント
     
 
     param.N = 16; % 衛星の数
+
+    %紐ありの場合
+    param.cof = 0.8; %反発係数
+    param.length = 0.17;
 
     %{
     param.timetable = {[5,9];
@@ -103,6 +107,7 @@ function param = setSimulationParameters()
                        [1,3];
                        [2,4]};
     %}
+
     param.timetable = [[[1,9],[4,12]];
                        [[2,10],[0,0]];
                        [[3,11],[0,0]];
@@ -125,6 +130,10 @@ function param = setSimulationParameters()
                        [[6,7],[0,0]];
                        [[7,8],[0,0]]];
 
+
+    
+
+    % 紐を使ったときに使うパラメータ
     % 各衛星と接続している衛星
     param.set =  {[2,9];
                    [1,3,10];
@@ -150,3 +159,4 @@ function param = setSimulationParameters()
 
 
 end
+

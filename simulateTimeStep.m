@@ -9,14 +9,15 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
     % 6. 位置と力の履歴を更新
 
     %各衛星に関して制御アルゴリズムを実行して、各衛星の磁気モーメントを計算。
+
+    
     for i = 1:param.N
 
         %Danil式かStepbystepのどちらかを選択。
         %[u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param);
-
-        [u, pair_satellite_idx] = controlAlgorithmStepbystep(histories, i, satellites, param, time);
         
-        %fprintf('pair_satellite_idx %d\n', pair_satellite_idx)
+        
+        [u, pair_satellite_idx] = controlAlgorithmStepbystep(histories, i, satellites, param, time);
         
         %シミュレーションタイムステップの間は変えない。
         %uに基づいて衛星の磁気モーメントを計算
@@ -33,15 +34,14 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
         %fprintf('final pair %d %d\n', i, pair_satellite_idx)
     end
     
+    
      % 各衛星に発生した磁気トルクと磁気力を計算
     [magnetic_forces, magnetic_torques] = calculateF_total(satellites, param);
 
     % 各衛星に発生した磁気トルクと磁気力から、dt秒後の各衛星の状態量を計算。
     satellites = updateSatelliteStates(satellites, param, magnetic_torques, magnetic_forces);
-    %重心位置のずれを修正
-    %satellites = adjustSatelliteState(satellites, param);
-    %force_sum = zeros(3,1);
 
+    %紐がつながっているときの制御
     %各衛星の相対距離を計算して、目標相対距離以上になった場合、相対位置ベクトル方向の速度ベクトルのうち、相対位置ベクトルの逆向きにする。
     %satellites = updateSatelliteStatesString(satellites, param);
 

@@ -26,12 +26,12 @@ function createAnimation(histories, param, satellites)
     for i = 1:round(pause/(fps*param.dt)):size(histories.position_histories{1}, 2)
     
         disp(i)
-        h_traj = cell(1, length(histories.position_histories));
-        h_force = cell(1, length(histories.position_histories));
+        %h_traj = cell(1, length(histories.position_histories));
+        %h_force = cell(1, length(histories.position_histories));
         [h1, h4, h5, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(1, :), sprintf('Satellite %d', 1), 1);
         
         for j = 2:length(histories.position_histories)
-            [h_traj{j}, h_force{j}] = plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
+            plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
         end
 
         dim = [0.65 0.5 0.3 0.3];
