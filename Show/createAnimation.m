@@ -9,6 +9,10 @@ function createAnimation(histories, param, satellites)
     %データを入れるフォルダを作る。
     mkdir(path_data)
     filename_movie = strcat(path_data, '/movie.avi');
+    filename_var = strcat(path_data, '/var.mat');
+    
+    %matファイルに全てのワークスペース変数の保存
+    save(filename_var);
 
     writerObj = VideoWriter(filename_movie);
     writerObj.Quality = 100;

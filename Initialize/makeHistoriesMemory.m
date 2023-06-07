@@ -11,6 +11,6 @@ function histories = makeHistoriesMemory(param)
     histories.pair_idx = zeros(param.N, int32(param.t/param.dt));
 
     %Danilのみ
-    histories.C1_histories = cell(1, param.N);
+    %histories.C1_histories = cell(1, param.N);
 end
 
