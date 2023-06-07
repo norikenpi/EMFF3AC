@@ -4,12 +4,28 @@ function satellites = updateSatelliteStates(satellites, param, magnetic_torques,
     %差分方程式をこっちでも実装しないといけない
 
     n = param.n;
+
+    %オイラー近似の係数
     A = [0, 0, 0, 1, 0, 0;
          0, 0, 0, 0, 1, 0;
          0, 0, 0, 0, 0, 1;
          0, 0, 0, 0, 0, 2*n;
          0, -n^2, 0, 0, 0, 0;
          0, 0, 3*n^2, -2*n, 0, 0];
+
+    %台形近似の係数
+    A = [0, 0, 0, 1/2, 0, 0;
+         0, 0, 0, 0, 1/2, 0;
+         0, 0, 0, 0, 0, 1/2;
+         0, 0, 0, 0, 0, 2*n;
+         0, -n^2, 0, 0, 0, 0;
+         0, 0, 3*n^2, -2*n, 0, 0]+...
+        [0, 0, 0, 0, 0, 2*n;
+         0, -n^2, 0, 0, 0, 0;
+         0, 0, 3*n^2, -2*n, 0, 0;
+         0, 0, 0, 0, 0, 0;
+         0, 0, 0, 0, 0, 0;
+         0, 0, 0, 0, 0, 0]/2;
      
     %オイラー近似を利用した差分方程式の係数
     A_d = eye(6) + param.dt*A;
@@ -27,8 +43,11 @@ function satellites = updateSatelliteStates(satellites, param, magnetic_torques,
         %B_sharp = (B.'*B)\B.';
         %オイラー近似を利用した差分方程式の係数
         B_d = param.dt*B;
+        position_before = satellites{i}.position;
+        velocity_before = satellites{i}.velocity;
 
-        state = A_d*[satellites{i}.position; satellites{i}.velocity] + B_d*magnetic_forces{i};
+
+        state = A_d*[position_before; velocity_before] + B_d*magnetic_forces{i};
         % 位置の更新
         satellites{i}.position = state(1:3);
         % 速度の更新
