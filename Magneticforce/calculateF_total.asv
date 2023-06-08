@@ -6,11 +6,15 @@ function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, para
     % 1からNまでの衛星に対して、他のすべての衛星の磁気ダイポールによる磁場を計算し、それらの磁場の合計から各衛星に働く磁気トルクと磁気力を求める。
     % 1からNまでの衛星に対して、Far Fieldモデルで電磁力を計算。
     for satellite_i = 1:param.N
+        disp("start")
+        disp(satellite_i);
+        disp(param.set{satellite_i})
         F_total = zeros(3, 1);  
         % それぞれの衛星がある場所での磁力を計算
 
         % 稼働している衛星のみ計算。
         for index = 1:size(param.set{satellite_i},2)
+            disp(index)
             satellite_j = param.set{satellite_i}(index);
             r = satellites{satellite_j}.position - satellites{satellite_i}.position;
             F = magneticForce(satellites{satellite_i}.magnetic_moment, satellites{satellite_j}.magnetic_moment, r, param);
