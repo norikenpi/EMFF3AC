@@ -26,7 +26,7 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
         end
         
         %計算された磁気モーメントに基づいて、磁力を計算しなおす（磁気モーメントには上限があるから）
-        u_real = magneticForceSatellite(i, pair_satellite_idx, satellites)/satellites{i}.mass;
+        u_real = magneticForceSatellite(i, pair_satellite_idx, satellites, param)/satellites{i}.mass;
 
         histories.u_histories(i,int32(time/param.dt)+1, :) = u;
         histories.u_real_histories(i,int32(time/param.dt)+1, :) = u_real;

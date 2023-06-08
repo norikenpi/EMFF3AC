@@ -1,13 +1,8 @@
 %m1を発生する磁気モーメントに発生する磁力
-function F = magneticForce(m1, m2, r)
-
-    % m1, m2: 3要素の磁気モーメントベクトル
-    % r: 3要素の距離ベクトル (m1からm2までの距離)
-    
-    % 定数
-    mu0 = 4*pi*1e-7; % 真空の透磁率
-    % 磁力計算
-    r_norm = norm(r);
-    F = - (3*mu0/(4*pi)) * ((r*dot(m1,m2)/r_norm^5) + (m1*dot(m2,r)/r_norm^5) + (m2*dot(m1,r)/r_norm^5) - (5*dot(m1,r)*dot(m2,r)*r/r_norm^7));
-
+function F = magneticForce(m1, m2, r, param)
+    if param.magnetic_model == "far_field"
+        F = far_field(m1, m2, r);
+    elseif param.magnetic_model == "near_field"
+        F = near_field(m1, m2, r, param);
+    end
 end

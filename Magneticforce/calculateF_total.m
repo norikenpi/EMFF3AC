@@ -10,8 +10,9 @@ function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, para
         % それぞれの衛星がある場所での磁力を計算
         for j = 1:param.N
             if i ~= j
+                
                 r = satellites{j}.position - satellites{i}.position;
-                F = magneticForce(satellites{i}.magnetic_moment, satellites{j}.magnetic_moment, r);
+                F = magneticForce(satellites{i}.magnetic_moment, satellites{j}.magnetic_moment, r, param);
                 F_total = F_total + F;
 
             end
