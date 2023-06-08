@@ -21,9 +21,9 @@ function satellites = updateSatelliteStates(satellites, param, magnetic_torques,
              0, 0, 0, 0, 0, 2*n;
              0, -n^2, 0, 0, 0, 0;
              0, 0, 3*n^2, -2*n, 0, 0]+...
-            [0, 0, 0, 0, 0, 2*n;
-             0, -n^2, 0, 0, 0, 0;
-             0, 0, 3*n^2, -2*n, 0, 0;
+            [0, 0, 0, 1, 0, 2*n;
+             0, -n^2, 0, 0, 1, 0;
+             0, 0, 3*n^2, -2*n, 0, 1;
              0, 0, 0, 0, 0, 0;
              0, 0, 0, 0, 0, 0;
              0, 0, 0, 0, 0, 0]/2;
@@ -51,6 +51,8 @@ function satellites = updateSatelliteStates(satellites, param, magnetic_torques,
 
 
         state = A_d*[position_before; velocity_before] + B_d*magnetic_forces{i};
+        
+
         % 位置の更新
         satellites{i}.position = state(1:3);
         % 速度の更新
