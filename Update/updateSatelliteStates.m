@@ -5,28 +5,31 @@ function satellites = updateSatelliteStates(satellites, param, magnetic_torques,
 
     n = param.n;
 
-    %オイラー近似の係数
-    A = [0, 0, 0, 1, 0, 0;
-         0, 0, 0, 0, 1, 0;
-         0, 0, 0, 0, 0, 1;
-         0, 0, 0, 0, 0, 2*n;
-         0, -n^2, 0, 0, 0, 0;
-         0, 0, 3*n^2, -2*n, 0, 0];
+    if param.approximation == "euler"
+        %オイラー近似の係数
+        A = [0, 0, 0, 1, 0, 0;
+             0, 0, 0, 0, 1, 0;
+             0, 0, 0, 0, 0, 1;
+             0, 0, 0, 0, 0, 2*n;
+             0, -n^2, 0, 0, 0, 0;
+             0, 0, 3*n^2, -2*n, 0, 0];
+    elseif param.approximation == "trapezoid" 
+        %台形近似の係数
+        A = [0, 0, 0, 1/2, 0, 0;
+             0, 0, 0, 0, 1/2, 0;
+             0, 0, 0, 0, 0, 1/2;
+             0, 0, 0, 0, 0, 2*n;
+             0, -n^2, 0, 0, 0, 0;
+             0, 0, 3*n^2, -2*n, 0, 0]+...
+            [0, 0, 0, 0, 0, 2*n;
+             0, -n^2, 0, 0, 0, 0;
+             0, 0, 3*n^2, -2*n, 0, 0;
+             0, 0, 0, 0, 0, 0;
+             0, 0, 0, 0, 0, 0;
+             0, 0, 0, 0, 0, 0]/2;
+    end
 
-    %台形近似の係数
-    A = [0, 0, 0, 1/2, 0, 0;
-         0, 0, 0, 0, 1/2, 0;
-         0, 0, 0, 0, 0, 1/2;
-         0, 0, 0, 0, 0, 2*n;
-         0, -n^2, 0, 0, 0, 0;
-         0, 0, 3*n^2, -2*n, 0, 0]+...
-        [0, 0, 0, 0, 0, 2*n;
-         0, -n^2, 0, 0, 0, 0;
-         0, 0, 3*n^2, -2*n, 0, 0;
-         0, 0, 0, 0, 0, 0;
-         0, 0, 0, 0, 0, 0;
-         0, 0, 0, 0, 0, 0]/2;
-     
+    
     %オイラー近似を利用した差分方程式の係数
     A_d = eye(6) + param.dt*A;
 
@@ -53,7 +56,6 @@ function satellites = updateSatelliteStates(satellites, param, magnetic_torques,
         % 速度の更新
         satellites{i}.velocity = state(4:6);
 
-        disp(satellites{1}.velocity)
         % 姿勢の更新
         %satellites{i}.orientation = satellites{i}.orientation + satellites{i}.angular_velocity * dt;
         % 角速度の更新

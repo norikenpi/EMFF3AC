@@ -6,5 +6,7 @@ for i = 1:param.N
     com_velocity = com_velocity + satellites{i}.velocity;
 end
 
+disp("com_position")
 disp(com_position)
+disp("com_velocity")
 disp(com_velocity)
