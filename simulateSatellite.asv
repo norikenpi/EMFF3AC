@@ -13,13 +13,14 @@ function simulateSatellite()
     histories = makeHistoriesMemory(param);
 
     % シミュレーションを実行
-    [satellites, histories] = runSimulation(satellites, param, histories);
+    histories = runSimulation(satellites, param, histories);
 
     %最終結果を表示
     assignin('base', 'satellites', satellites);
     assignin('base', 'param', param);
     assignin('base', 'histories', histories);
 
+    assignin('base, 'x', );
     showLastFrame(histories, param, satellites);
     
   

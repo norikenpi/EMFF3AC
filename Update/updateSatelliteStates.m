@@ -52,6 +52,8 @@ function satellites = updateSatelliteStates(satellites, param, magnetic_torques,
         satellites{i}.position = state(1:3);
         % 速度の更新
         satellites{i}.velocity = state(4:6);
+
+        disp(satellites{1}.velocity)
         % 姿勢の更新
         %satellites{i}.orientation = satellites{i}.orientation + satellites{i}.angular_velocity * dt;
         % 角速度の更新

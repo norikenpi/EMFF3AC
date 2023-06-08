@@ -1,0 +1,2 @@
+format long;
+disp(satellites{1}.velocity(1))
