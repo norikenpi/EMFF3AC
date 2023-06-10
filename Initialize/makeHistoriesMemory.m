@@ -3,6 +3,8 @@ function histories = makeHistoriesMemory(param)
     histories.position_histories = zeros(int32(param.t/param.dt), 3, param.N);
     histories.force_histories = zeros(int32(param.t/param.dt), 3, param.N);
     histories.magnetic_moment_histories = zeros(int32(param.t/param.dt), 3, param.N);
+    histories.magnetic_moment_req_histories = zeros(int32(param.t/param.dt), 3, param.N);
+
     histories.magnetic_forces_histories = zeros(int32(param.t/param.dt), 3, param.N);
     
     

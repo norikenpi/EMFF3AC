@@ -7,11 +7,11 @@ function param = setSimulationParameters()
     param.n = sqrt(param.myu/r_star^3); % 地球を周回する衛星の角速度
 
     param.approximation = 'trapezoid';
-    param.magnetic_model = "far_field";
+    param.magnetic_model = 'far_field';
     param.dt = 0.05; % シミュレーションタイムステップ
     param.time_step = 0.1; % 制御タイムステップ
-    %param.t = 4000; % シミュレーション時間 
-    param.t = 2*pi/param.n;
+    param.t = 1; % シミュレーション時間 
+    %param.t = 2*pi/param.n;
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.065; %初期衛星間距離
     param.satellite_desired_distance = 0.15; %衛星間距離
@@ -21,6 +21,11 @@ function param = setSimulationParameters()
 
     %保存先
     param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/';
+
+    param.date = datetime('now','Format', 'yyyy-MM-dd-HH-mm-ss');
+    param.path_data = sprintf(strcat(param.path, 'movie/%s'), param.date);
+
+    
     %param.path = 'C:/Users/nakan/OneDrive/デスクトップ/kubota';
     param.pair_time = 1; % ペアリングされてる時間
 

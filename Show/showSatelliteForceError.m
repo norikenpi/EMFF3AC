@@ -34,3 +34,6 @@ title('error vs. Time')
 
 % 衛星ごとに凡例を追加
 legend('Satellite 1', 'Satellite 2', 'Satellite 3')  % 必要に応じて衛星の数に応じて拡張
+
+[~, fileName, ~] = fileparts(mfilename('fullpath'));
+savePlot(param, fileName)
