@@ -22,8 +22,13 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
         %シミュレーションタイムステップの間は変えない。
         %uに基づいて衛星の磁気モーメントを計算
         if mod(time, param.time_step) == 0
-            satellites{i}.magnetic_moment = setSatelliteDipole(satellites, u, i, pair_satellite_idx);
+            [satellites{i}.magnetic_moment, magnetic_moment_req] = setSatelliteDipole(satellites, u, i, pair_satellite_idx);
+        else 
+            magnetic_moment_req = histories.magnetic_moment_req_histories(int32(time/param.dt), :, i);
         end
+
+   
+        histories.magnetic_moment_req_histories(int32(time/param.dt)+1, :, i) = magnetic_moment_req;
         
         %計算された磁気モーメントに基づいて、磁力を計算しなおす（磁気モーメントには上限があるから）
 

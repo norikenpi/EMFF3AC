@@ -1,10 +1,11 @@
 % 所望の力から必要な磁気モーメントを計算する
-function magnetic_moment = setSatelliteDipole(satellites, u, i, nearest_drift_satellite_idx)
+function [magnetic_moment, m2] = setSatelliteDipole(satellites, u, i, nearest_drift_satellite_idx, histories, time, param)
     myu0 = 4*pi*1e-7; % 真空の透磁率
 
     if isequal(u, [0;0;0])
         satellites{i}.magnetic_moment = [0;0;0];
         magnetic_moment = [0;0;0];
+        m2 = magnetic_moment;
     else
         r = satellites{nearest_drift_satellite_idx}.position - satellites{i}.position;
         r_norm = norm(r);
@@ -16,6 +17,9 @@ function magnetic_moment = setSatelliteDipole(satellites, u, i, nearest_drift_sa
         D = calculateD(r, m1);
         
         m2 = - 4*pi*r_norm^5/(3*myu0)*inv(D)*u*satellites{i}.mass;
+        
+
+
         if norm(m2) > satellites{i}.max_magnetic_moment
             m2 = satellites{i}.max_magnetic_moment/norm(m2) * m2;
         end
