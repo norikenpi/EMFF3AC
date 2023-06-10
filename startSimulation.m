@@ -1,10 +1,10 @@
 clear
 
-tic;
+
 
 simulateSatellite();
 
-toc;
+
 
 
 

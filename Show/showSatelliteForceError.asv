@@ -1,5 +1,4 @@
 %発生させようとした力と実際に発生した力を比較
-%電流の上限にどこで引っかかったかをチェック。
 
 assignin('base', 'u', histories.u_histories);
 assignin('base', 'u_real', histories.u_real_histories);
@@ -15,18 +14,13 @@ for satellite_i = 1:numSatellites
     error_data(:, satellite_i) = vecnorm(u{satellite_i} - u_real{satellite_i});  % 各衛星の位置データを抽出し、行列に格納
 end
 %}
-time = 0:param.dt:(numTimePoints-1)*param.dt;  % x軸の時間データ
-figure
-
 for i = 1:param.N
-    error_data = zeros(param.N, numTimePoints);
-    error_data(i, :) = vecnorm(u(:,:,i).' - u_real(:,:,i).');  % 各衛星の位置データを抽出し、行列に格納
-    plot(time, error_data(i,:))
-    disp(i)
+    error_data = zeros(numTimePoints-1, param.N);
+    error_data(:,i) = vecnorm(u(:,:,1).' - u_real(:,:,1).');  % 各衛星の位置データを抽出し、行列に格納
 end
 
-
-
+time = 0:param.dt:(numTimePoints-1)*param.dt;  % x軸の時間データ
+figure
 plot(time, error_data)
 xlabel('Time')
 ylabel('error')

@@ -25,16 +25,16 @@ function createAnimation(histories, param, satellites)
     m = satellites{1}.mass;
     a = satellites{1}.radius;
 
-    colors = jet(size(histories.position_histories, 1)); % N個の衛星に対して異なる色を設定
+    colors = jet(size(histories.position_histories, 3)); % N個の衛星に対して異なる色を設定
 
-    for i = 1:round(pause/(fps*param.dt)):size(histories.position_histories, 2)
+    for i = 1:round(pause/(fps*param.dt)):size(histories.position_histories, 1)
     
         disp(i)
         %h_traj = cell(1, length(histories.position_histories));
         %h_force = cell(1, length(histories.position_histories));
         [h1, h4, h5, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(1, :), sprintf('Satellite %d', 1), 1);
         
-        for j = 2:size(histories.position_histories, 1)
+        for j = 2:size(histories.position_histories, 3)
             [h_traj, h_force, h_mag, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
         end
 

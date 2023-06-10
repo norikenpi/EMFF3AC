@@ -1,16 +1,16 @@
 % シミュレーションパラメータを設定する関数。サンプリング間隔、シミュレーション時間、比例ゲイン、微分ゲイン、最大力などのパラメータを設定します。
 function param = setSimulationParameters()
-    myu = 3.986*10^14;
-    earth_radius = 6378.140*10^3; % 地球半径
-    altitude = 500*10^3; % 高度
-    r_star = earth_radius + altitude; % 地心からの距離
-    param.n = sqrt(myu/r_star^3); % 地球を周回する衛星の角速度
+    param.myu = 3.986*10^14;
+    param.earth_radius = 6378.140*10^3; % 地球半径
+    param.altitude = 500*10^3; % 高度
+    r_star = param.earth_radius + param.altitude; % 地心からの距離
+    param.n = sqrt(param.myu/r_star^3); % 地球を周回する衛星の角速度
 
     param.approximation = 'trapezoid';
     param.magnetic_model = "far_field";
-    param.dt = 0.01; % シミュレーションタイムステップ
+    param.dt = 0.05; % シミュレーションタイムステップ
     param.time_step = 0.1; % 制御タイムステップ
-    param.t = 1000; % シミュレーション時間
+    param.t = 10; % シミュレーション時間
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.065; %初期衛星間距離
     param.satellite_desired_distance = 0.15; %衛星間距離

@@ -2,17 +2,16 @@
 %jは衛星を表す
 %iは時間を表す
 function [h_traj, h_force, h_mag, h_pair] = plotSatelliteTrajectory(histories, param, time_i, color, name, satellite_j)
-
-    h_traj = plot3(histories.position_histories(satellite_j, 1:time_i, 1), histories.position_histories(satellite_j, 1:time_i, 2), histories.position_histories(satellite_j, 1:time_i, 3),'LineWidth',1,'Color', [0.7 0.7 0.7]);
+    h_traj = plot3(histories.position_histories(1:time_i, 1, satellite_j), histories.position_histories(1:time_i, 2, satellite_j), histories.position_histories(1:time_i, 3, satellite_j),'LineWidth',1,'Color', [0.7 0.7 0.7]);
     hold on;
-    plot3(histories.position_histories(satellite_j, time_i, 1), histories.position_histories(satellite_j, time_i, 2), histories.position_histories(satellite_j, time_i, 3), 'o', 'MarkerSize', 10, 'MarkerFaceColor', color, 'DisplayName', name);
+    plot3(histories.position_histories(time_i, 1, satellite_j), histories.position_histories(time_i, 2, satellite_j), histories.position_histories(time_i, 3, satellite_j), 'o', 'MarkerSize', 10, 'MarkerFaceColor', color, 'DisplayName', name);
 
-    satellite_j2 = histories.pair_idx(satellite_j, time_i);
-    h_pair = plotLine3D(histories.position_histories(satellite_j, time_i, :), histories.position_histories(satellite_j2, time_i, :));
+    satellite_j2 = histories.pair_idx(time_i, satellite_j);
+    h_pair = plotLine3D(histories.position_histories(time_i, :, satellite_j), histories.position_histories(time_i, :, satellite_j2));
     
     
-    h_force = quiver3(histories.position_histories(satellite_j, time_i, 1), histories.position_histories(satellite_j, time_i, 2), histories.position_histories(satellite_j, time_i, 3), histories.force_histories(satellite_j, time_i, 1)*param.force_arrow_scale, histories.force_histories(satellite_j, time_i, 2)*param.force_arrow_scale, histories.force_histories(satellite_j, time_i, 3)*param.force_arrow_scale);
-    h_mag = quiver3(histories.position_histories(satellite_j, time_i, 1), histories.position_histories(satellite_j, time_i, 2), histories.position_histories(satellite_j, time_i, 3), histories.magnetic_moment_histories(satellite_j, time_i, 1)*param.magnetic_moment_arrow_scale, histories.magnetic_moment_histories(satellite_j, time_i, 2)*param.magnetic_moment_arrow_scale, histories.magnetic_moment_histories(satellite_j, time_i, 3)*param.magnetic_moment_arrow_scale);
+    h_force = quiver3(histories.position_histories(time_i, 1, satellite_j), histories.position_histories(time_i, 2, satellite_j), histories.position_histories(time_i, 3, satellite_j), histories.force_histories(time_i, 1, satellite_j)*param.force_arrow_scale, histories.force_histories(time_i, 2, satellite_j)*param.force_arrow_scale, histories.force_histories(time_i, 3, satellite_j)*param.force_arrow_scale);
+    h_mag = quiver3(histories.position_histories(time_i, 1, satellite_j), histories.position_histories(time_i, 2, satellite_j), histories.position_histories(time_i, 3, satellite_j), histories.magnetic_moment_histories(time_i, 1, satellite_j)*param.magnetic_moment_arrow_scale, histories.magnetic_moment_histories(time_i, 2, satellite_j)*param.magnetic_moment_arrow_scale, histories.magnetic_moment_histories(time_i, 3, satellite_j)*param.magnetic_moment_arrow_scale);
     h_force.Color = 'green';
     h_mag.Color = 'red';
     
