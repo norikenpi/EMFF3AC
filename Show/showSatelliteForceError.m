@@ -17,9 +17,9 @@ end
 %}
 time = 0:param.dt:(numTimePoints-1)*param.dt;  % x軸の時間データ
 figure
-
+error_data = zeros(param.N, numTimePoints);
 for i = 1:param.N
-    error_data = zeros(param.N, numTimePoints);
+    
     error_data(i, :) = vecnorm(u(:,:,i).' - u_real(:,:,i).');  % 各衛星の位置データを抽出し、行列に格納
     plot(time, error_data(i,:))
     disp(i)
