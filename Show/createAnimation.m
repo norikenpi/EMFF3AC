@@ -57,7 +57,12 @@ function createAnimation(histories, param, satellites)
         %グラフ画像に日付を入れる。
         xPosition = xlim*3; % x軸の範囲を取得
         yPosition = ylim; % y軸の範囲を取得
+
+        yPosition2 = ylim/2;
         text(xPosition(2), yPosition(2), string(param.date), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
+
+        %時間を表示
+        text(xPosition(2), yPosition2(2), string(i*param.dt), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
         drawnow;
 
         frame = getframe(fig);
