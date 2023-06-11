@@ -5,6 +5,9 @@ function savePlot(param, fileName)
     yPosition = ylim; % y軸の範囲を取得
     text(xPosition(2), yPosition(2), string(param.date), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
    
+    %データを入れるフォルダを作る。
+    mkdir(param.path_data)
+    
     %matファイルに全てのワークスペース変数の保存
     filename_var = strcat(param.path_data, sprintf('/%s_var.mat', param.date));
     save(filename_var);
@@ -12,9 +15,6 @@ function savePlot(param, fileName)
     %パラメータをテキストファイル化
     filename_param = strcat(param.path_data, sprintf('/%s_param.txt', param.date));
     outputStructToTextFile(param, filename_param);
-
-    %データを入れるフォルダを作る。
-    mkdir(param.path_data)
 
     %グラフを保存
     

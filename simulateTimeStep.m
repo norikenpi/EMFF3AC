@@ -28,12 +28,13 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
         end
 
    
-        histories.magnetic_moment_req_histories(int32(time/param.dt)+1, :, i) = magnetic_moment_req;
+        
         
         %計算された磁気モーメントに基づいて、磁力を計算しなおす（磁気モーメントには上限があるから）
 
         u_real = magneticForceSatellite(i, pair_satellite_idx, satellites, param)/satellites{i}.mass;
-
+        
+        histories.magnetic_moment_req_histories(int32(time/param.dt)+1, :, i) = magnetic_moment_req;
         histories.u_histories(int32(time/param.dt)+1, :, i) = u;
         histories.u_real_histories(int32(time/param.dt)+1, :, i) = u_real;
         histories.pair_idx(int32(time/param.dt)+1, i) = pair_satellite_idx;
