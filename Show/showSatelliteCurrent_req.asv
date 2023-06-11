@@ -1,12 +1,12 @@
 %発生させようとした力と実際に発生した力を比較
 %電流の上限にどこで引っかかったかをチェック。
 
-satellite_i = 16;
+satellite_i = 1;
 
 assignin('base', 'current_req', histories.magnetic_moment_req_histories/(param.coilN*pi*param.radius^2));
 
 
-t_final = 500;
+t_final = 5000;
 
 numTimePoints = round(param.t)/param.dt;  % 時間データの数
 
@@ -35,7 +35,7 @@ hold on
 disp(satellite_i)
 labels{end + 1} = sprintf('Satellite %s', string(satellite_i));
 
-ylim([0 5000]);
+
 
 xlabel('Time(sec)')
 ylabel('current-req(A)')
@@ -46,7 +46,7 @@ legend(labels)
 
 %画像を保存
 [~, fileName, ~] = fileparts(mfilename('fullpath'));
-filename_option = string(satellite_i);
+filename_option = string(satellite_iy;
 fileName = sprintf("%s_%s", fileName, filename_option);
 
 savePlot(param, fileName)

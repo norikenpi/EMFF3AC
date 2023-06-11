@@ -1,7 +1,9 @@
 function createAnimation_y(histories, param, satellites)
     fps = 31;
-    pause = 300;
-    filename_option = "y";
+    pause = 100;
+    filename_option = "y_500s";
+    final = size(histories.position_histories, 1);
+    final = size(histories.position_histories, 1)/10;
 
     %データを入れるフォルダを作る。
     mkdir(param.path_data)
@@ -21,12 +23,11 @@ function createAnimation_y(histories, param, satellites)
     figcolor = [1 1 1];
     fig = figure('color', figcolor);
 
-    m = satellites{1}.mass;
-    a = satellites{1}.radius;
-
+    m = param.mass;
+    a = param.radius;
     colors = jet(size(histories.position_histories, 3)); % N個の衛星に対して異なる色を設定
 
-    for i = 1:round(pause/(fps*param.dt)):size(histories.position_histories, 1)
+    for i = 1:round(pause/(fps*param.dt)):final
     
         disp(i)
         %h_traj = cell(1, length(histories.position_histories));
@@ -67,7 +68,7 @@ function createAnimation_y(histories, param, satellites)
         text(xPosition(2)*2, yPosition(1)*2, zPosition(1)/3, string(param.date), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
         
         %時間を表示
-        text(xPosition(2)*2, yPosition(1)*2, zPosition(1)/2, string(i*param.dt), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
+        text(xPosition(2)*2, yPosition(1)*2, zPosition(1)/2, sprintf("time %s", string(i*param.dt)), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
         drawnow;
 
         frame = getframe(fig);

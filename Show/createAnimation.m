@@ -2,6 +2,9 @@ function createAnimation(histories, param, satellites)
     fps = 31;
     pause = 300;
     filename_option = "";
+    final = size(histories.position_histories, 1);
+    %final = size(histories.position_histories, 1)/10;
+
 
     %データを入れるフォルダを作る。
     mkdir(param.path_data)
@@ -10,7 +13,7 @@ function createAnimation(histories, param, satellites)
 
     
     
-    %matファイルに全てのワークスペース変数の保存
+    %matファイルに全Fてのワークスペース変数の保存
     save(filename_var);
 
     writerObj = VideoWriter(filename_movie);
@@ -21,12 +24,12 @@ function createAnimation(histories, param, satellites)
     figcolor = [1 1 1];
     fig = figure('color', figcolor);
 
-    m = satellites{1}.mass;
-    a = satellites{1}.radius;
+    m = param.mass;
+    a = param.radius;
 
     colors = jet(size(histories.position_histories, 3)); % N個の衛星に対して異なる色を設定
 
-    for i = 1:round(pause/(fps*param.dt)):size(histories.position_histories, 1)
+    for i = 1:round(pause/(fps*param.dt)):final
     
         disp(i)
         %h_traj = cell(1, length(histories.position_histories));
