@@ -1,11 +1,11 @@
-function createAnimation(histories, param, satellites)
+function createAnimation_y(histories, param, satellites)
     fps = 31;
     pause = 300;
-    filename_option = "";
+    filename_option = "y";
 
     %データを入れるフォルダを作る。
     mkdir(param.path_data)
-    filename_movie = strcat(param.path_data, sprintf('/%s_movie%s.avi', param.date, filename_option));
+    filename_movie = strcat(param.path_data, sprintf('/%s_movie_%s.avi', param.date, filename_option));
     filename_var = strcat(param.path_data, sprintf('/%s_var.mat', param.date));
 
     
@@ -38,6 +38,7 @@ function createAnimation(histories, param, satellites)
         end
         
         %x方向からの視点
+        view(0, 0)
         dim = [0.65 0.5 0.3 0.3];
         path_parent = append('質量 ', string(m), 'kg ','衛星半径', string(a), 'm');
         annotation('textbox',dim,'String',path_parent,'FitBoxToText','on')
@@ -57,14 +58,16 @@ function createAnimation(histories, param, satellites)
         legend(h_pair, 'Pair satellite');
         
         %グラフ画像に日付を入れる。
-        xPosition = xlim*3; % x軸の範囲を取得
-        yPosition = ylim; % y軸の範囲を取得
+        xPosition = xlim;
+        yPosition = ylim; % x軸の範囲を取得
+        zPosition = zlim; % y軸の範囲を取得
 
         yPosition2 = ylim/2;
-        text(xPosition(2), yPosition(2), string(param.date), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
 
+        text(xPosition(2)*2, yPosition(1)*2, zPosition(1)/3, string(param.date), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
+        
         %時間を表示
-        text(xPosition(2), yPosition2(2), string(i*param.dt), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
+        text(xPosition(2)*2, yPosition(1)*2, zPosition(1)/2, string(i*param.dt), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
         drawnow;
 
         frame = getframe(fig);

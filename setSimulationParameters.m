@@ -10,8 +10,8 @@ function param = setSimulationParameters()
     param.magnetic_model = 'far_field';
     param.dt = 0.1; % シミュレーションタイムステップ
     param.time_step = 0.1; % 制御タイムステップ
-    %param.t = 100; % シミュレーション時間 
-    param.t = 2*pi/param.n;
+    param.t = 10; % シミュレーション時間 
+    %param.t = 2*pi/param.n;
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.065; %初期衛星間距離
     param.satellite_desired_distance = 0.15; %衛星間距離
@@ -50,7 +50,7 @@ function param = setSimulationParameters()
 
     %2018年の野田さんの宇科連準拠
     param.coilN = 17; % 巻き数
-    param.I_max = 1; % 最大電流
+    param.I_max = 1.5; % 最大電流
     param.radius = 0.015; %衛星半径
     param.max_magnetic_moment = param.coilN * param.I_max * pi * param.radius^2; % 最大磁気モーメント
     
@@ -167,7 +167,7 @@ function param = setSimulationParameters()
     %描画パラメータ
     param.force_arrow_scale = 10^-9; %5*10^4
     param.magnetic_moment_arrow_scale = 10^-9;%100
-    param.axis_norm = 0.5;
+    param.axis_norm = 0.3;
 
 
 end
