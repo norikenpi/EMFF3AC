@@ -9,14 +9,25 @@ function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, para
         F_total = zeros(3, 1);  
         % それぞれの衛星がある場所での磁力を計算
 
-        % 稼働している衛星のみ計算。
-        for index = 1:size(param.set{satellite_i},2)
-            satellite_j = param.set{satellite_i}(index);
-            r = satellites{satellite_j}.position - satellites{satellite_i}.position;
-            F = magneticForce(satellites{satellite_i}.magnetic_moment, satellites{satellite_j}.magnetic_moment, r, param);
-            F_total = F_total + F;
+        if param.current_type == "DC"
+            % 稼働している衛星のみ計算。
+            for index = 1:size(param.set{satellite_i},2)
+                satellite_j = param.set{satellite_i}(index);
+                r = satellites{satellite_j}.position - satellites{satellite_i}.position;
+                F = magneticForce(satellites{satellite_i}.magnetic_moment, satellites{satellite_j}.magnetic_moment, r, param);
+                F_total = F_total + F;
+            end
+        elseif param.current_type == "AC"
+            %交流の場合の特定の衛星に加わる力を計算する。
+            for index = 1:size(param.N,2)-1
+                satellite_j = param.set{satellite_i}(index);
+                r = satellites{satellite_j}.position - satellites{satellite_i}.position;
+                F = magneticForce(satellites{satellite_i}.magnetic_moment, satellites{satellite_j}.magnetic_moment, r, param);
+                
+                F_total = F_total + F;
+            end
         end
-        
+
 
         % 全ての衛星と計算
         %{
