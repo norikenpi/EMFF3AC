@@ -14,21 +14,23 @@ function satellites = setInitialSatelliteStates(param)
         %衛星の目標値を設定
         [position_d, velocity_d] = getSatelliteDesiredPosition(i, param);
 
-
-        disp("position and velocity")
-        disp(position);
-        disp(velocity);
         %velocity = [0.002*i; 0.001*i; 0.001*i]; % 速度
         orientation = [0; 0; i*pi/180]; % オイラー角
         angular_velocity = param.angular_velocity; % 角速度
-        magnetic_moment = param.magnetic_moment; % 磁気モーメント
+
+        if param.current_type == "DC"
+            magnetic_moment = param.magnetic_moment; % 磁気モーメント
+        elseif param.current_type == "AC"
+            magnetic_moment = zeros(3, size(param.frequency, 1)); % 磁気モーメント
+        end
         mass = param.mass; % 衛星質量
         moment_of_inertia = param.moment_of_inertia; % 慣性モーメント
         max_magnetic_moment = param.max_magnetic_moment; % 最大磁気モーメント
         radius = param.radius; %衛星半径
+        frequency = param.frequency_set(1,:);
 
         satellites{i} = Satellite(position, velocity, orientation, angular_velocity, magnetic_moment, ...
-            mass, moment_of_inertia, max_magnetic_moment, radius, position_d, velocity_d);
+            mass, moment_of_inertia, max_magnetic_moment, radius, position_d, velocity_d, frequency);
 
     end
 

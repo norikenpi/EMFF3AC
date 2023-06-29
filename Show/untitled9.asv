@@ -1,0 +1,21 @@
+m1 = [1; 0; 0];
+m2 = [1; 0; 0];
+r = [1; 0; 0];
+F = far_field(m1, m2, r, param);
+
+total = 4;
+delta_theta = 2*pi/total;
+theta = 0;
+data_vector = zeros(3,total);
+for i = 1:total
+    theta = theta + delta_theta;
+    % 回転行列の作成
+    R = [cos(theta) -sin(theta) 0;
+         sin(theta)  cos(theta) 0;
+            0           0       1];
+    
+    % ベクトルの回転
+    rotated_m2 = R * m1;
+    F = far_field(m1, m2, r, param);
+    data_vector(:, i) = rotated_m2;
+end

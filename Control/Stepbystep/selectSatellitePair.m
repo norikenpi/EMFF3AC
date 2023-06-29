@@ -1,29 +1,32 @@
 function pair_satellite_idx = selectSatellitePair(i, time, param)
 
-
-    %現在何周期目か
-    T_counter = int64(time/param.pair_time);
-    pair_number =  size(param.timetable,1);
-    row = int64(mod(T_counter, pair_number) + 1);
-    col = find(param.timetable(row,:) == i);
-    % 時間に応じてくじの数字をチェック
-
-
-
-    if col == 1
-        pair_satellite_idx = param.timetable(row, 2);
-    elseif col == 2
-        pair_satellite_idx = param.timetable(row, 1);
-    elseif col == 3
-        pair_satellite_idx = param.timetable(row, 4);
-    elseif col == 4
-        pair_satellite_idx = param.timetable(row, 3);
-    elseif isempty(col)
-        pair_satellite_idx = i;
-    end
-
+    if param.current_type == "DC"
+        %現在何周期目か
+        T_counter = int64(time/param.pair_time);
+        pair_number = size(param.timetable,1);
     
+        %T_counter週目で稼働する衛星群
+        row = int64(mod(T_counter, pair_number) + 1);
+    
+        %その衛星群の中にi番目の衛星は含まれているかを確認
+        col = find(param.timetable(row,:) == i);
+        % 時間に応じてくじの数字をチェック 
+        if col == 1
+            pair_satellite_idx = param.timetable(row, 2);
+        elseif col == 2
+            pair_satellite_idx = param.timetable(row, 1);
+        elseif col == 3
+            pair_satellite_idx = param.timetable(row, 4);
+        elseif col == 4
+            pair_satellite_idx = param.timetable(row, 3);
+        elseif isempty(col)
+            pair_satellite_idx = i;
+        end
 
+    elseif param.current_type == "AC"
+        %衛星iに対応する衛星をpair_satellite_idxに格納する。
+        pair_satellite_idx = param.set{i};
+    end
 
 
     %{

@@ -1,4 +1,4 @@
-function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, param)
+function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, param, time)
         % 各衛星に働く磁気トルクと磁気力を計算
     magnetic_torques = cell(1, param.N);
     magnetic_forces = cell(1, param.N);
@@ -14,7 +14,7 @@ function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, para
             for index = 1:size(param.set{satellite_i},2)
                 satellite_j = param.set{satellite_i}(index);
                 r = satellites{satellite_j}.position - satellites{satellite_i}.position;
-                F = magneticForce(satellites{satellite_i}.magnetic_moment, satellites{satellite_j}.magnetic_moment, r, param);
+                F = magneticForce(satellites{satellite_i}.magnetic_moment, satellites{satellite_j}.magnetic_moment, r, param, time);
                 F_total = F_total + F;
             end
         elseif param.current_type == "AC"
@@ -22,9 +22,11 @@ function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, para
             for index = 1:size(param.N,2)-1
                 satellite_j = param.set{satellite_i}(index);
                 r = satellites{satellite_j}.position - satellites{satellite_i}.position;
-                F = magneticForce(satellites{satellite_i}.magnetic_moment, satellites{satellite_j}.magnetic_moment, r, param);
-                
-                F_total = F_total + F;
+
+                %2つの衛星間で発生する磁力
+                F_average = satelliteAverageForce(satellites{satellite_i}.magnetic_moment, satellites{satellite_j}.magnetic_moment, r, param, time);
+
+                F_total = F_total + F_average;
             end
         end
 
@@ -45,6 +47,7 @@ function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, para
 
         % 磁気トルクを計算
         %magnetic_torques{i} = cross(satellites{i}.magnetic_moment, B_total);
+
 
         % 磁気力を計算
         magnetic_forces{satellite_i} = F_total;

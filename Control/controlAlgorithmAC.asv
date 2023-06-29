@@ -1,0 +1,17 @@
+function [u, pair_satellite_list] = controlAlgorithmAC(histories, pair, satellites, param, time)
+
+
+    %ある時刻での衛星iと対応する衛星を設定
+    %ペアとなる衛星がいない場合、自衛星と同じインデックスが割り当てられる
+    satellite_i = pair(1);
+    satellite_j = pair(2);
+    
+    u = zeros(3,size(pair_satellite_list, 2));
+    for idx = 1:size(pair_satellite_list, 2)
+        pair_satellite_idx = pair_satellite_list(idx);
+        u(:, idx) = relativeFeedback(satellite_i, satellite_j, satellites, param);
+        disp("u")
+        disp(i)
+        disp(pair_satellite_idx)
+        disp(u)
+    end

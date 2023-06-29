@@ -1,7 +1,7 @@
 %発生させようとした力と実際に発生した力を比較
 %電流の上限にどこで引っかかったかをチェック。
 
-satellite_i = 16;
+satellite_i = 1;
 
 assignin('base', 'current_req', histories.magnetic_moment_req_histories/(param.coilN*pi*param.radius^2));
 

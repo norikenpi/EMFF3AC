@@ -6,31 +6,29 @@ function param = setSimulationParameters()
     r_star = param.earth_radius + param.altitude; % 地心からの距離
     param.n = sqrt(param.myu/r_star^3); % 地球を周回する衛星の角速度
 
-    param.approximation = 'trapezoid';
-    param.magnetic_model = 'far_field';
-    param.current_type = "DC";
+    param.approximation = 'trapezoid'; % trapezoid or euler
+    param.magnetic_model = 'far_field'; % near_field or far_field
+    param.current_type = 'DC'; % DC or AC
     param.dt = 0.1; % シミュレーションタイムステップ
     param.time_step = 0.1; % 制御タイムステップ
-    param.t = 10; % シミュレーション時間 
-    %param.t = 2*pi/param.n;
+    param.t = 1000; % シミュレーション時間 
+    %param.t = round(2*pi/param.n);
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.065; %初期衛星間距離
     param.satellite_desired_distance = 0.15; %衛星間距離
 
     %near_field
-    param.coil_split = 5;
+    param.coil_split = 7;
 
     %保存先
     param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/';
-
+    %param.path = 'C:/Users/nakan/OneDrive/デスクトップ/kubota';
     param.date = datetime('now','Format', 'yyyy-MM-dd-HH-mm-ss');
     param.path_data = sprintf(strcat(param.path, 'movie/%s'), param.date);
 
-    
-    %param.path = 'C:/Users/nakan/OneDrive/デスクトップ/kubota';
-    param.pair_time = 1; % ペアリングされてる時間
+    param.pair_time = 0.1; % ペアリングされてる時間
 
-    
+    param.N = 16; % 衛星の数    
 
     %Danil式パラメータ
     param.Kp = 10^(-6); % 比例ゲイン10^(-6)
@@ -46,6 +44,7 @@ function param = setSimulationParameters()
     %衛星の初期パラメータ
     param.angular_velocity = [0; 0; 0.1]; % 角速度
     param.magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
+    
     param.mass = 0.03; % 衛星質量
     param.moment_of_inertia = 1; % 慣性モーメント
 
@@ -54,13 +53,17 @@ function param = setSimulationParameters()
     param.I_max = 1.5; % 最大電流
     param.radius = 0.015; %衛星半径
     param.max_magnetic_moment = param.coilN * param.I_max * pi * param.radius^2; % 最大磁気モーメント
-    
-
-    param.N = 16; % 衛星の数
+   
 
     %紐ありの場合
     param.cof = 0.8; %反発係数
     param.length = 0.17;
+
+    %最適制御パラメータ
+    param.Q = diag([1, 1, 1, 10^7, 10^7, 10^7]);
+    param.R = diag([1, 1, 1]);
+
+
 
     %{
     param.timetable = {[5,9];
@@ -114,12 +117,9 @@ function param = setSimulationParameters()
                        [5,7];
                        [13,15]];
     %}
-    %{
-    param.timetable = {[1,2];
-                       [3,4];
-                       [1,3];
-                       [2,4]};
-    %}
+    
+
+    
 
     param.timetable = [[[1,9],[4,12]];
                        [[2,10],[0,0]];
@@ -143,6 +143,15 @@ function param = setSimulationParameters()
                        [[6,7],[0,0]];
                        [[7,8],[0,0]]];
 
+    %4衛星用
+    %{
+    param.timetable = [[[1,2],[0,0]];
+                       [[2,4],[0,0]];
+                       [[3,4],[0,0]];
+                       [[1,3],[0,0]]];
+    %}
+    
+
 
     
 
@@ -165,10 +174,109 @@ function param = setSimulationParameters()
                    [7,11,14,16];
                    [8,12,15]};
 
+    %4衛星用
+    %{
+    param.set = [[1,2];
+                 [2,3];
+                 [3,4];
+                 [1,4]];
+    %}
+    param.set_AC = [[1,2];
+                 [2,3];
+                 [3,4];
+                 [9,10];
+                 [10,11];
+                 [11,12];
+                 [13,14];
+                 [14,15];
+                 [15,16];
+                 [5,6];
+                 [6,7];
+                 [7,8];
+                 [1,9];
+                 [2,10];
+                 [3,11];
+                 [4,12];
+                 [9,13];
+                 [10,14];
+                 [11,15];
+                 [12,16];
+                 [13,5];
+                 [14,6];
+                 [15,7];
+                 [16,8]];
+
+
+
+    %交流
+    %4衛星用
+    %{
+    param.frequency_set = [1;
+                           2;
+                           3;
+                           4];
+    %}
+    param.frequency_set = [7;
+                           6;
+                           5;
+                           12;
+                           11;
+                           10;
+                           17;
+                           16;
+                           15;
+                           4;
+                           21;
+                           20;
+                           1;
+                           9;
+                           8;
+                           1;
+                           2;
+                           14;
+                           13;
+                           2;
+                           3;
+                           19;
+                           18;
+                           3];
+
+    %4衛星用
+    %{
+    param.frequency = [10;
+                       20;
+                       30;
+                       40]*pi; %rad/s    
+    %}
+    
+    param.frequency = [10;
+                       20;
+                       30;
+                       40;
+                       50;
+                       60;
+                       70;
+                       80;
+                       90;
+                       100;
+                       110;
+                       120;
+                       130;
+                       140;
+                       150;
+                       160;
+                       170;
+                       180;
+                       190;
+                       200;
+                       210]*pi;
+
+
+
     %描画パラメータ
     param.force_arrow_scale = 10^-9; %5*10^4
     param.magnetic_moment_arrow_scale = 10^-9;%100
-    param.axis_norm = 0.3;
+    param.axis_norm = 0.5;
 
 
 end

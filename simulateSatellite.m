@@ -12,15 +12,22 @@ function simulateSatellite()
     % 衛星の位置、力、および磁気モーメントの履歴を格納するためのセル配列を初期化する
     histories = makeHistoriesMemory(param);
 
-    % シミュレーションを実行
-    [satellites, histories] = runSimulation(satellites, param, histories);
 
     %最終結果を表示
     assignin('base', 'satellites', satellites);
     assignin('base', 'param', param);
     assignin('base', 'histories', histories);
 
+
+    % シミュレーションを実行
+    [satellites, histories] = runSimulation(satellites, param, histories);
+    disp("hstory")
+    disp(histories.position_histories)
     showLastFrame(histories, param, satellites);
+     %最終結果を表示
+    assignin('base', 'satellites', satellites);
+    assignin('base', 'param', param);
+    assignin('base', 'histories', histories);
     
   
     % アニメーションを作成

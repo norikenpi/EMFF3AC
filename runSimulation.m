@@ -6,7 +6,11 @@ function [satellites, histories] = runSimulation(satellites, param, histories)
         % 各衛星の状態を更新する
         disp("time")
         disp(time)
-        [satellites, histories] = simulateTimeStep(satellites, histories, param, time);
+        if param.current_type == "DC"
+            [satellites, histories] = simulateTimeStep(satellites, histories, param, time);
+        elseif param.current_type == "AC"
+            [satellites, histories] = simulateTimeStepAC(satellites, histories, param, time);
+        end
     end
     toc;
 end

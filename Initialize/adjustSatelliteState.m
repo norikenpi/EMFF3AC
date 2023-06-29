@@ -13,9 +13,6 @@ function satellites = adjustSatelliteState(satellites, param)
     
     %重心位置と重心速度を0にするように設定
     for i = 1:param.N
-        disp(satellites{i}.position)
         satellites{i}.position = satellites{i}.position - CoM;
-        disp(satellites{i}.position)
         satellites{i}.velocity = satellites{i}.velocity - CoMV;
-        disp("修正済み")
     end

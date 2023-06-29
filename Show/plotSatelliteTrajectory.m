@@ -6,6 +6,7 @@ function [h_traj, h_force, h_mag, h_pair] = plotSatelliteTrajectory(histories, p
     hold on;
     plot3(histories.position_histories(time_i, 1, satellite_j), histories.position_histories(time_i, 2, satellite_j), histories.position_histories(time_i, 3, satellite_j), 'o', 'MarkerSize', 10, 'MarkerFaceColor', color, 'DisplayName', name);
 
+
     satellite_j2 = histories.pair_idx(time_i, satellite_j);
     h_pair = plotLine3D(histories.position_histories(time_i, :, satellite_j), histories.position_histories(time_i, :, satellite_j2));
     
@@ -16,3 +17,4 @@ function [h_traj, h_force, h_mag, h_pair] = plotSatelliteTrajectory(histories, p
     h_mag.Color = 'red';
     
 end
+
