@@ -12,11 +12,11 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
     for i = 1:param.N
 
         %Danil式かStepbystepのどちらかを選択。
-        %[u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param);
+        [u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param, time);
         
         % StepbyStep方式
         %交流の場合、uは行列形式
-        [u, pair_satellite_idx] = controlAlgorithmStepbystep(histories, i, satellites, param, time);
+        %[u, pair_satellite_idx] = controlAlgorithmStepbystep(histories, i, satellites, param, time);
 
         
         % シミュレーションタイムステップの間は電流の大きさを変えない。

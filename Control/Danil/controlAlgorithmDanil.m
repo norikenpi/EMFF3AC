@@ -1,7 +1,7 @@
-function [u, nearest_drift_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param)
+function [u, nearest_drift_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param, time)
     [nearest_drift_satellite_idx, C1, relative_position, converge, relative_position_min] = findNearestDriftSatellite(satellites, param, i);
-    histories.C1_histories{i} = [histories.C1_histories{i}, C1];
-    histories.pair_idx{i} = [histories.pair_idx{i}, nearest_drift_satellite_idx];
+    histories.C1_histories(int32(time/param.dt)+1, i) = C1;
+    %histories.pair_idx{i} = [histories.pair_idx{i}, nearest_drift_satellite_idx];
 
     % 加速度から必要な磁気モーメントを計算（相手の磁気モーメントが0だったら適宜設定）
     %ペアリングする衛星が存在＆＆衝突する可能性がある距離に存在しない＆＆最大距離より小さい
