@@ -8,12 +8,15 @@ function param = setSimulationParameters()
 
     param.approximation = 'trapezoid'; % trapezoid or euler
     param.magnetic_model = 'far_field'; % near_field or far_field
+    param.start_state = 0;
+    param.start_state = [4,1,1];
     param.current_type = 'DC'; % DC or AC
-    param.dt = 0.1; % シミュレーションタイムステップ
-    param.time_step = 0.1; % 制御タイムステップ
-    param.t = 1000; % シミュレーション時間 
+    param.dt = 0.01; % シミュレーションタイムステップ
+    param.time_step = 0.01; % 制御タイムステップ
+
+    param.t = 100; % シミュレーション時間 
     %param.t = round(2*pi/param.n);
-    param.initial_error = 0.005;%初期誤差
+    param.initial_error = 0.05;%初期誤差
     param.satellite_initial_distance = 0.065; %初期衛星間距離
     param.satellite_desired_distance = 0.15; %衛星間距離
 
@@ -28,7 +31,7 @@ function param = setSimulationParameters()
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 16; % 衛星の数    
+    param.N = 4; % 衛星の数    
 
     %Danil式パラメータ
     param.Kp = 10^(-6); % 比例ゲイン10^(-6)
@@ -173,6 +176,12 @@ function param = setSimulationParameters()
                    [6,10,13,15];
                    [7,11,14,16];
                    [8,12,15]};
+
+        param.set =  {[2,3,4];
+                      [1,3,4];
+                      [1,2,4];
+                      [1,2,3];
+                   };
 
     %4衛星用
     %{

@@ -14,7 +14,7 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
         %Danil式かStepbystepのどちらかを選択。
         %[u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param, time);
 
-        [u, pair_satellite_idx] = controlAlgorithmDanilAC(histories, i, satellites, param, time);
+        [u, pair_satellite_idx] = controlAlgorithmDanil2(histories, i, satellites, param, time);
 
         
         % StepbyStep方式
@@ -48,7 +48,7 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
     
     
      % 各衛星に発生した磁気トルクと磁力を計算
-    [magnetic_forces, magnetic_torques] = calculateF_total(satellites, param, time, histories);
+    [magnetic_forces, magnetic_torques] = calculateF_total(satellites, param, time);
     
 
 

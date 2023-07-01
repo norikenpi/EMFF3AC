@@ -11,6 +11,8 @@ function satellites = setInitialSatelliteStates(param)
         %衛星を2x2x(param.N/4)の配列に配置する
         [position, velocity] = getSatellitePosition(i, param);
 
+        [position, velocity] = getSatellitePositionCustom(i, param);
+
         %衛星の目標値を設定
         [position_d, velocity_d] = getSatelliteDesiredPosition(i, param);
 

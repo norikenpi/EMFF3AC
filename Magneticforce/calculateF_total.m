@@ -1,4 +1,4 @@
-function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, param, time)
+function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, param, time, histories)
         % 各衛星に働く磁気トルクと磁気力を計算
     magnetic_torques = cell(1, param.N);
     magnetic_forces = cell(1, param.N);
@@ -12,7 +12,15 @@ function [magnetic_forces, magnetic_torques] = calculateF_total(satellites, para
         if param.current_type == "DC"
             % 稼働している衛星のみ計算。
             for index = 1:size(param.set{satellite_i},2)
+            
+
+                disp("satellite_i")
+                disp(satellite_i)
+                disp(index)
                 satellite_j = param.set{satellite_i}(index);
+
+                disp(satellite_j)
+                disp(satellite_i)
                 r = satellites{satellite_j}.position - satellites{satellite_i}.position;
                 F = magneticForce(satellites{satellite_i}.magnetic_moment, satellites{satellite_j}.magnetic_moment, r, param, time);
                 F_total = F_total + F;
