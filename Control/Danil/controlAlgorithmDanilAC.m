@@ -12,6 +12,7 @@ function [u, nearest_satellite_idx] = controlAlgorithmDanilAC(histories, i, sate
   
             %u = calculateRequiredAcceleration(param, C1);
     u = relativeFeedback(i, nearest_satellite_idx, satellites, param);
+    u = [0;0;0];
     %{
     elseif norm(relative_position) <= param.safety_distance
         %一番近いやつとペア組めてないじゃん。

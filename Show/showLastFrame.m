@@ -4,6 +4,7 @@ function showLastFrame(histories, param, satellites)
 
     m = satellites{1}.mass;
     a = satellites{1}.radius;
+    
 
     colors = jet(size(histories.position_histories, 3)); % N個の衛星に対して異なる色を設定
     i = size(histories.position_histories, 1);

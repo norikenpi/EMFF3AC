@@ -13,8 +13,9 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
 
         %Danil式かStepbystepのどちらかを選択。
         %[u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param, time);
+        [u, pair_satellite_idx] = controlAlgorithmDanilnotC1(histories, i, satellites, param, time);
 
-        [u, pair_satellite_idx] = controlAlgorithmDanilAC(histories, i, satellites, param, time);
+        %[u, pair_satellite_idx] = controlAlgorithmDanilAC(histories, i, satellites, param, time);
 
         
         % StepbyStep方式
@@ -42,6 +43,8 @@ function [satellites, histories] = simulateTimeStep(satellites, histories, param
             histories.magnetic_moment_req_histories(int32(time/param.dt)+1, :, i) = magnetic_moment_req;
             histories.u_histories(int32(time/param.dt)+1, :, i) = u;
             %histories.u_real_histories(int32(time/param.dt)+1, :, i) = u_real;
+            disp("paire")
+            disp(pair_satellite_idx)
             histories.pair_idx(int32(time/param.dt)+1, i) = pair_satellite_idx;
         end
     end

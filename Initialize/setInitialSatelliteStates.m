@@ -11,7 +11,11 @@ function satellites = setInitialSatelliteStates(param)
         %衛星を2x2x(param.N/4)の配列に配置する
         [position, velocity] = getSatellitePosition(i, param);
 
+        %4つの縦に並んだ衛星を正方形にする
         [position, velocity] = getSatellitePositionCustom(i, param);
+
+        %衛星群の合体
+        [position, velocity] = getSatellitePositionFusion(i, param);
 
         %衛星の目標値を設定
         [position_d, velocity_d] = getSatelliteDesiredPosition(i, param);
@@ -33,7 +37,6 @@ function satellites = setInitialSatelliteStates(param)
 
         satellites{i} = Satellite(position, velocity, orientation, angular_velocity, magnetic_moment, ...
             mass, moment_of_inertia, max_magnetic_moment, radius, position_d, velocity_d, frequency);
-
     end
 
 

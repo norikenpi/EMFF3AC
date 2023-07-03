@@ -5,7 +5,6 @@ function F_average = satelliteAverageForceTotal(satellite_i, satellite_j, time, 
 
     %satellite_iに関して
     for i = 1:size(param.frequency_set,1)
-
         m_i = satellite_i.magnetic_moment * [sin(param.frequency*t)]; %(3, size(param.frequency_set, 1)) × (size(param.frequency_set, 1)), 1)
         m_j = satellite_j.magnetic_moment * [sin(param.frequency*t)]; %(3, size(param.frequency_set, 1)) × (size(param.frequency_set, 1)), 1)
     end
