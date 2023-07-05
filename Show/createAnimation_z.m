@@ -1,6 +1,6 @@
 function createAnimation_z(histories, param, satellites)
     fps = 31;
-    pause = 300;
+    pause = param.pause;
     filename_option = "z";
 
     %データを入れるフォルダを作る。

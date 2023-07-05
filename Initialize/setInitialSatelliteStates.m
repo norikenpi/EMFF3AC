@@ -5,17 +5,20 @@ function satellites = setInitialSatelliteStates(param)
     for i = 1:param.N
         % ここで、各衛星の初期状態を設定してください
         
-        %既定の範囲内で衛星の初期位置を設定
+        %既定の範囲内で衛星の初期位置を設定。Cベース
         %[position, velocity] = getSatellitePositionRandom(i, satellites, param);
 
         %衛星を2x2x(param.N/4)の配列に配置する
-        [position, velocity] = getSatellitePosition(i, param);
+        %[position, velocity] = getSatellitePosition(i, param);
 
         %4つの縦に並んだ衛星を正方形にする
-        [position, velocity] = getSatellitePositionCustom(i, param);
+        %[position, velocity] = getSatellitePositionCustom(i, param);
 
         %衛星群の合体
-        [position, velocity] = getSatellitePositionFusion(i, param);
+        %[position, velocity] = getSatellitePositionFusion(i, param);
+
+        %既定の範囲内で衛星の初期位置を設定
+        [position, velocity] = getSatellitePositionRandom2(i, satellites, param);
 
         %衛星の目標値を設定
         [position_d, velocity_d] = getSatelliteDesiredPosition(i, param);

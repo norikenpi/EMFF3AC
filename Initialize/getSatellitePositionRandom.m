@@ -1,4 +1,4 @@
-% 衛星をランダムに配置する
+%既定の範囲内で衛星の初期位置を設定。Cベース
 %C1~C6 rand([-0.1; 0.1])
 function [pos, vel] = getSatellitePositionRandom(i, satellites, param)
     j = param.j;

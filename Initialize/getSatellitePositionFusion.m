@@ -17,10 +17,10 @@ function [position, velocity] = getSatellitePositionFusion(i, param)
         i = i - 4;
         [ix, iy, iz] = ind2sub(param.start_state, i);
         rng(i)
-        x = param.satellite_initial_distance * (ix) + rand() * param.initial_error - 0.8; % -0.15から0.15の範囲で衛星を配置
+        x = param.satellite_initial_distance * (ix) + rand() * param.initial_error - 0.3; % -0.15から0.15の範囲で衛星を配置
         y = param.satellite_initial_distance * 1.5 + rand() * param.initial_error;
         z = param.satellite_initial_distance * (iz) + rand() * param.initial_error;
-        vx = 0.005;
+        vx = 0.001;
         vy = 0;
         vz = 0;
     end

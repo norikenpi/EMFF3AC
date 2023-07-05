@@ -10,13 +10,13 @@ function param = setSimulationParameters()
     param.magnetic_model = 'far_field'; % near_field or far_field
     param.start_state = 0;
     param.start_state = [4,1,1];
-    param.current_type = 'DC'; % DC or AC
+    param.current_type = 'AC'; % DC or AC
     param.dt = 0.1; % シミュレーションタイムステップ
     param.time_step = 0.1; % 制御タイムステップ
 
-    param.t = 10; % シミュレーション時間 
-    param.t = round(2*pi/param.n)*2;
-    param.initial_error = 0.05;%初期誤差
+    param.t = 1; % シミュレーション時間 
+    %param.t = round(2*pi/param.n)*2;
+    param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.15; %初期衛星間距離
     param.satellite_desired_distance = 0.30; %衛星間距離
 
@@ -31,7 +31,7 @@ function param = setSimulationParameters()
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 4; % 衛星の数    
+    param.N = 5; % 衛星の数    
 
     %Danil式パラメータ
     param.Kp = 10^(-6); % 比例ゲイン10^(-6)
@@ -47,13 +47,20 @@ function param = setSimulationParameters()
     %衛星の初期パラメータ
     param.angular_velocity = [0; 0; 0.1]; % 角速度
     param.magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
+
+    param.mean_pos = [0, 0, 0]; %位置平均
+    param.std_pos = [0.15, 0.15, 0.15]; %位置標準偏差
+    param.mean_vel = [0, 0, 0.15]; %速度平均
+    param.std_vel = [0, 0, 0]; %速度標準偏差
+
+
     
     param.mass = 1; % 衛星質量
     param.moment_of_inertia = 1; % 慣性モーメント
 
     %2018年の野田さんの宇科連準拠
     param.coilN = 17; % 巻き数
-    param.I_max = 1.5; % 最大電流
+    param.I_max = 5; % 最大電流
     param.radius = 0.05; %衛星半径
     param.max_magnetic_moment = param.coilN * param.I_max * pi * param.radius^2; % 最大磁気モーメント
    
@@ -182,6 +189,7 @@ function param = setSimulationParameters()
                       [1,2,4];
                       [1,2,3];
                    };
+        param.set =  [1;2;3;4;5];
 
     %4衛星用
     %{
@@ -253,7 +261,8 @@ function param = setSimulationParameters()
     param.frequency_set = [1;
                            2;
                            3;
-                           4];
+                           4;
+                           5];
     
 
     %4衛星用
@@ -284,7 +293,8 @@ function param = setSimulationParameters()
     param.frequency = [10;
                        20;
                        30;
-                       40]*pi; %rad/s    
+                       40;
+                       50]*pi; %rad/s    
     
 
 
@@ -293,6 +303,7 @@ function param = setSimulationParameters()
     param.force_arrow_scale = 10^-9; %5*10^4
     param.magnetic_moment_arrow_scale = 10^-9;%100
     param.axis_norm = 0.5;
+    param.pause = 1000;
 
 
 end

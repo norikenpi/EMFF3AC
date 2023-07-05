@@ -29,7 +29,6 @@ function satellites = setSatelliteDipoleAC2(satellites, u, idx, pair_idx,  histo
         if norm(m1) == 0
             m1 = param.max_magnetic_moment * r/r_norm;
         end
-
         D = calculateD(r, m1);
         m2 = - 4*pi*r_norm^5/(3*myu0)*inv(D)*u*satellites{satellite_j}.mass;
 
