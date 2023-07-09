@@ -26,7 +26,7 @@ function param = setSimulationParameters()
 
     %保存先
     param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/';
-    %param.path = 'C:/Users/nakan/OneDrive/デスクトップ/kubota';
+    %param.path = 'C:/Users/nakan/OneDrive/デスクトップ/kubota/';
     param.date = datetime('now','Format', 'yyyy-MM-dd-HH-mm-ss');
     param.path_data = sprintf(strcat(param.path, 'movie/%s'), param.date);
 
