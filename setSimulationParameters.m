@@ -15,7 +15,7 @@ function param = setSimulationParameters()
     param.time_step = 0.1; % 制御タイムステップ
 
     
-    param.t = 1000; % シミュレーション時間 
+    param.t = 10; % シミュレーション時間 
     %param.t = round(2*pi/param.n);
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.15; %初期衛星間距離
@@ -32,7 +32,7 @@ function param = setSimulationParameters()
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 16; % 衛星の数    
+    param.N = 8; % 衛星の数    
 
     %Danil式パラメータ
     param.Kp = 10; % 比例ゲイン10^(-6)
@@ -44,8 +44,10 @@ function param = setSimulationParameters()
     param.avoid_collision_magnetic_moment = 0.00005; % 衝突回避制御を行うときの磁気ダイポールゲイン
     param.max_distance = 1; % 通信可能距離
     param.min_distance_nopair = 0.05; % ペアリングした衛星よりも近くに別の衛星があるとき、この距離以内にある場合、制御しない。
-    %param.C1_border = 10^-6; %10^-4
-    param.C1_border = 10000; %常に目標相対位置誤差に基づく制御
+    %param.control_border = 10^-4; %10^-4
+    param.control_border = 10000; %常に目標相対位置誤差に基づく制御
+
+    param.pair_type = 'C1';
 
     %衛星の初期パラメータ
     param.angular_velocity = [0; 0; 0.1]; % 角速度
@@ -270,7 +272,7 @@ function param = setSimulationParameters()
                            5;
                            6];
 
-    param.frequency_set = (1:120).';
+    param.frequency_set = (1:28).';
 
     %4衛星用
     param.frequency = [10;
@@ -302,7 +304,7 @@ function param = setSimulationParameters()
                        50;
                        60]*pi; %rad/s  
 
-    param.frequency = (10:10:1200).' * pi;
+    param.frequency = (10:10:280).' * pi;
     
   
     

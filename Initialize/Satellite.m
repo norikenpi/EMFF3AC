@@ -11,11 +11,12 @@ classdef Satellite
         radius
         position_d
         velocity_d
+        C1
     end
     
     methods
         function obj = Satellite(position, velocity, orientation, angular_velocity, magnetic_moment, mass, ...
-                moment_of_inertia, max_magnetic_moment, radius, position_d, velocity_d)
+                moment_of_inertia, max_magnetic_moment, radius, position_d, velocity_d, C1)
             obj.position = position;
             obj.velocity = velocity;
             obj.orientation = orientation;
@@ -27,6 +28,7 @@ classdef Satellite
             obj.radius = radius;
             obj.position_d = position_d;
             obj.velocity_d = velocity_d;
+            obj.C1 = C1;
         end
     end
 end

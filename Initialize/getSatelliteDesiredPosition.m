@@ -9,6 +9,11 @@ function [pos, vel] = getSatelliteDesiredPosition(i, param)
     
     mat = [[1,3];
            [2,4]];
+
+    mat = [[1,5];
+           [2,6];
+           [3,7];
+           [4,8]];
     
     
 

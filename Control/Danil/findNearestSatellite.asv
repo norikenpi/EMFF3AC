@@ -1,5 +1,5 @@
 % 与えられた衛星の配列から指定した衛星と除外する衛星以外で、最も近い衛星のインデックスと距離を求めます。
-function [error_idx, histories] = findNearestSatellite(satellites, target_idx, excluded_idx, param, histories, time)
+function error_idx = findNearestSatellite(satellites, target_idx, excluded_idx, param)
     distances = zeros(1, length(satellites));
     error = zeros(1,length(satellites));
     C1 = 0;
@@ -20,7 +20,6 @@ function [error_idx, histories] = findNearestSatellite(satellites, target_idx, e
 
             if param.pair_type == "C1"
                 C1 = relative_velocity(1) - 2 * param.n * relative_position(3); 
-                
                 histories.C1_histories(int32(time/param.dt)+1, i) = C1;
                 %error(i) = norm(relative_position - relative_position_d); %目標相対位置誤差
                 error(i) = C1;
@@ -49,7 +48,7 @@ function [error_idx, histories] = findNearestSatellite(satellites, target_idx, e
             %disp('1より小さい数字が見つかりました。');
             
             error_idx = idx;
-            satellites{i}.C1 = error(idx);
+            C1 = error(idx);
             break; % ループを終了
         
         end
