@@ -48,6 +48,7 @@ function param = setSimulationParameters()
     param.control_border = 10000; %常に目標相対位置誤差に基づく制御
 
     param.pair_type = 'C1';
+    param.pair_type = "energy";
 
     %衛星の初期パラメータ
     param.angular_velocity = [0; 0; 0.1]; % 角速度

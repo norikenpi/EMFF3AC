@@ -28,7 +28,9 @@ function [error_idx, histories] = findNearestSatellite(satellites, target_idx, e
                 distances(i) = norm(relative_position);
                 error(i) = 1/distances(i);
             elseif param.pair_type == "target_distance"
-                error(i) = 1/target_error;
+                error(i) = target_error;
+            elseif param.pair_type == "energy"
+                error(i) = norm(relative_velocity);
 
             end
         end
