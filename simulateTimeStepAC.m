@@ -9,26 +9,45 @@ function [satellites, histories] = simulateTimeStepAC(satellites, histories, par
         % シミュレーションタイムステップの間は電流の大きさを変えない。
         % uに基づいて衛星の磁気モーメントを計算
         % 各衛星の正規化後の磁気モーメントと所望の磁気ダイポールを計算。
-        if mod(time, param.time_step) == 0
-        %制御周期おきに磁気ダイポール計算をする。setSaetelliteDipoleの中で交流と直流で処理を分けてる。
-            
-            %Danil式かStepbystepのどちらかを選択。
-            %[u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param);
-            
-            [u, nearest_satellite_idx, histories] = controlAlgorithmDanilAC(histories, idx, satellites, param, time);
+        if param.freq_all == false
+            if mod(time, param.time_step) == 0
+            %制御周期おきに磁気ダイポール計算をする。setSaetelliteDipoleの中で交流と直流で処理を分けてる。
+                
+                %Danil式かStepbystepのどちらかを選択。
+                %[u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param);
+                
+                [u, nearest_satellite_idx, histories] = controlAlgorithmDanilAC(histories, idx, satellites, param, time);
+        
+                % StepbyStep方式
+                %iは衛星ペア
+                %pair = param.set_AC(i, :);
+                %u = controlAlgorithmAC(histories, pair, satellites, param, time);
     
-            % StepbyStep方式
-            %iは衛星ペア
-            %pair = param.set_AC(i, :);
-            %u = controlAlgorithmAC(histories, pair, satellites, param, time);
-
-            %satellites = setSatelliteDipoleAC(satellites, u, idx, histories, time, param);
-            satellites = setSatelliteDipoleAC2(satellites, u, idx, nearest_satellite_idx, histories, time, param);
-            histories.pair_idx(int32(time/param.dt)+1, idx) = nearest_satellite_idx;
-        else 
-        %制御周期の間は所望磁気モーメントは変わらない。
-            %magnetic_moment_req = histories.magnetic_moment_req_histories(int32(time/param.dt), :, idx);
-        end 
+                %satellites = setSatelliteDipoleAC(satellites, u, idx, histories, time, param);
+                satellites = setSatelliteDipoleAC2(satellites, u, idx, nearest_satellite_idx, histories, time, param);
+                histories.pair_idx(int32(time/param.dt)+1, idx) = nearest_satellite_idx;
+            else 
+            %制御周期の間は所望磁気モーメントは変わらない。
+                %magnetic_moment_req = histories.magnetic_moment_req_histories(int32(time/param.dt), :, idx);
+            end
+        elseif param.freq_all == true
+            histories.pair_idx(int32(time/param.dt)+1, idx) = idx;
+            for idx_j = (idx+1):param.N 
+                parameter = 0;
+                %param.C1_borderをめちゃくちゃ大きくすることで、常に目標相対位置誤差に基づく制御が可能になる。
+                if parameter > param.control_border
+                    %C1を制御
+                    u = calculateRequiredAcceleration(param, C1, idx, idx_j, satellites);
+                    histories.control_type(int32(time/param.dt)+1, idx) = 1;
+                elseif parameter <= param.control_border
+                    %目標相対位置誤差を制御
+                    u = relativeFeedback(idx, idx_j, satellites, param);
+                    histories.control_type(int32(time/param.dt)+1, idx) = 2;
+                end
+                satellites = setSatelliteDipoleAC2(satellites, u, idx, idx_j, histories, time, param);
+                
+            end
+        end
         
        
     end

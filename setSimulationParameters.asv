@@ -16,7 +16,7 @@ function param = setSimulationParameters()
 
     
     param.t = 1000; % シミュレーション時間 
-    %param.t = round(2*pi/param.n);
+    param.t = round(2*pi/param.n);
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.15; %初期衛星間距離
     param.satellite_desired_distance = 0.30; %衛星間距離
@@ -26,13 +26,13 @@ function param = setSimulationParameters()
 
     %保存先
     param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/';
-    %param.path = 'C:/Users/nakan/OneDrive/デスクトップ/kubota';
+    %param.path = 'C:/Users/nakan/OneDrive/デスクトップ/kubota/';
     param.date = datetime('now','Format', 'yyyy-MM-dd-HH-mm-ss');
     param.path_data = sprintf(strcat(param.path, 'movie/%s'), param.date);
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 16; % 衛星の数    
+    param.N = 8; % 衛星の数    
 
     %Danil式パラメータ
     param.Kp = 10; % 比例ゲイン10^(-6)
@@ -44,8 +44,14 @@ function param = setSimulationParameters()
     param.avoid_collision_magnetic_moment = 0.00005; % 衝突回避制御を行うときの磁気ダイポールゲイン
     param.max_distance = 1; % 通信可能距離
     param.min_distance_nopair = 0.05; % ペアリングした衛星よりも近くに別の衛星があるとき、この距離以内にある場合、制御しない。
-    param.C1_border = 10^-6; %10^-4
-    %param.C1_border = 10000; %常に目標相対位置誤差に基づく制御
+    %param.control_border = 10^-4; %10^-4
+    param.control_border = 10000; %常に目標相対位置誤差に基づく制御
+    
+    %衛星の数-1の周波数を使う場合true
+    param.freq_all = false;
+
+    param.pair_type = 'C1';
+    param.pair_type = "energy";
 
     %衛星の初期パラメータ
     param.angular_velocity = [0; 0; 0.1]; % 角速度
@@ -54,7 +60,7 @@ function param = setSimulationParameters()
     param.mean_pos = [0, 0, 0]; %位置平均
     param.std_pos = [0.05, 0.05, 0.05]; %位置標準偏差
     param.mean_vel = [0, 0, 0]; %速度平均
-    param.std_vel = [10^-5, 10^-5, 10^-5]; %速度標準偏差
+    param.std_vel = [10^-6, 10^-6, 10^-6]; %速度標準偏差
 
 
     
@@ -63,7 +69,7 @@ function param = setSimulationParameters()
 
     %2018年の野田さんの宇科連準拠
     param.coilN = 17; % 巻き数
-    param.I_max = 1; % 最大電流
+    param.I_max = 100; % 最大電流
     param.radius = 0.05; %衛星半径
     param.max_magnetic_moment = param.coilN * param.I_max * pi * param.radius^2; % 最大磁気モーメント
    
@@ -269,11 +275,10 @@ function param = setSimulationParameters()
                            4;
                            5;
                            6];
-    param.frequency_set = (1:120).';
+
+    param.frequency_set = (1:6).';
 
     %4衛星用
-    
-    
     param.frequency = [10;
                        20;
                        30;
@@ -295,14 +300,17 @@ function param = setSimulationParameters()
                        190;
                        200;
                        210]*pi;
-    param.frequency = (10:10:1200).' * pi;
-    
+
     param.frequency = [10;
                        20;
                        30;
                        40;
                        50;
-                       60]*pi; %rad/s    
+                       60]*pi; %rad/s  
+
+    param.frequency = (10:10:280).' * pi;
+    
+  
     
 
 
