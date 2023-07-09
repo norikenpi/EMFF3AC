@@ -32,7 +32,7 @@ function param = setSimulationParameters()
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 4; % 衛星の数    
+    param.N = 16; % 衛星の数    
 
     %Danil式パラメータ
     param.Kp = 10; % 比例ゲイン10^(-6)
@@ -270,7 +270,7 @@ function param = setSimulationParameters()
                            5;
                            6];
 
-    param.frequency_set = (1:6).';
+    param.frequency_set = (1:120).';
 
     %4衛星用
     param.frequency = [10;
@@ -302,7 +302,7 @@ function param = setSimulationParameters()
                        50;
                        60]*pi; %rad/s  
 
-    param.frequency = (10:10:60).' * pi;
+    param.frequency = (10:10:1200).' * pi;
     
   
     
