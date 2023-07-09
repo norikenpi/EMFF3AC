@@ -9,6 +9,7 @@ function [satellites, histories] = runSimulation(satellites, param, histories)
             [satellites, histories] = simulateTimeStep(satellites, histories, param, time);
         elseif param.current_type == "AC"
             [satellites, histories] = simulateTimeStepAC(satellites, histories, param, time);
+            %[satellites, histories] = simulateTimeStepACAll(satellites, histories, param, time);
         end
     end
     toc;

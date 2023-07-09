@@ -2,11 +2,6 @@ function [magnetic_forces, magnetic_torques,histories] = calculateF_totalAC(sate
         % 各衛星に働く磁気トルクと磁気力を計算
     magnetic_torques = cell(1, param.N);
     magnetic_forces = cell(1, param.N);
-    for satellite_i = 1:param.N
-        magnetic_forces{satellite_i} = zeros(3,1);
-        histories.force_histories(int32(time/param.dt)+1, :, satellite_i) = zeros(3,1);
-    end
-
 
     
     % 1からNまでの衛星に対して、他のすべての衛星の磁気ダイポールによる磁場を計算し、それらの磁場の合計から各衛星に働く磁気トルクと磁気力を求める。
@@ -26,15 +21,18 @@ function [magnetic_forces, magnetic_torques,histories] = calculateF_totalAC(sate
             end
         end
         %}
-
+        disp("Njni")
+        disp(histories.pair_idx(int32(time/param.dt)+1, satellite_i))
         satellite_j = histories.pair_idx(int32(time/param.dt)+1, satellite_i);
         F_average_total = satelliteAverageForceTotal(satellites{satellite_i}, satellites{satellite_j}, time, param);
         % 磁気力を計算
-
-        magnetic_forces{satellite_i} = magnetic_forces{satellite_i} + F_average_total/2;
-        magnetic_forces{satellite_j} = magnetic_forces{satellite_j} - F_average_total/2;
-        histories.force_histories(int32(time/param.dt)+1, :, satellite_i) = histories.force_histories(int32(time/param.dt)+1, :, satellite_i) + (F_average_total/2).';
-        histories.force_histories(int32(time/param.dt)+1, :, satellite_j) = histories.force_histories(int32(time/param.dt)+1, :, satellite_j) - (F_average_total/2).';
+        disp(F_average_total)
+        disp("kk")
+        disp(magnetic_forces{satellite_i})
+        magnetic_forces{satellite_i} = magnetic_forces{satellite_i} + F_average_total;
+        magnetic_forces{satellite_j} = magnetic_forces{satellite_j} - F_average_total;
+        histories.force_histories(int32(time/param.dt)+1, :, satellite_i) = histories.force_histories(int32(time/param.dt)+1, :, satellite_i) + F_total;
+        histories.force_histories(int32(time/param.dt)+1, :, satellite_i) = histories.force_histories(int32(time/param.dt)+1, :, satellite_i) - F_total;
         
     end
 end

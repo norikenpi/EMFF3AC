@@ -36,10 +36,9 @@ function satellites = setInitialSatelliteStates(param)
         moment_of_inertia = param.moment_of_inertia; % 慣性モーメント
         max_magnetic_moment = param.max_magnetic_moment; % 最大磁気モーメント
         radius = param.radius; %衛星半径
-        frequency = param.frequency_set(1,:);
 
         satellites{i} = Satellite(position, velocity, orientation, angular_velocity, magnetic_moment, ...
-            mass, moment_of_inertia, max_magnetic_moment, radius, position_d, velocity_d, frequency);
+            mass, moment_of_inertia, max_magnetic_moment, radius, position_d, velocity_d);
     end
 
 

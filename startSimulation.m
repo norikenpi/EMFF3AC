@@ -1,7 +1,6 @@
 clear
 
 
-
 simulateSatellite();
 
 

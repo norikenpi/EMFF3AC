@@ -1,9 +1,8 @@
 function createAnimation_y(histories, param, satellites)
     fps = 31;
-    pause = 100;
+    pause =  param.pause;
     filename_option = "y_500s";
-    final = size(histories.position_histories, 1);
-    final = size(histories.position_histories, 1)/10;
+
 
     %データを入れるフォルダを作る。
     mkdir(param.path_data)
@@ -27,7 +26,7 @@ function createAnimation_y(histories, param, satellites)
     a = param.radius;
     colors = jet(size(histories.position_histories, 3)); % N個の衛星に対して異なる色を設定
 
-    for i = 1:round(pause/(fps*param.dt)):final
+    for i = 1:round(pause/(fps*param.dt)):size(histories.position_histories, 1)
     
         disp(i)
         %h_traj = cell(1, length(histories.position_histories));

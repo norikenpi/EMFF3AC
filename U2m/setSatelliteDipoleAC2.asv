@@ -10,12 +10,11 @@ function satellites = setSatelliteDipoleAC2(satellites, u, idx, pair_idx,  histo
     satellite_i = idx;
     satellite_j = pair_idx;
     
-    freq_idx = findFrequencyIndex(idx, pair_idx, param);
 
 
     if isequal(u, [0;0;0])
-        satellites{satellite_i}.magnetic_moment(:,param.frequency_set(freq_idx)) = [0;0;0];
-        satellites{satellite_j}.magnetic_moment(:,param.frequency_set(freq_idx)) = [0;0;0];
+        satellites{satellite_i}.magnetic_moment(:,param.frequency_set(idx)) = [0;0;0];
+        satellites{satellite_j}.magnetic_moment(:,param.frequency_set(idx)) = [0;0;0];
         magnetic_moment = [0;0;0];
     else
         %uは衛星群全体で使う周波数の数だけの列を持った3×n行列。4つの衛星の場合3×4行列。
@@ -23,9 +22,9 @@ function satellites = setSatelliteDipoleAC2(satellites, u, idx, pair_idx,  histo
         r = satellites{satellite_j}.position - satellites{satellite_i}.position;
         r_norm = norm(r);
 
-        m1 = satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx));
+        m1 = satellites{satellite_j}.magnetic_moment(:, param.frequency_set(idx));
         if norm(m1) == 0
-            m1 = param.coilN * pi * param.radius^2 * param.I_max * r/r_norm;
+            m1 = param.max_magnetic_moment * r/r_norm;
         end
         D = calculateD(r, m1);
         m2 = - 4*pi*r_norm^5/(3*myu0)*inv(D)*u*satellites{satellite_j}.mass;
@@ -33,8 +32,9 @@ function satellites = setSatelliteDipoleAC2(satellites, u, idx, pair_idx,  histo
         %磁気ダイポールの大きさを均等にする。
         norm_sum = sqrt(norm(m1)*norm(m2));
         
-        satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum * m1/norm(m1);
-        satellites{satellite_i}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum * m2/norm(m2);
+        satellites{satellite_j}.magnetic_moment(:, param.frequency_set(idx)) = norm_sum * m1/norm(m1);
+        satellites{satellite_i}.magnetic_moment(:, param.frequency_set(idx)) = norm_sum * m2/norm(m2);
+        
 
     end
 end

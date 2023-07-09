@@ -1,7 +1,8 @@
 % 与えられた衛星の配列から指定した衛星と除外する衛星以外で、最も近い衛星のインデックスと距離を求めます。
-function error_idx = findNearestSatellite(satellites, target_idx, excluded_idx, param)
+function [error_idx, C1] = findNearestSatellite(satellites, target_idx, excluded_idx, param)
     distances = zeros(1, length(satellites));
     error = zeros(1,length(satellites));
+    C1 = 0;
     
 
 
@@ -10,8 +11,8 @@ function error_idx = findNearestSatellite(satellites, target_idx, excluded_idx, 
             distances(i) = inf;
             error(i) = 0;
         else
-            relative_position = satellites{i}.position - satellites{target_idx}.position;
-            relative_velocity = satellites{i}.velocity - satellites{target_idx}.velocity;
+            relative_position =  satellites{target_idx}.position - satellites{i}.position;
+            relative_velocity =  satellites{target_idx}.velocity - satellites{i}.velocity;
             %relative_position_d = satellites{i}.position_d - satellites{target_idx}.position_d;
             C1 = relative_velocity(1) - 2 * param.n * relative_position(3);
             distances(i) = norm(relative_position);
@@ -19,21 +20,29 @@ function error_idx = findNearestSatellite(satellites, target_idx, excluded_idx, 
             error(i) = C1;
         end
     end
+    abs_error = abs(error);
 
     %[~, nearest_satellite_idx] = min(distances);
     %[~, error_idx] = max(error);
 
     % 配列のソート
-    sortedArray = sort(error, 'descend'); % 配列を降順にソート
+    sortedArray = sort(abs_error, 'descend'); % 配列を降順にソート
     % ループ処理
-    border = 0.60;
+    border = 50;
     for i = 1:length(sortedArray)
-        if sortedArray(i) < border
+        idx = find(abs_error == sortedArray(i));
+        %ボーダーあり
+        if abs_error < border
             %disp('1より小さい数字が見つかりました。');
-            error_idx = find(error == sortedArray(i));
+            
+            error_idx = idx;
+            C1 = error(idx);
             break; % ループを終了
+        
         end
-    end
+        
+        
+    end 
 
     %道グラフ
     %{

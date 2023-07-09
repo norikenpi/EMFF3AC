@@ -56,7 +56,7 @@ function createAnimation_z(histories, param, satellites)
         title(append('Satellite Relative Motion with Trajectory ',path_parent))
         %legend([h1, h4, h5], 'Satellite trajectory', 'Satellite force', 'magnetic moment');
         legend(h_pair, 'Pair satellite');
-        
+       
         %グラフ画像に日付を入れる。
         xPosition = xlim;
         yPosition = ylim; % x軸の範囲を取得

@@ -14,8 +14,9 @@ function param = setSimulationParameters()
     param.dt = 0.1; % シミュレーションタイムステップ
     param.time_step = 0.1; % 制御タイムステップ
 
-    param.t = 1; % シミュレーション時間 
-    %param.t = round(2*pi/param.n)*2;
+    
+    param.t = 1000; % シミュレーション時間 
+    %param.t = round(2*pi/param.n);
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.15; %初期衛星間距離
     param.satellite_desired_distance = 0.30; %衛星間距離
@@ -31,10 +32,10 @@ function param = setSimulationParameters()
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 5; % 衛星の数    
+    param.N = 16; % 衛星の数    
 
     %Danil式パラメータ
-    param.Kp = 10^(-6); % 比例ゲイン10^(-6)
+    param.Kp = 10; % 比例ゲイン10^(-6)
     param.Kd = 0.05; % 微分ゲイン
     param.C1_min = 10^-7; % 最小ドリフト
     param.j = 9; %シード値
@@ -43,15 +44,17 @@ function param = setSimulationParameters()
     param.avoid_collision_magnetic_moment = 0.00005; % 衝突回避制御を行うときの磁気ダイポールゲイン
     param.max_distance = 1; % 通信可能距離
     param.min_distance_nopair = 0.05; % ペアリングした衛星よりも近くに別の衛星があるとき、この距離以内にある場合、制御しない。
+    param.C1_border = 10^-6; %10^-4
+    %param.C1_border = 10000; %常に目標相対位置誤差に基づく制御
 
     %衛星の初期パラメータ
     param.angular_velocity = [0; 0; 0.1]; % 角速度
     param.magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
 
     param.mean_pos = [0, 0, 0]; %位置平均
-    param.std_pos = [0.15, 0.15, 0.15]; %位置標準偏差
-    param.mean_vel = [0, 0, 0.15]; %速度平均
-    param.std_vel = [0, 0, 0]; %速度標準偏差
+    param.std_pos = [0.05, 0.05, 0.05]; %位置標準偏差
+    param.mean_vel = [0, 0, 0]; %速度平均
+    param.std_vel = [10^-5, 10^-5, 10^-5]; %速度標準偏差
 
 
     
@@ -60,7 +63,7 @@ function param = setSimulationParameters()
 
     %2018年の野田さんの宇科連準拠
     param.coilN = 17; % 巻き数
-    param.I_max = 5; % 最大電流
+    param.I_max = 1; % 最大電流
     param.radius = 0.05; %衛星半径
     param.max_magnetic_moment = param.coilN * param.I_max * pi * param.radius^2; % 最大磁気モーメント
    
@@ -70,7 +73,7 @@ function param = setSimulationParameters()
     param.length = 0.17;
 
     %最適制御パラメータ
-    param.Q = diag([1, 1, 1, 10^7, 10^7, 10^7]);
+    param.Q = diag([1, 1, 1, 10^4, 10^4, 10^4]);
     param.R = diag([1, 1, 1]);
 
 
@@ -167,6 +170,7 @@ function param = setSimulationParameters()
 
     % 紐を使ったときに使うパラメータ
     % 各衛星と接続している衛星
+    %{
     param.set =  {[2,9];
                    [1,3,10];
                    [2,4,11];
@@ -190,6 +194,7 @@ function param = setSimulationParameters()
                       [1,2,3];
                    };
         param.set =  [1;2;3;4;5];
+    %}
 
     %4衛星用
     %{
@@ -262,8 +267,9 @@ function param = setSimulationParameters()
                            2;
                            3;
                            4;
-                           5];
-    
+                           5;
+                           6];
+    param.frequency_set = (1:120).';
 
     %4衛星用
     
@@ -289,20 +295,22 @@ function param = setSimulationParameters()
                        190;
                        200;
                        210]*pi;
+    param.frequency = (10:10:1200).' * pi;
     
     param.frequency = [10;
                        20;
                        30;
                        40;
-                       50]*pi; %rad/s    
+                       50;
+                       60]*pi; %rad/s    
     
 
 
 
     %描画パラメータ
-    param.force_arrow_scale = 10^-9; %5*10^4
+    param.force_arrow_scale = 5*10^9; %5*10^4
     param.magnetic_moment_arrow_scale = 10^-9;%100
-    param.axis_norm = 0.5;
+    param.axis_norm = 5; %0.5
     param.pause = 1000;
 
 
