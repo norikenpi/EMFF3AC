@@ -32,7 +32,7 @@ function param = setSimulationParameters()
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 4; % 衛星の数    
+    param.N = 8; % 衛星の数    
 
     %Danil式パラメータ
     param.Kp = 10; % 比例ゲイン10^(-6)
@@ -50,10 +50,10 @@ function param = setSimulationParameters()
     param.control_border = 10000; %常に目標相対位置誤差に基づく制御
     
     %衛星の数-1の周波数を使う場合true
-    param.freq_all = false;
+    param.freq_all = true;
 
     param.pair_type = 'C1';
-    param.pair_type = 'distance';%このパラメータを変えることで、何を元にペアを組むかを決める。
+    %param.pair_type = 'distance';%このパラメータを変えることで、何を元にペアを組むかを決める。
 
     %制御の終了条件
     param.border = 0.02;
@@ -68,6 +68,7 @@ function param = setSimulationParameters()
     param.std_pos = [0.01, 0.01, 0.01]; %位置標準偏差
     param.mean_vel = [0, 0, 0]; %速度平均
     param.std_vel = [10^-4, 10^-4, 10^-4]; %速度標準偏差
+    %param.std_vel = [10^-6, 10^-6, 10^-6]; %速度標準偏差
 
 
     
@@ -283,7 +284,7 @@ function param = setSimulationParameters()
                            5;
                            6];
 
-    param.frequency_set = (1:6).';
+    param.frequency_set = (1:28).';
 
     %4衛星用
     param.frequency = [10;
@@ -315,7 +316,7 @@ function param = setSimulationParameters()
                        50;
                        60]*pi; %rad/s  
 
-    param.frequency = (10:10:60).' * pi;
+    param.frequency = (10:10:280).' * pi;
     
   
     

@@ -2,7 +2,8 @@ clear
 
 
 param = setSimulationParameters();
-number = 100;
+number = 1;
+seed0 = 1;
 
 % シミュレーションパラメータを設定
 result = [];

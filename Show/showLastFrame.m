@@ -10,7 +10,7 @@ function showLastFrame(histories, param, satellites)
 
     %修了時間
     i = size(histories.position_histories, 1);
-    i = int32(param.finished_time/param.dt);
+    i = int32(abs(param.finished_time)/param.dt);
     
 
     h_traj = cell(1, length(histories.position_histories));

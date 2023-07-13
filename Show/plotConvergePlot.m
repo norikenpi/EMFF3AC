@@ -14,6 +14,7 @@ function plotConvergePlot(array, first_seed, type)
     % プロット
     %plot(index, array, 'o');
     xlabel('Seed');
+    ylim([-2000, 2000])
     ylabel('Converge time(s)');
     title(sprintf('Plot of Converge time(2cm) %s', type));
     grid on

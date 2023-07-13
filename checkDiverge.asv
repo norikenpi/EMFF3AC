@@ -19,8 +19,8 @@ function check = checkDiverge(satellites, param)
             end
         end
     elseif param.N == 8
-        border = param.diverge_border;
-        check =true;
+        border = param.border;
+        check = false;
         x1 = satellites{1}.position;
         x2 = satellites{2}.position;
         x3 = satellites{3}.position;
@@ -45,7 +45,15 @@ function check = checkDiverge(satellites, param)
                             if x6x2 < border
                                 if x7x3 < border
                                     if x8x4 < border
-                                        check = false;
+                                        check = true;
+                                        disp(x1x2)
+                                        disp(x2x4)
+                                        disp(x3x4)
+                                        disp(x3x1)
+                                        disp(x5x1)
+                                        disp(x6x2)
+                                        disp(x7x3)
+                                        disp(x8x4)
                                     end
                                 end
                             end
