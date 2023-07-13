@@ -25,7 +25,7 @@ function [satellites, histories] = simulateTimeStepAC(satellites, histories, par
     
                 %satellites = setSatelliteDipoleAC(satellites, u, idx, histories, time, param);
                 satellites = setSatelliteDipoleAC2(satellites, u, idx, nearest_satellite_idx, histories, time, param);
-                histories.pair_idx(int32(time/param.dt)+1, idx) = nearest_satellite_idx;
+                %histories.pair_idx(int32(time/param.dt)+1, idx) = nearest_satellite_idx;
             else 
             %制御周期の間は所望磁気モーメントは変わらない。
                 %magnetic_moment_req = histories.magnetic_moment_req_histories(int32(time/param.dt), :, idx);

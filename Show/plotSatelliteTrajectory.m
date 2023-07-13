@@ -5,11 +5,24 @@ function [h_traj, h_force, h_mag, h_pair] = plotSatelliteTrajectory(histories, p
     h_traj = plot3(histories.position_histories(1:time_i, 1, satellite_j), histories.position_histories(1:time_i, 2, satellite_j), histories.position_histories(1:time_i, 3, satellite_j),'LineWidth',1,'Color', [0.7 0.7 0.7]);
 
     hold on;
+    disp(time_i)
     plot3(histories.position_histories(time_i, 1, satellite_j), histories.position_histories(time_i, 2, satellite_j), histories.position_histories(time_i, 3, satellite_j), 'o', 'MarkerSize', 10, 'MarkerFaceColor', color, 'DisplayName', name);
 
 
-    satellite_j2 = histories.pair_idx(time_i, satellite_j);
-    h_pair = plotLine3D(histories.position_histories(time_i, :, satellite_j), histories.position_histories(time_i, :, satellite_j2));
+    if param.freq_all == true
+        for idx = 1:param.N
+            if idx ~= satellite_j
+                satellite_j2 = idx;
+                h_pair = plotLine3D(histories.position_histories(time_i, :, satellite_j), histories.position_histories(time_i, :, satellite_j2));
+            end
+        end
+    elseif param.freq_all == false              
+        satellite_j2 = histories.pair_idx(time_i, satellite_j);
+        disp(satellite_j)
+        disp(satellite_j2)
+        h_pair = plotLine3D(histories.position_histories(time_i, :, satellite_j), histories.position_histories(time_i, :, satellite_j2));
+    end
+    
     
     
     h_force = quiver3(histories.position_histories(time_i, 1, satellite_j), histories.position_histories(time_i, 2, satellite_j), histories.position_histories(time_i, 3, satellite_j), histories.force_histories(time_i, 1, satellite_j)*param.force_arrow_scale, histories.force_histories(time_i, 2, satellite_j)*param.force_arrow_scale, histories.force_histories(time_i, 3, satellite_j)*param.force_arrow_scale);

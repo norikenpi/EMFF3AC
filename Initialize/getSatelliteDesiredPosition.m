@@ -43,6 +43,7 @@ function [pos, vel] = getSatelliteDesiredPosition(i, param)
         y = param.satellite_desired_distance * (3);
         z = 0;
     end
-    pos = [x + rand() * param.initial_error ; y + rand() * param.initial_error; z + rand() * param.initial_error];
+    %pos = [x + rand() * param.initial_error ; y + rand() * param.initial_error; z + rand() * param.initial_error];
+    pos = [x ; y ; z];
     vel = [0; 0; 0];
 end

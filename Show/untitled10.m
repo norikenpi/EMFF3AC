@@ -1,5 +1,5 @@
 %収束チェック
-border = 0.01;
+border = param.border;
 for i = 1:size(histories.position_histories, 1)
     disp("time")
     disp(i)

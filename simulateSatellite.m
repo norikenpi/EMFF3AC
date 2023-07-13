@@ -1,9 +1,8 @@
 
 
 % 衛星振動をシミュレーションするメイン関数。初期状態設定、シミュレーションパラメータ設定、シミュレーション実行、結果プロット、アニメーション作成の手順を実行します。
-function simulateSatellite()
-    % シミュレーションパラメータを設定
-    param = setSimulationParameters();
+function simulateSatellite(param)
+    
 
     %パスを通す
     addPath(param);
@@ -16,19 +15,19 @@ function simulateSatellite()
 
 
     %
-    assignin('base', 'satellites', satellites);
-    assignin('base', 'param', param);
-    assignin('base', 'histories', histories);
+    %assignin('base', 'satellites', satellites);
+    %assignin('base', 'param', param);
+    %assignin('base', 'histories', histories);
 
 
     % シミュレーションを実行
-    [satellites, histories] = runSimulation(satellites, param, histories);
+    [satellites, histories, param] = runSimulation(satellites, param, histories);
     assignin('base', 'satellites', satellites);
     assignin('base', 'param', param);
     assignin('base', 'histories', histories);
 
     
-    showLastFrame(histories, param, satellites);
+    %showLastFrame(histories, param, satellites);
      %最終結果を表示
         
   

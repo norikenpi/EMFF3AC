@@ -15,8 +15,8 @@ function param = setSimulationParameters()
     param.time_step = 0.1; % 制御タイムステップ
 
     
-    param.t = 1000; % シミュレーション時間 
-    param.t = round(2*pi/param.n);
+    param.t = 2000; % シミュレーション時間 
+    %param.t = round(2*pi/param.n);
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.15; %初期衛星間距離
     param.satellite_desired_distance = 0.30; %衛星間距離
@@ -45,22 +45,29 @@ function param = setSimulationParameters()
     param.max_distance = 1; % 通信可能距離
     param.min_distance_nopair = 0.05; % ペアリングした衛星よりも近くに別の衛星があるとき、この距離以内にある場合、制御しない。
     %param.control_border = 10^-4; %10^-4
+
+
     param.control_border = 10000; %常に目標相対位置誤差に基づく制御
     
     %衛星の数-1の周波数を使う場合true
     param.freq_all = false;
 
     param.pair_type = 'C1';
-    param.pair_type = "energy";
+    param.pair_type = 'distance';%このパラメータを変えることで、何を元にペアを組むかを決める。
+
+    %制御の終了条件
+    param.border = 0.02;
+    param.diverge_border = 1;
+    param.finished_time = param.t;
 
     %衛星の初期パラメータ
     param.angular_velocity = [0; 0; 0.1]; % 角速度
     param.magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
 
     param.mean_pos = [0, 0, 0]; %位置平均
-    param.std_pos = [0.05, 0.05, 0.05]; %位置標準偏差
+    param.std_pos = [0.01, 0.01, 0.01]; %位置標準偏差
     param.mean_vel = [0, 0, 0]; %速度平均
-    param.std_vel = [10^-6, 10^-6, 10^-6]; %速度標準偏差
+    param.std_vel = [10^-4, 10^-4, 10^-4]; %速度標準偏差
 
 
     

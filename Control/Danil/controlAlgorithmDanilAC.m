@@ -2,7 +2,7 @@ function [u, nearest_satellite_idx, histories] = controlAlgorithmDanilAC(histori
     [nearest_satellite_idx, histories] = findNearestSatellite(satellites, i, i, param, histories, time);
     
     
-    %histories.pair_idx{i} = [histories.pair_idx{i}, nearest_drift_satellite_idx];
+    histories.pair_idx(int32(time/param.dt)+1, i) = nearest_satellite_idx;
 
     % 加速度から必要な磁気モーメントを計算（相手の磁気モーメントが0だったら適宜設定）
     %ペアリングする衛星が存在＆＆衝突する可能性がある距離に存在しない＆＆最大距離より小さい
@@ -14,7 +14,15 @@ function [u, nearest_satellite_idx, histories] = controlAlgorithmDanilAC(histori
 
     parameter = 0;
 
+    %relative_position = satellites{nearest_satellite_idx}.position - satellites{i}.position;
+    %relative_velocity = satellites{nearest_satellite_idx}.velocity - satellites{i}.velocity;
+    %relative_position_d = satellites{nearest_satellite_idx}.position_d - satellites{i}.position_d;
+    %error = relative_position - relative_position_d;
+    %histories.relative_position(int32(time/param.dt)+1, :, i) = error;
+    %histories.relative_distance(int32(time/param.dt)+1, i) = norm(relative_position) - norm(relative_position_d);
+
     
+
     %param.C1_borderをめちゃくちゃ大きくすることで、常に目標相対位置誤差に基づく制御が可能になる。
     if parameter > param.control_border
         %C1を制御

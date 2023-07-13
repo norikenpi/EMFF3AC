@@ -8,7 +8,7 @@ function [error_idx, histories] = findNearestSatellite(satellites, target_idx, e
 
     for i = 1:length(satellites)
         if any([i == target_idx, i == excluded_idx, isempty(satellites{i})])
-            distances(i) = inf;
+            %distances(i) = 100000;
             error(i) = 0;
         else
             relative_position =  satellites{target_idx}.position - satellites{i}.position;
@@ -25,9 +25,9 @@ function [error_idx, histories] = findNearestSatellite(satellites, target_idx, e
                 %error(i) = norm(relative_position - relative_position_d); %目標相対位置誤差
                 error(i) = C1;
             elseif param.pair_type == "distance"
-                distances(i) = norm(relative_position);
-                error(i) = 1/distances(i);
-            elseif param.pair_type == "target_distance"
+                %distances(i) = norm(relative_position);
+                error(i) = 1/norm(relative_position);
+            elseif param.pair_type == "target_distance" %相対目標位置誤差
                 error(i) = target_error;
             elseif param.pair_type == "energy"
                 error(i) = norm(relative_velocity);
@@ -43,13 +43,12 @@ function [error_idx, histories] = findNearestSatellite(satellites, target_idx, e
     % 配列のソート
     sortedArray = sort(abs_error, 'descend'); % 配列を降順にソート
     % ループ処理
-    border = 50;
+    border = 5000000000;
     for i = 1:length(sortedArray)
         idx = find(abs_error == sortedArray(i));
         %ボーダーあり
-        if abs_error < border
+        if abs_error(idx) < border
             %disp('1より小さい数字が見つかりました。');
-            
             error_idx = idx;
             satellites{i}.C1 = error(idx);
             break; % ループを終了
@@ -57,7 +56,7 @@ function [error_idx, histories] = findNearestSatellite(satellites, target_idx, e
         end
         
         
-    end 
+    end
 
     %道グラフ
     %{

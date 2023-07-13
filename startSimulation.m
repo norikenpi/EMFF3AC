@@ -1,16 +1,8 @@
 clear
 
 
-simulateSatellite();
-
-
-
-
-
-
-
-
-
+param = setSimulationParameters();
+simulateSatellite(param);
 
 
 

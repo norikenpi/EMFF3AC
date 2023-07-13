@@ -26,7 +26,7 @@ function createAnimation_z(histories, param, satellites)
 
     colors = jet(size(histories.position_histories, 3)); % N個の衛星に対して異なる色を設定
 
-    for i = 1:round(pause/(fps*param.dt)):size(histories.position_histories, 1)
+    for i = 1:round(pause/(fps*param.dt)):int32(param.finished_time/param.dt)
     
         disp(i)
         %h_traj = cell(1, length(histories.position_histories));

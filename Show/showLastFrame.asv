@@ -8,9 +8,9 @@ function showLastFrame(histories, param, satellites)
 
     colors = jet(size(histories.position_histories, 3)); % N個の衛星に対して異なる色を設定
 
-    %修了時間
+    %修了
     i = size(histories.position_histories, 1);
-    i = int32(param.finished_time/param.dt);
+    i = param.fi
     
 
     h_traj = cell(1, length(histories.position_histories));
