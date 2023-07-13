@@ -2,13 +2,17 @@ clear
 
 
 param = setSimulationParameters();
-number = 2;
+number = 100;
 
 % シミュレーションパラメータを設定
 result = [];
+seed0 = 1;
 for i = 1:number
+    
     type = 'C1';
-    param.j = param.j + i - 1; %シード値
+    disp(i)
+    disp(type)
+    param.j = seed0 + i - 1; %シード値
     param.pair_type = type;
     simulateSatellite(param);
     result(i) = param.finished_time;
@@ -18,9 +22,12 @@ result_C1 = result;
 makeResultFile(param, type, result)
 
 result = [];
+param.j = 1;
 for i = 1:number
     type = 'distance';
-    param.j = param.j + i - 1; %シード値
+    disp(i)
+    disp(type)
+    param.j = seed0 + i - 1; %シード値
     param.pair_type = type;
     simulateSatellite(param);
     result(i) = param.finished_time;
@@ -30,9 +37,12 @@ result_distance = result;
 makeResultFile(param, type, result)
 
 result = [];
+param.j = 1;
 for i = 1:number
     type = 'target_distance';
-    param.j = param.j + i - 1; %シード値
+    disp(i)
+    disp(type)
+    param.j = seed0 + i - 1; %シード値
     param.pair_type = type;
     simulateSatellite(param);
     result(i) = param.finished_time;
@@ -42,26 +52,33 @@ result_target_distance = result;
 makeResultFile(param, type, result)
 
 result = [];
+param.j = 1;
 for i = 1:number
     type = 'energy';
-    param.j = param.j + i - 1; %シード値
+    disp(i)
+    disp(type)
+    param.j = seed0 + i - 1; %シード値
     param.pair_type = type;
     simulateSatellite(param);
     result(i) = param.finished_time;
     %makeDataFile(param, i, type)
 end
-resulten = result;
+result_energy = result;
 makeResultFile(param, type, result)
 
 result = [];
+param.j = 1;
 for i = 1:number
     type = 'freq_all';
+    disp(i)
+    disp(type)
     param.freq_all = true;
-    param.j = param.j + i - 1; %シード値
+    param.j = seed0 + i - 1; %シード値
     simulateSatellite(param);
     result(i) = param.finished_time;
     %makeDataFile(param, i, type)
 end
+result_freq_all = result;
 makeResultFile(param, type, result)
 
 

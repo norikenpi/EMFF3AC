@@ -11,7 +11,7 @@ for i = 1:number
     type = 'C1';
     disp(i)
     disp(type)
-    param.j = param.j + i - 1; %シード値
+    param.j = seed0 + i - 1; %シード値
     param.pair_type = type;
     simulateSatellite(param);
     result(i) = param.finished_time;
@@ -25,7 +25,7 @@ for i = 1:number
     type = 'distance';
     disp(i)
     disp(type)
-    param.j = param.j + i - 1; %シード値
+    param.j = seed0 + i - 1; %シード値
     param.pair_type = type;
     simulateSatellite(param);
     result(i) = param.finished_time;
@@ -39,7 +39,7 @@ for i = 1:number
     type = 'target_distance';
     disp(i)
     disp(type)
-    param.j = param.j + i - 1; %シード値
+    param.j = seed0 + i - 1; %シード値
     param.pair_type = type;
     simulateSatellite(param);
     result(i) = param.finished_time;
@@ -53,7 +53,7 @@ for i = 1:number
     type = 'energy';
     disp(i)
     disp(type)
-    param.j = param.j + i - 1; %シード値
+    param.j = seed0 + i - 1; %シード値
     param.pair_type = type;
     simulateSatellite(param);
     result(i) = param.finished_time;
@@ -68,7 +68,7 @@ for i = 1:number
     disp(i)
     disp(type)
     param.freq_all = true;
-    param.j = param.j + i - 1; %シード値
+    param.j = seed0 + i - 1; %シード値
     simulateSatellite(param);
     result(i) = param.finished_time;
     %makeDataFile(param, i, type)
