@@ -50,7 +50,7 @@ function param = setSimulationParameters()
     param.control_border = 10000; %常に目標相対位置誤差に基づく制御
     
     %衛星の数-1の周波数を使う場合true
-    param.freq_all = false;
+    param.freq_all = true;
 
     param.pair_type = 'C1';
     %param.pair_type = 'distance';%このパラメータを変えることで、何を元にペアを組むかを決める。
@@ -316,8 +316,8 @@ function param = setSimulationParameters()
                        50;
                        60]*pi; %rad/s  
 
-    param.frequency = (10:10:280).' * 2 * pi;
-     
+    param.frequency = (10:10:280).' * pi;
+    
   
     
 

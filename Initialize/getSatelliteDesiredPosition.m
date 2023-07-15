@@ -9,6 +9,7 @@ function [pos, vel] = getSatelliteDesiredPosition(i, param)
     
     mat = [[1,3];
            [2,4]];
+    
     %{
     mat = [[1,5];
            [2,6];
@@ -23,27 +24,29 @@ function [pos, vel] = getSatelliteDesiredPosition(i, param)
     x = param.satellite_desired_distance * (ix); % -0.15から0.15の範囲で衛星を配置
     y = param.satellite_desired_distance * (iy);
     z = 0;
-    if i == 5
-        x = param.satellite_desired_distance * (1); % -0.15から0.15の範囲で衛星を配置
-        y = param.satellite_desired_distance * (0);
-        z = 0;
+    if param.N == 8
+        if i == 5
+            x = param.satellite_desired_distance * (1); % -0.15から0.15の範囲で衛星を配置
+            y = param.satellite_desired_distance * (0);
+            z = 0;
+        end
+        if i == 6
+            x = param.satellite_desired_distance * (3); % -0.15から0.15の範囲で衛星を配置
+            y = param.satellite_desired_distance * (1);
+            z = 0;
+        end
+        if i == 7
+            x = param.satellite_desired_distance * (0); % -0.15から0.15の範囲で衛星を配置
+            y = param.satellite_desired_distance * (2);
+            z = 0;
+        end
+        if i == 8
+            x = param.satellite_desired_distance * (2); % -0.15から0.15の範囲で衛星を配置
+            y = param.satellite_desired_distance * (3);
+            z = 0;
+        end
     end
-    if i == 6
-        x = param.satellite_desired_distance * (3); % -0.15から0.15の範囲で衛星を配置
-        y = param.satellite_desired_distance * (1);
-        z = 0;
-    end
-    if i == 7
-        x = param.satellite_desired_distance * (0); % -0.15から0.15の範囲で衛星を配置
-        y = param.satellite_desired_distance * (2);
-        z = 0;
-    end
-    if i == 8
-        x = param.satellite_desired_distance * (2); % -0.15から0.15の範囲で衛星を配置
-        y = param.satellite_desired_distance * (3);
-        z = 0;
-    end
-    %pos = [x + rand() * param.initial_error ; y + rand() * param.initial_error; z + rand() * param.initial_error];
-    pos = [x ; y ; z];
-    vel = [0; 0; 0];
+        %pos = [x + rand() * param.initial_error ; y + rand() * param.initial_error; z + rand() * param.initial_error];
+        pos = [x ; y ; z];
+        vel = [0; 0; 0];
 end

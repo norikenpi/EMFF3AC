@@ -30,6 +30,8 @@ function [satellites, histories] = simulateTimeStepAC(satellites, histories, par
             %制御周期の間は所望磁気モーメントは変わらない。
                 %magnetic_moment_req = histories.magnetic_moment_req_histories(int32(time/param.dt), :, idx);
             end
+
+        %全ての衛星とペアを組むパターン。全ての周波数を使う。すごい重い。
         elseif param.freq_all == true
             histories.pair_idx(int32(time/param.dt)+1, idx) = idx;
             for idx_j = (idx+1):param.N 

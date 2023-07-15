@@ -1,3 +1,6 @@
+%startManySimulationで大量のシミュレーションを同時に始めて、
+%plotConvergePlotでプロットする
+
 clear
 
 

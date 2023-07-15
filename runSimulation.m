@@ -11,6 +11,8 @@ function [satellites, histories, param] = runSimulation(satellites, param, histo
             [satellites, histories] = simulateTimeStepAC(satellites, histories, param, time);
             %[satellites, histories] = simulateTimeStepACAll(satellites, histories, param, time);
         end
+
+        %収束または発散のチェックを行う。
         if mod(time, param.time_step) == 0
             [converge_check, histories] = checkConverge(satellites, param, histories, time);
             diverge_check = checkDiverge(satellites, param);
