@@ -54,7 +54,7 @@ makeResultFile(param, type, result)
 
 result = [];
 for i = 1:number
-    type = 'energy';
+    type = "all_energy";
     disp(i)
     disp(type)
     param.j = seed0 + i - 1; %シード値
@@ -63,7 +63,21 @@ for i = 1:number
     result(i) = param.finished_time;
     %makeDataFile(param, i, type)
 end
-result_energy = result;
+result_all_energy = result;
+makeResultFile(param, type, result)
+
+result = [];
+for i = 1:number
+    type = "velocity";
+    disp(i)
+    disp(type)
+    param.j = seed0 + i - 1; %シード値
+    param.pair_type = type;
+    simulateSatellite(param);
+    result(i) = param.finished_time;
+    %makeDataFile(param, i, type)
+end
+result_velocity = result;
 makeResultFile(param, type, result)
 
 result = [];

@@ -20,6 +20,7 @@ function F_average = satelliteAverageForceTotalonly2(satellite_i, satellite_j, t
     %elseif norm(r) <= 0.3
     %    A_F = near_field(m_i, m_j, r, param);
     %end
-    A_F = near_field(m_i, m_j, r, param);
+    %A_F = near_field(m_i, m_j, r, param);
+    A_F = far_field(m_i, m_j, r, param);
     %F = - (3*mu0/(4*pi)) * ((r_mat.*dot(m_i,m_j)/r_norm^5) + (m_i.*dot(m_j,r_mat)/r_norm^5) + (m_j.*dot(m_i,r_mat)/r_norm^5) - r_mat.*(5*dot(m_i,r_mat).*dot(m_j,r_mat))/r_norm^7);
     F_average = A_F/2; %sin^2の積分は1/2

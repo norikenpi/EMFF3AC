@@ -14,8 +14,8 @@ function h = showCoilDipoleError(distance, coil_radius, param)
     disp(distance)
     I1 = [0 0 1];
     I2 = [0 0 1];
-    I1 = [1 0 0];
-    I2 = [1 0 0];
+    %I1 = [1 0 0];
+    %I2 = [1 0 0];
     p1 = 0;
     q1 = 0;
     l1 = 0;
@@ -33,8 +33,9 @@ function h = showCoilDipoleError(distance, coil_radius, param)
     disp("ダイポール近似")
     disp(F_dipole)
     disp(norm(F_dipole))
-    
+    tic
     [F100, T100] = plot_magnetic_field_FT2(quat1, quat2, X, I1, I2, 100, 100, N, a);
+    toc
     n_F100 = norm(F100);
     n_T100 = norm(T100);
     disp("100分割")

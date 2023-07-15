@@ -327,7 +327,7 @@ function param = setSimulationParameters()
     param.force_arrow_scale = 5*10^9; %5*10^4
     param.magnetic_moment_arrow_scale = 10^-9;%100
     param.axis_norm = 1; %0.5
-    param.pause = 1000;
+    param.pause = 300;
 
 
 end
