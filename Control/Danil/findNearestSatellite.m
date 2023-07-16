@@ -62,8 +62,8 @@ function [error_idx, histories, safety_distance] = findNearestSatellite(satellit
         %ボーダーあり
         if abs_error(idx) < border
             %disp('1より小さい数字が見つかりました。');
-            error_idx = idx;
-            histories.relative_distance_pair(int32(time/param.dt)+1, target_idx) = 1/distances(idx);
+            error_idx = idx(1);
+            histories.relative_distance_pair(int32(time/param.dt)+1, target_idx) = 1/distances(error_idx );
             %satellites{i}.C1 = error(idx);
             break; % ループを終了
         

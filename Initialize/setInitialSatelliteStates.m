@@ -18,7 +18,7 @@ function satellites = setInitialSatelliteStates(param)
         %[position, velocity] = getSatellitePositionFusion(i, param);
 
         %既定の範囲内で衛星の初期位置を設定
-        [position, velocity] = getSatellitePositionRandom2(i, satellites, param);
+        [position, velocity] = getSatellitePositionRandom3(i, satellites, param);
 
         %衛星の目標値を設定
         [position_d, velocity_d] = getSatelliteDesiredPosition(i, param);
