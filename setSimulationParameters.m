@@ -37,10 +37,12 @@ function param = setSimulationParameters()
     %Danil式パラメータ
     param.Kp = 10; % 比例ゲイン10^(-6)
     param.Kd = 0.05; % 微分ゲイン
+
+    param.Kp_avoid = 1000000; % 比例ゲイン10^(-6)
     param.C1_min = 10^-7; % 最小ドリフト
     param.j = 1; %シード値
     param.C1_ini = 0.1;%初期C1の最大値
-    param.safety_distance = 0.05; % 衝突回避制御を実施するための距離
+    param.safety_distance = 0.2; % 衝突回避制御を実施するための距離
     param.avoid_collision_magnetic_moment = 0.00005; % 衝突回避制御を行うときの磁気ダイポールゲイン
     param.max_distance = 1; % 通信可能距離
     param.min_distance_nopair = 0.05; % ペアリングした衛星よりも近くに別の衛星があるとき、この距離以内にある場合、制御しない。
@@ -52,8 +54,11 @@ function param = setSimulationParameters()
     %衛星の数-1の周波数を使う場合true
     param.freq_all = false;
 
-    param.pair_type = 'C1';
+    %param.pair_type = 'C1';
     %param.pair_type = 'distance';%このパラメータを変えることで、何を元にペアを組むかを決める。
+    %param.pair_type = 'all_energy';
+    %param.pair_type = 'target_distance';
+    param.pair_type = 'velocity';
 
     %制御の終了条件
     param.border = 0.02;
@@ -283,8 +288,8 @@ function param = setSimulationParameters()
                            4;
                            5;
                            6];
-
-    param.frequency_set = (1:28).';
+    nCn_1 = (param.N*(param.N-1))/2;
+    param.frequency_set = (1:nCn_1).';
 
     %4衛星用
     param.frequency = [10;
@@ -316,7 +321,7 @@ function param = setSimulationParameters()
                        50;
                        60]*pi; %rad/s  
 
-    param.frequency = (10:10:280).' * 2 * pi;
+    param.frequency = (10:10:nCn_1*10).' * 2 * pi;
      
   
     
@@ -327,7 +332,7 @@ function param = setSimulationParameters()
     param.force_arrow_scale = 5*10^9; %5*10^4
     param.magnetic_moment_arrow_scale = 10^-9;%100
     param.axis_norm = 1; %0.5
-    param.pause = 300;
+    param.pause = 30;
 
 
 end

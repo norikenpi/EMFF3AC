@@ -14,10 +14,10 @@ function [check, histories] = checkConverge(satellites, param, histories, time)
         x3x4 = abs(norm(x3 - x4) - param.satellite_desired_distance);
         x3x1 = abs(norm(x3 - x1) - param.satellite_desired_distance);
     
-        histories.relative_distance(int32(time/param.dt)+1, 1) = x1x2;
-        histories.relative_distance(int32(time/param.dt)+1, 2) = x2x4;
-        histories.relative_distance(int32(time/param.dt)+1, 3) = x3x4;
-        histories.relative_distance(int32(time/param.dt)+1, 4) = x3x1;
+        histories.relative_target_distance(int32(time/param.dt)+1, 1) = x1x2;
+        histories.relative_target_distance(int32(time/param.dt)+1, 2) = x2x4;
+        histories.relative_target_distance(int32(time/param.dt)+1, 3) = x3x4;
+        histories.relative_target_distance(int32(time/param.dt)+1, 4) = x3x1;
         if x1x2  < border
             if x2x4 < border
                 if x3x4 < border
@@ -52,14 +52,14 @@ function [check, histories] = checkConverge(satellites, param, histories, time)
         x7x3 = abs(norm(x7 - x3) - param.satellite_desired_distance);
         x8x4 = abs(norm(x8 - x4) - param.satellite_desired_distance);
     
-        histories.relative_distance(int32(time/param.dt)+1, 1) = x1x2;
-        histories.relative_distance(int32(time/param.dt)+1, 2) = x2x4;
-        histories.relative_distance(int32(time/param.dt)+1, 3) = x3x1;
-        histories.relative_distance(int32(time/param.dt)+1, 4) = x3x4;
-        histories.relative_distance(int32(time/param.dt)+1, 5) = x5x1;
-        histories.relative_distance(int32(time/param.dt)+1, 6) = x6x2;
-        histories.relative_distance(int32(time/param.dt)+1, 7) = x7x3;
-        histories.relative_distance(int32(time/param.dt)+1, 8) = x8x4;
+        histories.relative_target_distance(int32(time/param.dt)+1, 1) = x1x2;
+        histories.relative_target_distance(int32(time/param.dt)+1, 2) = x2x4;
+        histories.relative_target_distance(int32(time/param.dt)+1, 3) = x3x1;
+        histories.relative_target_distance(int32(time/param.dt)+1, 4) = x3x4;
+        histories.relative_target_distance(int32(time/param.dt)+1, 5) = x5x1;
+        histories.relative_target_distance(int32(time/param.dt)+1, 6) = x6x2;
+        histories.relative_target_distance(int32(time/param.dt)+1, 7) = x7x3;
+        histories.relative_target_distance(int32(time/param.dt)+1, 8) = x8x4;
         if x1x2  < border
             if x2x4 < border
                 if x3x4 < border
