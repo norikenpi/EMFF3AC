@@ -1,4 +1,5 @@
 % コイルの分割数とコイル間距離による誤差について
+%satelliteAverageForceTotalonly2で磁場計算方法を書く
 
 figure
 distance = [1,0.3,0.15];

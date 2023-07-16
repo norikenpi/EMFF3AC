@@ -4,7 +4,7 @@ function h = showCoilDipoleError(distance, coil_radius, param)
     addpath("C:/Users/masam/lab/30_simscape/20_磁石/EMFF3/Magneticforce");
     a = coil_radius;
     N = 17;
-    i_max = 6;
+    i_max = 8;
     i = 0;
     splitA = 5;
     splitB = 5;

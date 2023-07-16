@@ -22,7 +22,7 @@ function param = setSimulationParameters()
     param.satellite_desired_distance = 0.30; %衛星間距離
 
     %near_field
-    param.coil_split = 7;
+    param.coil_split = 11;
 
     %保存先
     param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/';

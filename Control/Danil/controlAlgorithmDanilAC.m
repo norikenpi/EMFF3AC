@@ -22,7 +22,7 @@ function [u, nearest_satellite_idx, histories] = controlAlgorithmDanilAC(histori
 
     %衝突防止制御をするかどうか
     if safety_distance > 0
-            disp("too near")
+            %衛星間距離が小さすぎる場合
             u = calculateAvoidAcceleration(param, i, nearest_satellite_idx, satellites);
             
             %u = relativeFeedback(i, nearest_satellite_idx, satellites, param);
