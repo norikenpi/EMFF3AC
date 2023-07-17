@@ -24,12 +24,18 @@ function satellites = setSatelliteDipoleAC2(satellites, u, idx, pair_idx,  histo
         r_norm = norm(r);
 
         m1 = satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx));
+        %m1に0以外の値が入っていないとm2が計算できないので，とりあえず値を入れている．
         if norm(m1) == 0
             m1 = param.coilN * pi * param.radius^2 * param.I_max * r/r_norm;
         end
-        D = calculateD(r, m1);
-        m2 = - 4*pi*r_norm^5/(3*myu0)*inv(D)*u*satellites{satellite_j}.mass;
 
+        if param.control_magnetic_model == "far_field"
+            m2 = far_field_inv(r, m1, u, param);
+            
+        elseif param.control_magnetic_model == "near_field"
+            m2 = near_field_inv(r, m1, u, param);
+        end
+        
         %磁気ダイポールの大きさを均等にする。
         norm_sum = sqrt(norm(m1)*norm(m2));
         

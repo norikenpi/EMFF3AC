@@ -1,6 +1,6 @@
 % シミュレーションパラメータを設定する関数。サンプリング間隔、シミュレーション時間、比例ゲイン、微分ゲイン、最大力などのパラメータを設定します。
 function param = setSimulationParameters()
-    param.myu = 3.986*10^14;
+    param.myu = 3.986*10^14; %重力定数
     param.earth_radius = 6378.140*10^3; % 地球半径
     param.altitude = 500*10^3; % 高度
     r_star = param.earth_radius + param.altitude; % 地心からの距離
@@ -23,7 +23,7 @@ function param = setSimulationParameters()
     param.satellite_desired_distance = 0.30; %衛星間距離
 
     %near_field
-    param.coil_split = 11;
+    param.coil_split = 10;
 
     %保存先
     param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/';
