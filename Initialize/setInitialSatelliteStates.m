@@ -17,7 +17,10 @@ function satellites = setInitialSatelliteStates(param)
         %衛星群の合体
         %[position, velocity] = getSatellitePositionFusion(i, param);
 
-        %既定の範囲内で衛星の初期位置を設定
+        %分散を指定してランダムにばらまく．
+        %[position, velocity] = getSatellitePositionRandom2(i, satellites, param);
+
+        %15cmずつ置いていって，それが他の衛星と15cm離れているかを確認していくやり方
         [position, velocity] = getSatellitePositionRandom3(i, satellites, param);
 
         %衛星の目標値を設定

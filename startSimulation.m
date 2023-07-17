@@ -1,4 +1,4 @@
-clear
+
 
 
 param = setSimulationParameters();
