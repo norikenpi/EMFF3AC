@@ -35,9 +35,7 @@ function F_average = satelliteAverageForceTotalonly2(satellite_i, satellite_j, t
             A_F = near_field(m_i, m_j, r, param);
         end
     elseif param.magnetic_model == "far_field"
-        param.coil_split = 5;
-
-        A_F = near_field(m_i, m_j, r, param);
+        A_F = far_field(m_i, m_j, r, param);
     end
     
     %

@@ -7,8 +7,8 @@ function param = setSimulationParameters()
     param.n = sqrt(param.myu/r_star^3); % 地球を周回する衛星の角速度
 
     param.approximation = 'trapezoid'; % trapezoid or euler
-    param.magnetic_model = 'near_field'; % near_field or far_field 発生させた電流に対して，発生する磁力をどのモデルで計算するか
-    param.control_magnetic_model = 'near_field'; % near_field or far_field 所望の力に対して発生させる磁力を計算するときにどのもでるを使うか
+    param.magnetic_model = 'far_field'; % near_field or far_field 発生させた電流に対して，発生する磁力をどのモデルで計算するか
+    param.control_magnetic_model = 'far_field'; % near_field or far_field 所望の力に対して発生させる磁力を計算するときにどのもでるを使うか
     param.start_state = 0;
     param.start_state = [4,1,1];
     param.current_type = 'AC'; % DC or AC
