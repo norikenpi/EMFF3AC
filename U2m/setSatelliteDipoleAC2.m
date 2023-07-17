@@ -33,6 +33,16 @@ function satellites = setSatelliteDipoleAC2(satellites, u, idx, pair_idx,  histo
             m2 = far_field_inv(r, m1, u, param);
             
         elseif param.control_magnetic_model == "near_field"
+            if norm(r) < 0.15
+                %11分轄
+                param.coil_split = 11;
+            elseif norm(r) >= 0.15 && norm(r) < 0.3
+                %7分轄
+                param.coil_split = 7;
+            elseif norm(r) >= 0.3
+                %5分轄
+                param.coil_split = 5;
+            end
             m2 = near_field_inv(r, m1, u, param);
         end
         
