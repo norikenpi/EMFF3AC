@@ -2,15 +2,15 @@
 %plotConvergePlotでプロットする
 
 %clear
-%result_C1 = zeros(1, 100);
-%result_distance = zeros(1, 100);
-%result_target_distance = zeros(1, 100);
-%result_all_energy = zeros(1, 100);
-%result_velocity = zeros(1, 100);
-%result_freq_all = zeros(1, 100);
-
+result_C1 = zeros(1, 100);
+result_distance = zeros(1, 100);
+result_target_distance = zeros(1, 100);
+result_all_energy = zeros(1, 100);
+result_velocity = zeros(1, 100);
+result_freq_all = zeros(1, 100);
+startTime = datetime;
 param = setSimulationParameters();
-number = 1;
+number = 4;
 seed0 = 1;
 
 % シミュレーションパラメータを設定
@@ -58,7 +58,7 @@ end
 %result_target_distance = result;
 makeResultFile(param, type, result_target_distance)
 
-result = [];
+%result = [];
 for i = 1:number
     type = "all_energy";
     disp(i)
@@ -72,7 +72,7 @@ end
 %result_all_energy = result;
 makeResultFile(param, type, result_all_energy)
 
-result = [];
+%result = [];
 for i = 1:number
     type = "velocity";
     disp(i)
@@ -86,7 +86,7 @@ end
 %result_velocity = result;
 makeResultFile(param, type, result_velocity)
 
-result = [];
+%result = [];
 for i = 1:number
     type = 'freq_all';
     disp(i)
@@ -101,4 +101,6 @@ end
 makeResultFile(param, type, result_freq_all)
 
 
-
+endTime = datetime;
+executionTime = endTime - startTime;
+disp(['処理時間: ' char(executionTime)]);

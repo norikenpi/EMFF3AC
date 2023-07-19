@@ -1,5 +1,11 @@
 function [u, nearest_satellite_idx, histories] = controlAlgorithmDanilAC(histories, i, satellites, param, time)
+
+    %startTime = datetime;
     [nearest_satellite_idx, histories, safety_distance] = findNearestSatellite(satellites, i, i, param, histories, time);
+    %endTime = datetime;
+    %executionTime = endTime - startTime;
+    %timeString = [num2str(milliseconds(executionTime), '%.2f') ' ms'];
+    %disp(['findNearestSatellite処理時間: ' timeString]);
 
     histories.pair_idx(int32(time/param.dt)+1, i) = nearest_satellite_idx;
 

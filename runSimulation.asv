@@ -4,19 +4,15 @@ function [satellites, histories, param] = runSimulation(satellites, param, histo
     tic;
     for time = 0:param.dt:param.t
         % 各衛星の状態を更新する
-        disp(time)
+        %disp(time)
         if param.current_type == "DC"
             [satellites, histories] = simulateTimeStep(satellites, histories, param, time);
         elseif param.current_type == "AC"
-            %startTime = datetime;
+            startTime = datetime;
             [satellites, histories] = simulateTimeStepAC(satellites, histories, param, time);
-            %endTime = datetime;
-            %executionTime = endTime - startTime;
-            %timeString = [num2str(milliseconds(executionTime), '%.2f') ' ms'];
-            %disp(['simulateTimeStepAC処理時間: ' timeString]);
-
-
-
+            
+            executionTime = endTime - startTime;
+            disp(['simulateTimeStepAC処理時間: ' char(executionTime)]);
             %[satellites, histories] = simulateTimeStepACAll(satellites, histories, param, time);
         end
 

@@ -1,6 +1,6 @@
 function createAnimation(histories, param, satellites)
     fps = 31;
-    pause = param.pause
+    pause = param.pause;
     filename_option = "";
     %final = size(histories.position_histories, 1)/10;
 
