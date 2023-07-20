@@ -22,6 +22,7 @@ function createAnimation(histories, param, satellites)
 
     figcolor = [1 1 1];
     fig = figure('color', figcolor);
+    
 
     m = param.mass;
     a = param.radius;

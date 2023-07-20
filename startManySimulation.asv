@@ -2,15 +2,15 @@
 %plotConvergePlotでプロットする
 
 %clear
-result_C1 = zeros(1, 100);
-result_distance = zeros(1, 100);
-result_target_distance = zeros(1, 100);
-result_all_energy = zeros(1, 100);
-result_velocity = zeros(1, 100);
-result_freq_all = zeros(1, 100);
+%result_C1 = zeros(1, 100);
+%result_distance = zeros(1, 100);
+%result_target_distance = zeros(1, 100);
+%result_all_energy = zeros(1, 100);
+%result_velocity = zeros(1, 100);
+%result_freq_all = zeros(1, 100);
 startTime = datetime;
 param = setSimulationParameters();
-number = 100;
+number = 50;
 seed0 = 1;
 
 % シミュレーションパラメータを設定
