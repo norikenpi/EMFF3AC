@@ -1,3 +1,4 @@
+%showDataBar(data)で図示
 function data = calculateStates(param)
     reative_velocity_square_mean_data = zeros(1,100);
     energy_sum_data = zeros(1,100);
@@ -7,7 +8,7 @@ function data = calculateStates(param)
     for i = 1:100
         param.j = i;
         satellites = setInitialSatelliteStates(param);
-
+        %{
         %重心に対する相対速度の2乗平均
         reative_velocity_square_mean_data(i) = calculateReativeVelocitySquareMean(satellites, param);
         %エネルギーの大きさの和
@@ -18,6 +19,19 @@ function data = calculateStates(param)
         distance_mean_data(i) = calculateDistanceMean(satellites, param);
         %目標位置までの距離
         target_distace_mean_data(i) = calculateTargetDistanceMean(satellites, param);
+        %}
+
+        %重心に対する相対速度の最大
+        reative_velocity_square_mean_data(i) = calculateReativeVelocitySquareMax(satellites, param);
+        %エネルギーの大きさの最大
+        energy_sum_data(i) = calculateEnergyMax(satellites, param);
+        %重心から見たC1の最大
+        C1_sum_data(i) = calculateC1Max(satellites, param);
+        %重心からの距離の最大
+        distance_mean_data(i) = calculateDistanceMax(satellites, param);
+        %目標位置までの距離の最大
+        target_distace_mean_data(i) = calculateTargetDistanceMax(satellites, param);
+
     
         data = [reative_velocity_square_mean_data; energy_sum_data; C1_sum_data; distance_mean_data; target_distace_mean_data];
     end

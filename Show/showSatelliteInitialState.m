@@ -10,7 +10,7 @@ function showSatelliteInitialState(seed)
     %param.freq_all = false;
     param.j = seed;
     %param.pair_type = 'all_energy';
-    satellites = simulateSatellite(param);
+    satellites = setInitialSatelliteStates(param);
     
     position = zeros(1,param.N);
     C1 = zeros(1,param.N);

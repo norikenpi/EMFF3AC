@@ -11,7 +11,7 @@ function createAnimation_z(histories, param, satellites)
     
     
     %matファイルに全てのワークスペース変数の保存
-    save(filename_var);
+    %save(filename_var);
 
     writerObj = VideoWriter(filename_movie);
     writerObj.Quality = 100;

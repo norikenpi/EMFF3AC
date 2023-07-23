@@ -2,9 +2,9 @@
 
 
 param = setSimulationParameters();
-param.t = 0.5; 
+param.t = 2000; 
 %param.freq_all = false;
-%param.j = 3;
+param.j = 6;
 %param.pair_type = 'all_energy';
 simulateSatellite(param);
 
