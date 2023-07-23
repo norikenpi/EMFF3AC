@@ -101,7 +101,7 @@ function [satellites, histories] = simulateTimeStepAC(satellites, histories, par
     %startTime = datetime;
     for idx = 1:param.N
         histories.position_histories(int32(time/param.dt)+1, :, idx) = satellites{idx}.position;
-        %histories.velocity_histories(int32(time/param.dt)+1, :, idx) = satellites{idx}.velocity;
+        histories.velocity_histories(int32(time/param.dt)+1, :, idx) = satellites{idx}.velocity;
         histories.velocity_n_histories(int32(time/param.dt)+1, idx) = norm(satellites{idx}.velocity);
         histories.force_histories(int32(time/param.dt)+1, :, idx) = magnetic_forces{idx};
         

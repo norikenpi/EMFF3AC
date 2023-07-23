@@ -1,7 +1,7 @@
 
 
 % 衛星振動をシミュレーションするメイン関数。初期状態設定、シミュレーションパラメータ設定、シミュレーション実行、結果プロット、アニメーション作成の手順を実行します。
-function simulateSatellite(param)
+function satellites = simulateSatellite(param)
     
 
     %パスを通す

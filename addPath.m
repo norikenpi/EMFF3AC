@@ -1,5 +1,6 @@
 function addPath(param)
 
+    addpath(strcat(param.path, "/EMFF3AC"))
     addpath(strcat(param.path, "/EMFF3AC/Control/Danil"))
     addpath(strcat(param.path, "/EMFF3AC/Control/Stepbystep"))
     addpath(strcat(param.path, "/EMFF3AC/Control/String"))
