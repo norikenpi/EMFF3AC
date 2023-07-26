@@ -16,7 +16,7 @@ function showDataBar(data)
     legend('重心からの相対速度最大', '重心からのエネルギー最大', '重心からのC1最大', '重心からの距離最大', '目標相対地位誤差最大');
     
     graph_num = 2;
-    title_list = ["重心からのC1最大の衛星のC1" "重心からのC1最大の衛星に最も近い衛星までの距離" "Apollo" "Skylab" "Skylab B" "ISS"];
+    title_list = ["重心" "Gemini" "Apollo" "Skylab" "Skylab B" "ISS"];
 
     % 5つの棒グラフを縦に並べる
     for i = 1:graph_num
@@ -39,7 +39,7 @@ function showDataBar(data)
         bar(7, data(i, 7), 'y'); % 7番目のデータを黄でプロット
         bar(9, data(i, 9), 'y'); % 9番目のデータを黄でプロット
         bar(10, data(i, 10), 'y'); % 10番目のデータを黄でプロット
-        bar(15, data(i, 15), 'y'); % 15番目のデータを黄でプロット
+        bar(12, data(i, 12), 'y'); % 12つ目のデータを黄でプロット
         bar(18, data(i, 18), 'y'); % 18番目のデータを黄でプロット
         bar(20, data(i, 20), 'y'); % 20番目のデータを黄でプロット
         bar(55, data(i, 55), 'y'); % 55番目のデータを黄でプロット
