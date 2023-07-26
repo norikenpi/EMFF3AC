@@ -8,8 +8,7 @@ function [u, nearest_satellite_idx, histories] = controlAlgorithmDanilAC(histori
     %disp(['findNearestSatellite処理時間: ' timeString]);
 
     histories.pair_idx(int32(time/param.dt)+1, i) = nearest_satellite_idx;
-    histories.pair_nearest_distance(int32(time/param.dt)+1, i) = norm(satellites{i}.position - satellites{nearest_satellite_idx}.position);
-
+    histories.pair_nearest_distance(int32(time/param.dt)+1, i) = satellites{i}.position 
 
     % 加速度から必要な磁気モーメントを計算（相手の磁気モーメントが0だったら適宜設定）
     %ペアリングする衛星が存在＆＆衝突する可能性がある距離に存在しない＆＆最大距離より小さい

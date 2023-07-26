@@ -6,6 +6,7 @@ function histories = makeHistoriesMemory(param)
 
     histories.relative_target_distance = zeros(int32(param.t/param.dt)+1, param.N);
     histories.relative_distance_pair = zeros(int32(param.t/param.dt)+1, param.N);
+    histories.pair_nearest_distance = zeros(int32(param.t/param.dt)+1, param.N);
     histories.relative_position = zeros(int32(param.t/param.dt)+1, 3, param.N);
 
     histories.force_histories = zeros(int32(param.t/param.dt), 3, param.N);

@@ -10,7 +10,7 @@ function simulateSatellite(param)
     %N個の衛星の初期状態を設定
     satellites = setInitialSatelliteStates(param);
 
-    satellites{5}.velocity = satellites{5}.velocity * 0.9; 
+    satellites{3}.velocity = satellites{3}.velocity * 0.8; 
     satellites = adjustSatelliteState(satellites, param);
     satellites = adjustSatelliteDesiredState(satellites, param);
 
