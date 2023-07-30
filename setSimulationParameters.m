@@ -39,7 +39,7 @@ function param = setSimulationParameters()
     param.Kp = 10; % 比例ゲイン10^(-6)
     param.Kd = 0.05; % 微分ゲイン
 
-    param.Kp_avoid = 10; % 比例ゲイン10^(-6)
+    param.Kp_avoid = 100000000; % 比例ゲイン10^(-6)
     param.C1_min = 10^-7; % 最小ドリフト
     param.j = 3; %シード値
     param.C1_ini = 0.1;%初期C1の最大値
