@@ -9,7 +9,7 @@ function [satellites, histories, param] = runSimulation(satellites, param, histo
             [satellites, histories] = simulateTimeStep(satellites, histories, param, time);
         elseif param.current_type == "AC"
             %startTime = datetime;
-            [satellites, histories] = simulateTimeStepAC(satellites, histories, param, time);
+            [satellites, histories, param] = simulateTimeStepAC(satellites, histories, param, time);
             %endTime = datetime;
             %executionTime = endTime - startTime;
             %timeString = [num2str(milliseconds(executionTime), '%.2f') ' ms'];

@@ -1,4 +1,4 @@
-function [u, nearest_satellite_idx, histories, satellites, param] = controlAlgorithmDanilAC(histories, i, satellites, param, time)
+function [u, nearest_satellite_idx, histories, satellites] = controlAlgorithmDanilAC(histories, i, satellites, param, time)
 
     %startTime = datetime;
     [nearest_satellite_idx, histories, safety_distance, satellites] = findNearestSatellite(satellites, i, i, param, histories, time);
@@ -17,9 +17,9 @@ function [u, nearest_satellite_idx, histories, satellites, param] = controlAlgor
     %if converge == 0 && norm(relative_position) < param.max_distance
         % C1を低減する必要がある場合、必要な加速度を計算
     
-    %parameter = abs(satellites{i}.C1);
+    parameter = abs(satellites{i}.C1);
 
-    parameter = 0;
+    %parameter = 0;
 
     %relative_position = satellites{nearest_satellite_idx}.position - satellites{i}.position;
     %relative_velocity = satellites{nearest_satellite_idx}.velocity - satellites{i}.velocity;
@@ -27,6 +27,7 @@ function [u, nearest_satellite_idx, histories, satellites, param] = controlAlgor
     %error = relative_position - relative_position_d;
     %histories.relative_position(int32(time/param.dt)+1, :, i) = error;
     %histories.relative_distance(int32(time/param.dt)+1, i) = norm(relative_position) - norm(relative_position_d);
+    safety_distance = 
     %衝突防止制御をするかどうか
     if safety_distance > 0
             %衛星間距離が小さすぎる場合
@@ -38,24 +39,13 @@ function [u, nearest_satellite_idx, histories, satellites, param] = controlAlgor
         %param.C1_borderをめちゃくちゃ大きくすることで、常に目標相対位置誤差に基づく制御が可能になる。
         if parameter > param.control_border
             %C1を制御
-            %u = calculateRequiredAcceleration(param, satellites{i}.C1, i, nearest_satellite_idx, satellites);
-            %histories.control_type(int32(time/param.dt)+1, i) = 1;
-            %param.pair_type = 'C1';
-
-            %目標相対位置誤差を制御
-            
-            u = relativeFeedback(i, nearest_satellite_idx, satellites, param);
-            histories.control_type(int32(time/param.dt)+1, i) = 2;
-            %param.pair_type = 'velocity';
-
-   
+            u = calculateRequiredAcceleration(param, satellites{i}.C1, i, nearest_satellite_idx, satellites);
+            histories.control_type(int32(time/param.dt)+1, i) = 1;
         elseif parameter <= param.control_border
             %目標相対位置誤差を制御
             
             u = relativeFeedback(i, nearest_satellite_idx, satellites, param);
             histories.control_type(int32(time/param.dt)+1, i) = 2;
-            %param.pair_type = 'velocity';
-
         end
     end
 

@@ -1,5 +1,5 @@
 % シミュレーションの各タイムステップで衛星の状態を更新する関数
-function [satellites, histories] = simulateTimeStepAC(satellites, histories, param, time)
+function [satellites, histories, param] = simulateTimeStepAC(satellites, histories, param, time)
     %param.setの数だけ、繰り返す。
     for idx = 1:param.N 
         satellites{idx}.magnetic_moment = zeros(3, size(param.frequency, 1));
@@ -17,7 +17,7 @@ function [satellites, histories] = simulateTimeStepAC(satellites, histories, par
                 %[u, pair_satellite_idx] = controlAlgorithmDanil(histories, i, satellites, param);
 
                 %startTime = datetime;
-                [u, nearest_satellite_idx, histories] = controlAlgorithmDanilAC(histories, idx, satellites, param, time);
+                [u, nearest_satellite_idx, histories, satellites, param] = controlAlgorithmDanilAC(histories, idx, satellites, param, time);
                 %endTime = datetime;
                 %executionTime = endTime - startTime;
                 %timeString = [num2str(milliseconds(executionTime), '%.2f') ' ms'];

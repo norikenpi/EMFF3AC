@@ -1,17 +1,12 @@
-clear
-
-tic;
-
-simulateSatellite();
-
-toc;
 
 
 
-
-
-
-
+param = setSimulationParameters();
+param.t = 5000; 
+%param.freq_all = false;
+param.j = 7;
+param.pair_type = 'velocity';
+simulateSatellite(param);
 
 
 
