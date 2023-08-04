@@ -1,7 +1,9 @@
 %既定の範囲内で衛星の初期位置を設定。Cベース
 %C1~C6 rand([-0.1; 0.1])
 function [pos, vel] = getSatellitePositionRandom4(i, satellites, param)
-    seedj = param.j;
+    
+    %シード値固定
+    seedj = 1;
     rng(i+seedj);
     mean_pos = param.mean_pos;
     std_pos = param.std_pos;
@@ -30,8 +32,8 @@ function [pos, vel] = getSatellitePositionRandom4(i, satellites, param)
 
     
 
-
-
+    seedj = param.j;
+    rng(i+seedj);
     % 3つの衛星の速度を生成
     vel = normrnd(mean_vel, sqrt(std_vel), 1, 3).';
 

@@ -48,9 +48,19 @@ function u = relativeFeedback(i, pair_satellite_idx, satellites, param, historie
     
     %目標値と現在地のずれ
     x_tilda = x - xd;
+
+    adjust_mat = [[10000,0,0,0,0,0];
+                  [0,10000,0,0,0,0];
+                  [0,0,10000,0,0,0];
+                  [0,0,0,10000,0,0];
+                  [0,0,0,0,10000,0];
+                  [0,0,0,0,0,10000];];
+
+    K = K * adjust_mat; 
     
     %x_tildaを0にするためのフィードバック
     u_tilda = -K*x_tilda;
     
     %元の状態方程式の入力(N) 自分から見た相手の衛星の制御力とは逆の制御力を自分に加える
     u = -(u_tilda + u_d);
+

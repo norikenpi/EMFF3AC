@@ -13,6 +13,7 @@ function satellites = setSatelliteDipoleAC2(satellites, u, idx, pair_idx,  histo
     freq_idx = findFrequencyIndex(idx, pair_idx, param);
 
 
+
     if isequal(u, [0;0;0])
         satellites{satellite_i}.magnetic_moment(:,param.frequency_set(freq_idx)) = [0;0;0];
         satellites{satellite_j}.magnetic_moment(:,param.frequency_set(freq_idx)) = [0;0;0];
