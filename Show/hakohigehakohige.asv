@@ -1,0 +1,9 @@
+
+result_velocity5105_plus = result_velocity5105(result_velocity5105 > 0)
+result_velocity104_plus = result_velocity104( result_velocity104 > 0)
+result_velocity5104_plus = result_velocity5104()
+
+
+results_data = [result_velocity5105; result_velocity104; result_velocity5104];
+labels = {'5×10^(-5)','10^(-4)', '5×10^(-4)'};
+showResultHakohige(results_data, labels);

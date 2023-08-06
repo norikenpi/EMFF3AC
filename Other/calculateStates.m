@@ -29,24 +29,24 @@ function data = calculateStates(param)
         %}
 
         %運動エネルギー最大の衛星とペアを組んでいる衛星の距離の重み付け平均
-        E_max_distance_weight_agerage(i) = calculateEnergyMaxWeghtDistance(param);
+        %E_max_distance_weight_agerage(i) = calculateEnergyMaxWeghtDistance(param);
 
-        KE_max_distance_weight_agerage(i) = calculateKineticEnergyMaxWeghtDistance(param);
+        %KE_max_distance_weight_agerage(i) = calculateKineticEnergyMaxWeghtDistance(param);
 
 
         %重心に対する相対速度の最大
-        reative_velocity_square_mean_data(i) = calculateReativeVelocitySquareMax(satellites, param);
+        %reative_velocity_square_mean_data(i) = calculateReativeVelocitySquareMax(satellites, param);
         %エネルギーの大きさの最大
-        energy_sum_data(i) = calculateEnergyMax(satellites, param);
+        %energy_sum_data(i) = calculateEnergyMax(satellites, param);
         %重心から見たC1の最大
         C1_max_data(i) = calculateC1Max(satellites, param);
         %重心からの距離の最大
-        distance_mean_data(i) = calculateDistanceMax(satellites, param);
+        %distance_mean_data(i) = calculateDistanceMax(satellites, param);
         %目標位置までの距離の最大
-        target_distace_mean_data(i) = calculateTargetDistanceMax(satellites, param);
+        %target_distace_mean_data(i) = calculateTargetDistanceMax(satellites, param);
 
         %C1最大とペアを組んでいる衛星との距離
-        C_max_distance(i) = calculateC1MaxPairRelativeDistance(satellites, param);
+        %C_max_distance(i) = calculateC1MaxPairRelativeDistance(satellites, param);
 
         %分離方向の速度を持つ衛星の衛星の中で，最大の速度を持つ衛星の速度の大きさ
         relative_separation_velocity(i) = calculateRelativeSeparationVelocity(satellites, param);
@@ -58,7 +58,7 @@ function data = calculateStates(param)
     end
 
     %data = [reative_velocity_square_mean_data; energy_sum_data; C1_sum_data; distance_mean_data; target_distace_mean_data];
-    data = [C1_max_data; C_max_distance; E_max_distance_weight_agerage; KE_max_distance_weight_agerage; relative_separation_velocity; C_max_distance];
-    %data = [C1_max_data; relative_separation_velocity];
+    %data = [C1_max_data; C_max_distance; E_max_distance_weight_agerage; KE_max_distance_weight_agerage; relative_separation_velocity; C_max_distance];
+    data = [C1_max_data; relative_separation_velocity];
     
 end

@@ -4,9 +4,8 @@
 param = setSimulationParameters();
 param.t = 2000; 
 %param.freq_all = false;
-param.j = 7;
+param.j = 2;
 param.pair_type = "Takahashi";
-%param.pair_type = "velocity";
 simulateSatellite(param);
 
 

@@ -1,0 +1,10 @@
+%hakohigehakohigeで表示
+function showResultHakohige(results_data)
+    % 箱ひげ図を描きます
+    boxplot(results_data','Labels',{'mu = 5','mu = 6'}, 'Symbol','');
+    
+    % グラフのタイトルと軸ラベルを付けます
+    title('速度の標準偏差と収束時間の関係')
+    xlabel('速度の標準偏差')
+    ylabel('時間(s)')
+end

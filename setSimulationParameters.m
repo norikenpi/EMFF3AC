@@ -74,7 +74,7 @@ function param = setSimulationParameters()
     param.mean_vel = [0, 0, 0]; %速度平均
     param.std_vel = [5*10^-5, 5*10^-5, 5*10^-5]; %速度標準偏差
     param.std_vel = [10^-4, 10^-4, 10^-4]; %速度標準偏差
-    param.std_vel = [5*10^-4, 5*10^-4, 5*10^-4]; %速度標準偏差
+    param.std_vel = [3*10^-4, 3*10^-4, 3*10^-4]; %速度標準偏差
 
 
     

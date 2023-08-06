@@ -80,6 +80,7 @@ result_all_energy01 = checkConvergeOrNot(result_all_energy);
 makeResultFile(param, type, result_all_energy)
 %}
 
+
 %result = [];
 for i = 1:number
     type = "velocity";
@@ -92,8 +93,9 @@ for i = 1:number
     %makeDataFile(param, i, type)
 end
 %result_velocity = result;
-result_separate_velocity01 = checkConvergeOrNot(result_velocity);
+result_velocity01 = checkConvergeOrNot(result_velocity);
 makeResultFile(param, type, result_velocity)
+
 
 %{
 %result = [];
@@ -126,6 +128,22 @@ end
 %result_velocity = result;
 result_separate_velocity01 = checkConvergeOrNot(result_separate_velocity);
 makeResultFile(param, type, result_separate_velocity)
+%}
+
+%{
+for i = 1:number
+    type = "Takahashi";
+    disp(i)
+    disp(type)
+    param.j = seed0 + i - 1; %シード値
+    param.pair_type = type;
+    simulateSatellite(param);
+    result_Takahashi(param.j) = param.finished_time;
+    %makeDataFile(param, i, type)
+end
+%result_velocity = result;
+result_Takahashi01= checkConvergeOrNot(result_Takahashi);
+makeResultFile(param, type, result_Takahashi)
 %}
 
 

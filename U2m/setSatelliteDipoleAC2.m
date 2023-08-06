@@ -15,8 +15,11 @@ function satellites = setSatelliteDipoleAC2(satellites, u, idx, pair_idx,  histo
 
 
     if isequal(u, [0;0;0])
-        satellites{satellite_i}.magnetic_moment(:,param.frequency_set(freq_idx)) = [0;0;0];
-        satellites{satellite_j}.magnetic_moment(:,param.frequency_set(freq_idx)) = [0;0;0];
+        if freq_idx == 0
+        else
+            satellites{satellite_i}.magnetic_moment(:,param.frequency_set(freq_idx)) = [0;0;0];
+            satellites{satellite_j}.magnetic_moment(:,param.frequency_set(freq_idx)) = [0;0;0];
+        end
         magnetic_moment = [0;0;0];
     else
         %uは衛星群全体で使う周波数の数だけの列を持った3×n行列。4つの衛星の場合3×4行列。

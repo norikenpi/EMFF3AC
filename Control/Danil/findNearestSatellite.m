@@ -19,7 +19,8 @@ function [error_idx, histories, safety_distance, satellites] = findNearestSatell
 
             relative_velocity =  satellites{target_idx}.velocity - satellites{i}.velocity;
             target_error = norm(relative_position_d - relative_position);
-            C1 = relative_velocity(1) - 2 * param.n * relative_position(3); 
+            C1 = relative_velocity(1)/param.n - 2 * relative_position(3); 
+            C4 = relative_position(1) + 2 * relative_velocity(3)/param.n;
             histories.C1_histories(int32(time/param.dt)+1, i) = C1;
             satellites{i}.C1 = C1;
 
@@ -46,7 +47,13 @@ function [error_idx, histories, safety_distance, satellites] = findNearestSatell
                     else
                         error(i) = norm(relative_velocity);
                     end
-                    
+                elseif param.pair_type == "Takahashi"
+                    rs = 10;
+                    if (C4^2 + (2*C1)^2 < rs) || (C1*C4 > 0)
+                        error(i) = 1/((C4 + sign(C1) * sqrt(rs^2 - (2 * C1)^2))/(2*C1*param.n));
+                    else
+                        error(i) = 0;
+                    end
                 end
             end
         end
