@@ -1,6 +1,6 @@
 %5×100の配列を棒グラフにして図示する．
 
-function showDataBar(data)
+function showDataBar(data, result)
 
     for i = 1:size(data,1)
         data(i,:) = rescaleTo01(data(i,:));
@@ -15,7 +15,7 @@ function showDataBar(data)
     ylabel('Y軸');
     legend('重心からの相対速度最大', '重心からのエネルギー最大', '重心からのC1最大', '重心からの距離最大', '目標相対地位誤差最大');
     
-    graph_num = 2;
+    graph_num = 6;
     title_list = ["重心からのC1最大の衛星のC1" "分離方向の速度を持つ衛星の衛星の中で，最大の速度を持つ衛星の速度の大きさ" "重心からのC1最大の衛星に最も近い衛星までの距離" "重心から見たエネルギー最大の衛星とペアを組んでいる衛星までの重み付き平均距離" "重心から見た運動エネルギー最大の衛星とペアを組んでいる衛星までの重み付き平均距離" "Skylab B" "ISS"];
 
     % 5つの棒グラフを縦に並べる
@@ -28,10 +28,12 @@ function showDataBar(data)
         
         % 1つ目、4番目、10番目のデータを赤色に変更
         hold on;
-        list = [1,3,4,5,6,7,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,39,43,79,80,90];
-        for j = 1:size(list,2)
+        %minus_index = [1,3,4,5,6,7,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,30,31,39,43,79,80,90];
+        minus_index = find(result < 0);
+
+        for j = 1:size(minus_index,2)
             disp(j)
-            bar(list(j), data(i, list(j)), 'r'); % 1つ目のデータを赤でプロット
+            bar(minus_index(j), data(i, minus_index(j)), 'r'); % 1つ目のデータを赤でプロット
         end
         %{
         bar(1, data(i, 1), 'y'); % 1つ目のデータを黄でプロット
