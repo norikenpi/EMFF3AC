@@ -21,7 +21,7 @@ function plotConvergePlot(array, first_seed, type, param)
     %グラフ画像に日付を入れる。
     xPosition = xlim; % x軸の範囲を取得
     yPosition = ylim*0.8; % y軸の範囲を取得
-    text(xPosition(2), yPosition(2), string(param.date), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
+    %text(xPosition(2), yPosition(2), string(param.date), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
 
     grid on
     hold off
