@@ -3,7 +3,7 @@
 function [pos, vel] = getSatellitePositionRandom4(i, satellites, param)
     
     %シード値固定
-    seedj = 1;
+    seedj = param.j;
     rng(i+seedj);
     mean_pos = param.mean_pos;
     std_pos = param.std_pos;
@@ -35,9 +35,9 @@ function [pos, vel] = getSatellitePositionRandom4(i, satellites, param)
     seedj = param.j;
     rng(i+seedj);
     % 3つの衛星の速度を生成
-    %vel = normrnd(mean_vel, sqrt(std_vel), 1, 3).';
+    vel = normrnd(mean_vel, sqrt(std_vel), 1, 3).';
 
     %vx以外固定
-    vel = [0;normrnd(mean_vel(1), sqrt(std_vel(1)), 1, 1); 0];
+    %vel = [0;normrnd(mean_vel(1), sqrt(std_vel(1)), 1, 1); 0];
 
 end

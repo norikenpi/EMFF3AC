@@ -39,7 +39,7 @@ function param = setSimulationParameters()
     param.Kp = 10; % 比例ゲイン10^(-6)
     param.Kd = 0.05; % 微分ゲイン
 
-    param.Kp_avoid = 1000000; % 比例ゲイン10^(-6)
+    param.Kp_avoid = 100000000; % 比例ゲイン10^(-6)
     param.C1_min = 10^-7; % 最小ドリフト
     param.j = 3; %シード値
     param.C1_ini = 0.1;%初期C1の最大値
@@ -73,8 +73,8 @@ function param = setSimulationParameters()
     param.std_pos = [0.01, 0.01, 0.01]; %位置標準偏差
     param.mean_vel = [0, 0, 0]; %速度平均
     param.std_vel = [5*10^-5, 5*10^-5, 5*10^-5]; %速度標準偏差
-    %param.std_vel = [10^-5, 10^-5, 10^-5]; %速度標準偏差
-    %param.std_vel = [10^-6, 10^-6, 10^-6]; %速度標準偏差
+    param.std_vel = [10^-4, 10^-4, 10^-4]; %速度標準偏差
+    param.std_vel = [3*10^-5, 3*10^-5, 3*10^-5]; %速度標準偏差
 
 
     
