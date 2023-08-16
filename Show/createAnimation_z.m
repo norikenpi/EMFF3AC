@@ -32,17 +32,17 @@ function createAnimation_z(histories, param, satellites)
         %h_traj = cell(1, length(histories.position_histories));
         %h_force = cell(1, length(histories.position_histories));
         disp(i)
-        [h1, h4, h5, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(1, :), sprintf('Satellite %d', 1), 1);
+        [h4, h5] = plotSatelliteTrajectory(histories, param, i, colors(1, :), sprintf('Satellite %d', 1), 1);
         
         for j = 2:size(histories.position_histories, 3)
-            [h_traj, h_force, h_mag, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
+            [h_force, h_mag] = plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
         end
         
         %x方向からの視点
         view(0, 90)
         dim = [0.65 0.5 0.3 0.3];
         path_parent = append('質量 ', string(m), 'kg ','衛星半径', string(a), 'm');
-        annotation('textbox',dim,'String',path_parent,'FitBoxToText','on')
+        %annotation('textbox',dim,'String',path_parent,'FitBoxToText','on')
 
         
         axis([-param.axis_norm,param.axis_norm,-param.axis_norm,param.axis_norm,-param.axis_norm,param.axis_norm])
@@ -54,9 +54,9 @@ function createAnimation_z(histories, param, satellites)
         set(gca,'YDir','reverse')
         set(gca,'ZDir','reverse')
         path_parent = append('(', string(pause), ' times speed)');
-        title(append('Satellite Relative Motion with Trajectory ',path_parent))
+        %title(append('Satellite Relative Motion with Trajectory ',path_parent))
         %legend([h1, h4, h5], 'Satellite trajectory', 'Satellite force', 'magnetic moment');
-        legend(h_pair, 'Pair satellite');
+        %legend(h_pair, 'Pair satellite');
        
         %グラフ画像に日付を入れる。
         xPosition = xlim;
@@ -65,10 +65,10 @@ function createAnimation_z(histories, param, satellites)
 
         yPosition2 = ylim/2;
 
-        text(xPosition(2)*1.5, yPosition(1)/5, zPosition(1)*2, string(param.date), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
+        %text(xPosition(2)*1.5, yPosition(1)/5, zPosition(1)*2, string(param.date), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
         
         %時間を表示
-        text(xPosition(2)*1.5, yPosition(1)/3, zPosition(1)*2, sprintf("time %s", string(i*param.dt)), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
+        %text(xPosition(2)*1.5, yPosition(1)/3, zPosition(1)*2, sprintf("time %s", string(i*param.dt)), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
         drawnow;
 
         frame = getframe(fig);

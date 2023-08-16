@@ -63,6 +63,7 @@ end
 %result_target_distance = result;
 result_target_distance01 = checkConvergeOrNot(result_target_distance);
 makeResultFile(param, type, result_target_distance)
+%}
 
 %result = [];
 for i = 1:number
@@ -78,7 +79,7 @@ end
 %result_all_energy = result;
 result_all_energy01 = checkConvergeOrNot(result_all_energy);
 makeResultFile(param, type, result_all_energy)
-%}
+
 
 %{
 %result = [];
@@ -130,7 +131,7 @@ result_separate_velocity01 = checkConvergeOrNot(result_separate_velocity);
 makeResultFile(param, type, result_separate_velocity)
 %}
 
-
+%{
 for i = 1:number
     type = "Takahashi";
     disp(i)
@@ -144,7 +145,7 @@ end
 %result_velocity = result;
 result_Takahashi01= checkConvergeOrNot(result_Takahashi);
 makeResultFile(param, type, result_Takahashi)
-
+%}
 
 
 endTime = datetime;

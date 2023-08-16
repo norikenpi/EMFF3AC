@@ -73,7 +73,7 @@ function param = setSimulationParameters()
     param.std_pos = [0.01, 0.01, 0.01]; %位置標準偏差
     param.mean_vel = [0, 0, 0]; %速度平均
     param.std_vel = [5*10^-5, 5*10^-5, 5*10^-5]; %速度標準偏差
-    param.std_vel = [10^-4, 10^-4, 10^-4]; %速度標準偏差
+    %param.std_vel = [10^-4, 10^-4, 10^-4]; %速度標準偏差
     %param.std_vel = [15*10^-5, 15*10^-5, 15*10^-5]; %速度標準偏差
 
 
@@ -331,11 +331,15 @@ function param = setSimulationParameters()
 
     %描画パラメータ
     param.force_arrow_scale = 5*10^2; %5*10^4
-    %param.force_arrow_scale = 0; %5*10^4
+    
     param.magnetic_moment_arrow_scale = 10^-9;%100
     param.velocity_arrow_scale = 50;%100
     param.axis_norm = 1; %0.5
     param.pause = 30;
+
+    param.force_arrow_scale = 0; %5*10^4
+    param.magnetic_moment_arrow_scale = 0; %5*10^4
+    param.velocity_arrow_scale = 0; %5*10^4
 
 
 end

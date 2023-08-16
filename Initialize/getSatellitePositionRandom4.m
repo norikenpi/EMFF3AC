@@ -3,8 +3,8 @@
 function [pos, vel] = getSatellitePositionRandom4(i, satellites, param)
     
     %シード値固定
-    %seedj = param.j;
-    seedj = 1;
+    seedj = param.j;
+    %seedj = 1;
    
    
     rng(i+seedj);
@@ -35,8 +35,8 @@ function [pos, vel] = getSatellitePositionRandom4(i, satellites, param)
 
     
     %上のwhileでseedjが書き換えられてしまっている．書き変えられたseedjをそのまま使うのが正解
-    seedj = param.j;
-    rng(i+seedj);
+    %seedj = param.j;
+    %rng(i+seedj);
     % 3つの衛星の速度を生成
     vel = normrnd(mean_vel, sqrt(std_vel), 1, 3).';
 
