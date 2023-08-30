@@ -52,18 +52,18 @@ function [pos, vel] = getSatelliteDesiredPosition(i, param)
     
     if param.N == 3
         if i == 1
-            x = sqrt(3)/2 * param.satellite_desired_distance; 
+            x = param.satellite_desired_distance * (2); % -0.15から0.15の範囲で衛星を配置
             y = 0;
             z = 0;
         end
         if i == 2
-            x = 0; 
-            y = 1/2 * param.satellite_desired_distance;
+            x = param.satellite_desired_distance * (2); % -0.15から0.15の範囲で衛星を配置
+            y = param.satellite_desired_distance * (3);
             z = 0;
         end
         if i == 3
-            x = 0; 
-            y = -1/2 * param.satellite_desired_distance;
+            x = param.satellite_desired_distance * (2); % -0.15から0.15の範囲で衛星を配置
+            y = param.satellite_desired_distance * (3);
             z = 0;
         end
 

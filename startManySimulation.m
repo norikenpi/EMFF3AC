@@ -14,7 +14,6 @@ param = setSimulationParameters();
 number = 100;
 seed0 = 1;
 
-%{
 
 % シミュレーションパラメータを設定
 %result = [];
@@ -63,7 +62,7 @@ end
 %result_target_distance = result;
 result_target_distance01 = checkConvergeOrNot(result_target_distance);
 makeResultFile(param, type, result_target_distance)
-%}
+
 
 %result = [];
 for i = 1:number
@@ -79,7 +78,7 @@ end
 %result_all_energy = result;
 result_all_energy01 = checkConvergeOrNot(result_all_energy);
 makeResultFile(param, type, result_all_energy)
-
+%}
 
 %{
 %result = [];

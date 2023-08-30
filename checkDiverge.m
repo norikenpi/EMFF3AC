@@ -54,5 +54,18 @@ function check = checkDiverge(satellites, param)
                 end
             end
         end
+    elseif param.N == 3
+        border = param.diverge_border;
+        check = true;
+        x1 = satellites{1}.position;
+        x2 = satellites{2}.position;
+        x3 = satellites{3}.position;
+        if abs(norm(x1 - x2) - param.satellite_desired_distance)  < border
+            if abs(norm(x2 - x3) - param.satellite_desired_distance)  < border
+                if abs(norm(x3 - x1) - param.satellite_desired_distance)  < border
+                    check = false;
+                end
+            end
+        end
     end
 end

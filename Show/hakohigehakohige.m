@@ -10,7 +10,7 @@ result_Takahashi_plus = result_Takahashi(result_Takahashi > 0);
 
 %result_velocity5105_plus = result_velocity5105;
 %result_velocity3105_plus = result_velocity3105;
-%result_velocity104_plus = result_velocity104;￥
+%result_velocity104_plus = result_velocity104;
 
 
 %result_velocity5104_plus = result_velocity5104;

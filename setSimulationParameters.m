@@ -33,7 +33,7 @@ function param = setSimulationParameters()
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 8; % 衛星の数    
+    param.N = 3; % 衛星の数    
 
     %Danil式パラメータ
     param.Kp = 10; % 比例ゲイン10^(-6)
@@ -70,7 +70,7 @@ function param = setSimulationParameters()
     param.magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
 
     param.mean_pos = [0, 0, 0]; %位置平均
-    param.std_pos = [0.01, 0.01, 0.01]; %位置標準偏差
+    param.std_pos = [0.05, 0.05, 0.05]; %位置標準偏差
     param.mean_vel = [0, 0, 0]; %速度平均
     param.std_vel = [5*10^-5, 5*10^-5, 5*10^-5]; %速度標準偏差
     %param.std_vel = [10^-4, 10^-4, 10^-4]; %速度標準偏差
