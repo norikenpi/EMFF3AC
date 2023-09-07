@@ -21,6 +21,7 @@ function [satellites, histories, param] = runSimulation(satellites, param, histo
         end
 
         %収束または発散のチェックを行う。
+        %{
         if mod(time, param.time_step) == 0
             [converge_check, histories] = checkConverge(satellites, param, histories, time);
             diverge_check = checkDiverge(satellites, param);
@@ -37,6 +38,7 @@ function [satellites, histories, param] = runSimulation(satellites, param, histo
             
             end
         end
+        %}
     end
     toc;
 end

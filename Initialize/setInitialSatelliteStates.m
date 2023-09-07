@@ -40,6 +40,7 @@ function satellites = setInitialSatelliteStates(param)
         max_magnetic_moment = param.max_magnetic_moment; % 最大磁気モーメント
         radius = param.radius; %衛星半径
         C1 = 0;
+        verCellHandle = 0;
 
         satellites{i} = Satellite(position, velocity, orientation, angular_velocity, magnetic_moment, ...
             mass, moment_of_inertia, max_magnetic_moment, radius, position_d, velocity_d, C1);

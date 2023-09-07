@@ -1,5 +1,6 @@
 
-
+%warning('off','all')
+%これで警告をoff
 
 param = setSimulationParameters();
 %param.t = 2000; 

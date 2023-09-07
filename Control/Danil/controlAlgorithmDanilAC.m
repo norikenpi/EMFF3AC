@@ -38,7 +38,7 @@ function [u, nearest_satellite_idx, histories, satellites, param] = controlAlgor
         %param.C1_borderをめちゃくちゃ大きくすることで、常に目標相対位置誤差に基づく制御が可能になる。
         if parameter > param.control_border
             %C1を制御
-            u = calculateRequiredAcceleration(param, satellites{i}.C1, i, nearest_satellite_idx, satellites);
+            [u, satellites] = calculateRequiredAcceleration(param, satellites{i}.C1, i, nearest_satellite_idx, satellites);
             histories.control_type(int32(time/param.dt)+1, i) = 1;
             %param.pair_type = 'C1';
 
@@ -52,7 +52,7 @@ function [u, nearest_satellite_idx, histories, satellites, param] = controlAlgor
         elseif parameter <= param.control_border
             %目標相対位置誤差を制御
             
-            u = relativeFeedback(i, nearest_satellite_idx, satellites, param);
+            [u, satellites, histories] = relativeFeedback(i, nearest_satellite_idx, satellites, param, histories);
             histories.control_type(int32(time/param.dt)+1, i) = 2;
             %param.pair_type = 'velocity';
 

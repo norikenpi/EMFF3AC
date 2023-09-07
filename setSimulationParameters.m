@@ -9,6 +9,7 @@ function param = setSimulationParameters()
     param.approximation = 'trapezoid'; % trapezoid or euler
     param.magnetic_model = 'far_field'; % near_field or far_field 発生させた電流に対して，発生する磁力をどのモデルで計算するか
     param.control_magnetic_model = 'far_field'; % near_field or far_field 所望の力に対して発生させる磁力を計算するときにどのもでるを使うか
+    param.hill_on = false;
     param.start_state = 0;
     param.start_state = [4,1,1];
     param.current_type = 'AC'; % DC or AC
@@ -16,7 +17,7 @@ function param = setSimulationParameters()
     param.time_step = 0.1; % 制御タイムステップ
 
     
-    param.t = 2000; % シミュレーション時間 
+    param.t = 5000; % シミュレーション時間 
     %param.t = round(2*pi/param.n);
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.15; %初期衛星間距離
@@ -33,7 +34,7 @@ function param = setSimulationParameters()
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 3; % 衛星の数    
+    param.N = 4; % 衛星の数    
 
     %Danil式パラメータ
     param.Kp = 10; % 比例ゲイン10^(-6)
@@ -83,7 +84,7 @@ function param = setSimulationParameters()
 
     %2018年の野田さんの宇科連準拠
     param.coilN = 17; % 巻き数
-    param.I_max = 100; % 最大電流
+    param.I_max = 1000; % 最大電流
     param.radius = 0.05; %衛星半径
     param.max_magnetic_moment = param.coilN * param.I_max * pi * param.radius^2; % 最大磁気モーメント
    
@@ -333,13 +334,13 @@ function param = setSimulationParameters()
     param.force_arrow_scale = 5*10^2; %5*10^4
     
     param.magnetic_moment_arrow_scale = 10^-9;%100
-    param.velocity_arrow_scale = 50;%100
+    param.velocity_arrow_scale = 0;%100
     param.axis_norm = 1; %0.5
-    param.pause = 30;
+    param.pause = 172;
 
     param.force_arrow_scale = 0; %5*10^4
-    param.magnetic_moment_arrow_scale = 0; %5*10^4
-    param.velocity_arrow_scale = 0; %5*10^4
+    param.magnetic_moment_arrow_scale = 5*10^4; %5*10^4
+    param.velocity_arrow_scale = 5*10; %5*10^4
 
 
 end

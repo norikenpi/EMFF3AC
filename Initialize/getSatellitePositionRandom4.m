@@ -13,6 +13,7 @@ function [pos, vel] = getSatellitePositionRandom4(i, satellites, param)
     mean_vel = param.mean_vel; 
     std_vel = param.std_vel;
     pos = normrnd(mean_pos, sqrt(std_pos), 1, 3).';
+    pos(3) = 0;
     % 3つの衛星の位置を生成
     if i > 1
         relative_distance_min = 0;
@@ -21,7 +22,7 @@ function [pos, vel] = getSatellitePositionRandom4(i, satellites, param)
             seedj = seedj + 1;
             rng(seedj+i);
             pos = normrnd(mean_pos, sqrt(std_pos), 1, 3).';
-            
+            pos(3) = 0;
             %最も近い距離にある衛星を探す。
             relative_distance_min = 1000;
             for j = 1:(i-1)
@@ -39,6 +40,7 @@ function [pos, vel] = getSatellitePositionRandom4(i, satellites, param)
     %rng(i+seedj);
     % 3つの衛星の速度を生成
     vel = normrnd(mean_vel, sqrt(std_vel), 1, 3).';
+    vel(3) = 0;
 
     %vx以外固定
     %vel = [0;normrnd(mean_vel(1), sqrt(std_vel(1)), 1, 1); 0];
