@@ -19,6 +19,7 @@ function satellites = setInitialSatelliteStates(param)
 
         %分散を指定してランダムにばらまく．
         %[position, velocity] = getSatellitePositionRandom2(i, satellites, param);
+        
 
         %15cmずつ置いていって，それが他の衛星と15cm離れているかを確認していくやり方
         [position, velocity] = getSatellitePositionRandom4(i, satellites, param);

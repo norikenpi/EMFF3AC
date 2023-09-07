@@ -9,7 +9,7 @@ function param = setSimulationParameters()
     param.approximation = 'trapezoid'; % trapezoid or euler
     param.magnetic_model = 'far_field'; % near_field or far_field 発生させた電流に対して，発生する磁力をどのモデルで計算するか
     param.control_magnetic_model = 'far_field'; % near_field or far_field 所望の力に対して発生させる磁力を計算するときにどのもでるを使うか
-    param.hill_on = false;
+    param.hill_on = true; % 深宇宙想定か、軌道上想定か
     param.start_state = 0;
     param.start_state = [4,1,1];
     param.current_type = 'AC'; % DC or AC
@@ -17,7 +17,7 @@ function param = setSimulationParameters()
     param.time_step = 0.1; % 制御タイムステップ
 
     
-    param.t = 5000; % シミュレーション時間 
+    param.t = 3102; % シミュレーション時間 
     %param.t = round(2*pi/param.n);
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.15; %初期衛星間距離
@@ -71,9 +71,9 @@ function param = setSimulationParameters()
     param.magnetic_moment = [0; 0.01; 0]; % 磁気モーメント
 
     param.mean_pos = [0, 0, 0]; %位置平均
-    param.std_pos = [0.05, 0.05, 0.05]; %位置標準偏差
+    param.std_pos = [0.05, 0.05, 0.05]; %位置標準偏差[0.05, 0.05, 0.05]
     param.mean_vel = [0, 0, 0]; %速度平均
-    param.std_vel = [5*10^-5, 5*10^-5, 5*10^-5]; %速度標準偏差
+    param.std_vel = [0, 0, 0]; %速度標準偏差[5*10^-5, 5*10^-5, 5*10^-5]
     %param.std_vel = [10^-4, 10^-4, 10^-4]; %速度標準偏差
     %param.std_vel = [15*10^-5, 15*10^-5, 15*10^-5]; %速度標準偏差
 

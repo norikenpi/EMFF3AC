@@ -1,4 +1,4 @@
-function [u, satellites] = relativeFeedback(i, pair_satellite_idx, satellites, param, histories)
+function [u, satellites, histories] = relativeFeedback(i, pair_satellite_idx, satellites, param, histories)
 
     
     %Hill方程式によって作られるオイラー近似離散状態方程式の係数
@@ -9,12 +9,15 @@ function [u, satellites] = relativeFeedback(i, pair_satellite_idx, satellites, p
          0, -param.n^2, 0, 0, 0, 0;
          0, 0, 3*param.n^2, -2*param.n, 0, 0];
     
-    A = [0, 0, 0, 1, 0, 0;
-         0, 0, 0, 0, 1, 0;
-         0, 0, 0, 0, 0, 1;
-         0, 0, 0, 0, 0, 0;
-         0, 0, 0, 0, 0, 0;
-         0, 0, 0, 0, 0, 0];
+    if not(param.hill_on)
+        A = [0, 0, 0, 1, 0, 0;
+             0, 0, 0, 0, 1, 0;
+             0, 0, 0, 0, 0, 1;
+             0, 0, 0, 0, 0, 0;
+             0, 0, 0, 0, 0, 0;
+             0, 0, 0, 0, 0, 0];
+    end
+
     m = satellites{i}.mass;
     
     %Hill方程式によって作られるオイラー近似離散状態方程式の係数
@@ -42,7 +45,9 @@ function [u, satellites] = relativeFeedback(i, pair_satellite_idx, satellites, p
     %現在の相対位置速度と目標の相対位置速度
     relative_position = satellites{pair_satellite_idx}.position - satellites{i}.position;
     relative_velocity = satellites{pair_satellite_idx}.velocity - satellites{i}.velocity;
-    satellites = calcDesirePostion(satellites, param);
+    [satellites, c, v] = calcDesirePostion(satellites, param);
+    %histories.c(int32(time/param.dt)+1, :, idx) = c;
+    %histories.v(int32(time/param.dt)+1, :, idx) = v;
 
     relative_position_d = satellites{pair_satellite_idx}.position_d - satellites{i}.position_d;
     relative_velocity_d = satellites{pair_satellite_idx}.velocity_d - satellites{i}.velocity_d;
@@ -73,9 +78,10 @@ function [u, satellites] = relativeFeedback(i, pair_satellite_idx, satellites, p
     
     %元の状態方程式の入力(N) 自分から見た相手の衛星の制御力とは逆の制御力を自分に加える
     u = -(u_tilda + u_d);
+    u = zeros(3,1);
 end
 
-function satellites = calcDesirePostion(satellites, param)
+function [satellites, c, v] = calcDesirePostion(satellites, param)
     Px = zeros(param.N, 1);
     Py = zeros(param.N, 1);
     for i = 1:param.N
@@ -95,15 +101,14 @@ function satellites = calcDesirePostion(satellites, param)
     X=(LIMIT2*cos(theta)).';
     Y=(LIMIT2*sin(theta)).';
     XX=[X, Y];
-    [Px, Py, verCellHandle] = Yuta_lloydsAlgorithm2(Px,Py, XX);
+    [Px, Py, c, v] = Yuta_lloydsAlgorithm2(Px,Py, XX);
     for i = 1:param.N
         satellites{i}.position_d(1) = Px(i);
         satellites{i}.position_d(2) = Py(i);
-        sa
     end
 end
 
-function [Px, Py] = Yuta_lloydsAlgorithm2(Px,Py, crs)
+function [Px, Py, c, v] = Yuta_lloydsAlgorithm2(Px,Py, crs)
     
     close all
     format compact
@@ -116,7 +121,7 @@ function [Px, Py] = Yuta_lloydsAlgorithm2(Px,Py, crs)
     xrange = max(crs(:,1));
     yrange = max(crs(:,2));
     [v,c]=VoronoiBounded(Px,Py, crs);
-    
+
     % 各セルの重心を計算
     for i = 1:numel(c) %calculate the centroid of each cell
         [cx,cy] = PolyCentroid(v(c{i},1),v(c{i},2));
@@ -325,14 +330,14 @@ function [Cx,Cy] = PolyCentroid(X,Y)
 % The centroid of a non-self-intersecting closed polygon defined by n vertices (x0,y0), (x1,y1), ..., (xn?1,yn?1) is the point (Cx, Cy), where
 % In these formulas, the vertices are assumed to be numbered in order of their occurrence along the polygon's perimeter, and the vertex ( xn, yn ) is assumed to be the same as ( x0, y0 ). Note that if the points are numbered in clockwise order the area A, computed as above, will have a negative sign; but the centroid coordinates will be correct even in this case.http://en.wikipedia.org/wiki/Centroid
 % A = polyarea(X,Y)
-
-Xa = [X(2:end);X(1)];
-Ya = [Y(2:end);Y(1)];
-%各ボロノイ領域の面積
-A = 1/2*sum(X.*Ya-Xa.*Y); %signed area of the polygon
-%各ボロノイ領域の重心
-Cx = (1/(6*A)*sum((X + Xa).*(X.*Ya-Xa.*Y)));
-Cy = (1/(6*A)*sum((Y + Ya).*(X.*Ya-Xa.*Y)));
+    
+    Xa = [X(2:end);X(1)];
+    Ya = [Y(2:end);Y(1)];
+    %各ボロノイ領域の面積
+    A = 1/2*sum(X.*Ya-Xa.*Y); %signed area of the polygon
+    %各ボロノイ領域の重心
+    Cx = (1/(6*A)*sum((X + Xa).*(X.*Ya-Xa.*Y)));
+    Cy = (1/(6*A)*sum((Y + Ya).*(X.*Ya-Xa.*Y)));
 end
 
 function [V,C]=VoronoiBounded(x,y, crs)

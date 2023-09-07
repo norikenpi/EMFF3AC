@@ -38,7 +38,7 @@ function createAnimation_z(histories, param, satellites)
             [h_force, h_mag] = plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
         end
 
-        plotVolonoi(squeeze(histories.position_histories(i, 1, :)), squeeze(histories.position_histories(i, 2, :)), param)
+        %plotVolonoi(squeeze(histories.position_histories(i, 1, :)), squeeze(histories.position_histories(i, 2, :)), param)
 
         %x方向からの視点
         view(0, 90)
