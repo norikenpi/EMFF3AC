@@ -17,7 +17,7 @@ function param = setSimulationParameters()
     param.time_step = 0.1; % 制御タイムステップ
 
     
-    param.t = 3000; % シミュレーション時間 
+    param.t = 8000; % シミュレーション時間 
     %param.t = round(2*pi/param.n);
     param.initial_error = 0.005;%初期誤差
     param.satellite_initial_distance = 0.15; %初期衛星間距離
@@ -83,7 +83,7 @@ function param = setSimulationParameters()
     param.moment_of_inertia = 1; % 慣性モーメント
 
     %2018年の野田さんの宇科連準拠
-    param.coilN = 17; % 巻き数
+    param.coilN = 20; % 巻き数
     param.I_max = 10; % 最大電流
     param.radius = 0.05; %衛星半径
     param.max_magnetic_moment = param.coilN * param.I_max * pi * param.radius^2; % 最大磁気モーメント
@@ -94,7 +94,7 @@ function param = setSimulationParameters()
     param.length = 0.17;
 
     %最適制御パラメータ
-    param.Q = diag([1, 1, 1, 10^8, 10^8, 10^8]); %diag([1, 1, 1, 10^4, 10^4, 10^4])
+    param.Q = diag([1, 1, 1, 10^6, 10^6, 10^6]); %diag([1, 1, 1, 10^4, 10^4, 10^4])
     param.R = diag([1, 1, 1]);
 
 

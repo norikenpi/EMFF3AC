@@ -70,7 +70,7 @@ function createAnimation_z(histories, param, satellites)
         %text(xPosition(2)*1.5, yPosition(1)/5, zPosition(1)*2, string(param.date), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
         
         %時間を表示
-        %text(xPosition(2)*1.5, yPosition(1)/3, zPosition(1)*2, sprintf("time %s", string(i*param.dt)), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
+        text(xPosition(2)*1.5, yPosition(1)/3, zPosition(1)*2, sprintf("time %s", string(i*param.dt)), 'HorizontalAlignment', 'right', 'VerticalAlignment', 'bottom');
         drawnow;
 
         frame = getframe(fig);
