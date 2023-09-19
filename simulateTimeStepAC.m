@@ -91,6 +91,10 @@ function [satellites, histories, param] = simulateTimeStepAC(satellites, histori
     % 各衛星に発生した磁気トルクと磁気力から、dt秒後の各衛星の状態量を計算。
     %startTime = datetime;
     satellites = updateSatelliteStates(satellites, param, magnetic_torques, magnetic_forces);
+    
+    for i = 1:param.N
+        satellites{i}.position(3) = 0;
+    end
     %endTime = datetime;
     %executionTime = endTime - startTime;
     %timeString = [num2str(milliseconds(executionTime), '%.2f') ' ms'];

@@ -45,7 +45,11 @@ function [u, satellites, histories] = relativeFeedback(i, pair_satellite_idx, sa
     %現在の相対位置速度と目標の相対位置速度
     relative_position = satellites{pair_satellite_idx}.position - satellites{i}.position;
     relative_velocity = satellites{pair_satellite_idx}.velocity - satellites{i}.velocity;
-    [satellites, c, v] = calcDesirePostion(satellites, param);
+
+    %ボロノイ図を用いて目標位置を計算
+    %[satellites, c, v] = calcDesirePostion(satellites, param);
+
+
     %histories.c(int32(time/param.dt)+1, :, idx) = c;
     %histories.v(int32(time/param.dt)+1, :, idx) = v;
 
@@ -78,7 +82,7 @@ function [u, satellites, histories] = relativeFeedback(i, pair_satellite_idx, sa
     
     %元の状態方程式の入力(N) 自分から見た相手の衛星の制御力とは逆の制御力を自分に加える
     u = -(u_tilda + u_d);
-    u = zeros(3,1);
+
 end
 
 function [satellites, c, v] = calcDesirePostion(satellites, param)

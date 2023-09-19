@@ -31,10 +31,10 @@ function createAnimation_y(histories, param, satellites)
         disp(i)
         %h_traj = cell(1, length(histories.position_histories));
         %h_force = cell(1, length(histories.position_histories));
-        [h1, h4, h5, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(1, :), sprintf('Satellite %d', 1), 1);
+        [h1, h4, h5] = plotSatelliteTrajectory(histories, param, i, colors(1, :), sprintf('Satellite %d', 1), 1);
         
         for j = 2:size(histories.position_histories, 3)
-            [h_traj, h_force, h_mag, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
+            [h_traj, h_force, h_pair] = plotSatelliteTrajectory(histories, param, i, colors(j, :), sprintf('Satellite %d', j), j);
         end
         
         %x方向からの視点

@@ -102,7 +102,7 @@ function plotVolonoi(x, y, param)
     cellColors = cool(param.N);
     [v,c] = VoronoiBounded(x,y, XX);
     for i = 1:param.N % update Voronoi cells
-        patch(v(c{i},1), v(c{i},2), cellColors(i,:)*.8);
+        patch(v(c{i},1), v(c{i},2), ones(1, length(c{i})), cellColors(i,:)*.8);
     end
 
 end

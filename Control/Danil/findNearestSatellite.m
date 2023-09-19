@@ -14,45 +14,47 @@ function [error_idx, histories, safety_distance, satellites] = findNearestSatell
             
         else
             relative_position =  satellites{target_idx}.position - satellites{i}.position;
-            relative_position_d = satellites{target_idx}.position_d - satellites{i}.position_d;
-            distances(i) = 1/norm(relative_position);
-
-            relative_velocity =  satellites{target_idx}.velocity - satellites{i}.velocity;
-            target_error = norm(relative_position_d - relative_position);
-            C1 = relative_velocity(1)/param.n - 2 * relative_position(3); 
-            C4 = relative_position(1) + 2 * relative_velocity(3)/param.n;
-            histories.C1_histories(int32(time/param.dt)+1, i) = C1;
-            satellites{i}.C1 = C1;
-
-            %最も近くにある衛星が衝突防止制御する範囲にある場合
-            if (1/distances(i)) < param.safety_distance
-               safety_distance = 1;
-            else
-                %提案アルゴリズム別のペア決め方法
-                if param.pair_type == "C1"
-                    %error(i) = norm(relative_position - relative_position_d); %目標相対位置誤差
-                    error(i) = C1;
-                elseif param.pair_type == "distance"
-                    %distances(i) = norm(relative_position);
-                    error(i) = 1/norm(relative_position);
-                elseif param.pair_type == "target_distance" %相対目標位置誤差
-                    error(i) = target_error;
-                elseif param.pair_type == "velocity"
-                    error(i) = norm(relative_velocity);
-                elseif param.pair_type == "all_energy"
-                    error(i) = (norm(relative_velocity)^2)*param.mass/2 + (param.n*relative_position(2)^2)/2 - (3*param.n*relative_position(3)^2)/2;
-                elseif param.pair_type == "separate_velocity"
-                    if  dot(relative_velocity, relative_position) > 0
-                        error(i) = norm(relative_velocity)*100;
-                    else
+            if norm(relative_position) < param.diverge_border
+                relative_position_d = satellites{target_idx}.position_d - satellites{i}.position_d;
+                distances(i) = 1/norm(relative_position);
+    
+                relative_velocity =  satellites{target_idx}.velocity - satellites{i}.velocity;
+                target_error = norm(relative_position_d - relative_position);
+                C1 = relative_velocity(1)/param.n - 2 * relative_position(3); 
+                C4 = relative_position(1) + 2 * relative_velocity(3)/param.n;
+                histories.C1_histories(int32(time/param.dt)+1, i) = C1;
+                satellites{i}.C1 = C1;
+    
+                %最も近くにある衛星が衝突防止制御する範囲にある場合
+                if (1/distances(i)) < param.safety_distance
+                   safety_distance = 1;
+                else
+                    %提案アルゴリズム別のペア決め方法
+                    if param.pair_type == "C1"
+                        %error(i) = norm(relative_position - relative_position_d); %目標相対位置誤差
+                        error(i) = C1;
+                    elseif param.pair_type == "distance"
+                        %distances(i) = norm(relative_position);
+                        error(i) = 1/norm(relative_position);
+                    elseif param.pair_type == "target_distance" %相対目標位置誤差
+                        error(i) = target_error;
+                    elseif param.pair_type == "velocity"
                         error(i) = norm(relative_velocity);
-                    end
-                elseif param.pair_type == "Takahashi"
-                    rs = 10;
-                    if (C4^2 + (2*C1)^2 < rs) || (C1*C4 > 0)
-                        error(i) = 1/((C4 + sign(C1) * sqrt(rs^2 - (2 * C1)^2))/(2*C1*param.n));
-                    else
-                        error(i) = 0;
+                    elseif param.pair_type == "all_energy"
+                        error(i) = (norm(relative_velocity)^2)*param.mass/2 + (param.n*relative_position(2)^2)/2 - (3*param.n*relative_position(3)^2)/2;
+                    elseif param.pair_type == "separate_velocity"
+                        if  dot(relative_velocity, relative_position) > 0
+                            error(i) = norm(relative_velocity)*100;
+                        else
+                            error(i) = norm(relative_velocity);
+                        end
+                    elseif param.pair_type == "Takahashi"
+                        rs = 10;
+                        if (C4^2 + (2*C1)^2 < rs) || (C1*C4 > 0)
+                            error(i) = 1/((C4 + sign(C1) * sqrt(rs^2 - (2 * C1)^2))/(2*C1*param.n));
+                        else
+                            error(i) = 0;
+                        end
                     end
                 end
             end
