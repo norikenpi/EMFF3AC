@@ -1,6 +1,7 @@
 % シミュレーションの各タイムステップで衛星の状態を更新する関数
 function [satellites, histories, param] = simulateTimeStepAC(satellites, histories, param, time)
-    %param.setの数だけ、繰り返す。
+    %param.setの数だけ、繰り返す。\
+
     for idx = 1:param.N 
         satellites{idx}.magnetic_moment = zeros(3, size(param.frequency, 1));
     end
@@ -31,10 +32,12 @@ function [satellites, histories, param] = simulateTimeStepAC(satellites, histori
     
                 %satellites = setSatelliteDipoleAC(satellites, u, idx, histories, time, param);
 
+  
 
                 %startTime = datetime;
                 satellites = setSatelliteDipoleAC2(satellites, u, idx, nearest_satellite_idx, histories, time, param);
                 %endTime = datetime;
+                
                 %executionTime = endTime - startTime;
                 %timeString = [num2str(milliseconds(executionTime), '%.2f') ' ms'];
                 %disp(['setSatelliteDipoleAC2処理時間: ' timeString]);
@@ -58,6 +61,8 @@ function [satellites, histories, param] = simulateTimeStepAC(satellites, histori
                 elseif parameter <= param.control_border
                     %目標相対位置誤差を制御
                     u = relativeFeedback(idx, idx_j, satellites, param);
+    
+                    
                     histories.control_type(int32(time/param.dt)+1, idx) = 2;
                 end
                 satellites = setSatelliteDipoleAC2(satellites, u, idx, idx_j, histories, time, param);
@@ -72,7 +77,9 @@ function [satellites, histories, param] = simulateTimeStepAC(satellites, histori
     %satellites = adjustMagneticMoment(satellites, param); 
     %各衛星の磁気ダイポールモーメントの上限に基づいて、要求電流の割合に応じて電流を分配。
     %startTime = datetime;
+
     satellites = adjustMagneticMomentAC(satellites, param); 
+
     %endTime = datetime;
     %executionTime = endTime - startTime;
     %timeString = [num2str(milliseconds(executionTime), '%.2f') ' ms'];
@@ -82,7 +89,11 @@ function [satellites, histories, param] = simulateTimeStepAC(satellites, histori
 
      % 各衛星に発生した磁気トルクと磁力を計算
      %startTime = datetime;
+ 
     [magnetic_forces, magnetic_torques, histories] = calculateF_totalAC(satellites, param, time, histories);
+
+    
+    % 経過時間を表示
     %endTime = datetime;
     %executionTime = endTime - startTime;
     %timeString = [num2str(milliseconds(executionTime), '%.2f') ' ms'];
@@ -90,10 +101,15 @@ function [satellites, histories, param] = simulateTimeStepAC(satellites, histori
 
     % 各衛星に発生した磁気トルクと磁気力から、dt秒後の各衛星の状態量を計算。
     %startTime = datetime;
+
     satellites = updateSatelliteStates(satellites, param, magnetic_torques, magnetic_forces);
-    
-    for i = 1:param.N
-        satellites{i}.position(3) = 0;
+        
+
+
+    if param.two_D
+        for i = 1:param.N
+            satellites{i}.position(3) = 0;
+        end
     end
     %endTime = datetime;
     %executionTime = endTime - startTime;
@@ -103,15 +119,22 @@ function [satellites, histories, param] = simulateTimeStepAC(satellites, histori
 
     % 各衛星に関して位置と力の履歴を更新
     %startTime = datetime;
+
     for idx = 1:param.N
+
         histories.position_histories(int32(time/param.dt)+1, :, idx) = satellites{idx}.position;
         histories.position_d_histories(int32(time/param.dt)+1, :, idx) = satellites{idx}.position_d;
         histories.velocity_histories(int32(time/param.dt)+1, :, idx) = satellites{idx}.velocity;
         histories.velocity_n_histories(int32(time/param.dt)+1, idx) = norm(satellites{idx}.velocity);
         histories.force_histories(int32(time/param.dt)+1, :, idx) = magnetic_forces{idx};
-        
+
+
         histories.magnetic_forces_histories(int32(time/param.dt)+1, :, idx) = magnetic_forces{idx};
         magnetic_moment_sum = 0;
+
+        
+        
+        %こことんでもなく時間かかるから、電流の大きさを調べたいときは他のやり方で計算した方がいいかも
         for freq_i = 1:size(param.frequency, 1)
             magnetic_moment_sum = magnetic_moment_sum + norm(satellites{idx}.magnetic_moment(:,freq_i));
         end

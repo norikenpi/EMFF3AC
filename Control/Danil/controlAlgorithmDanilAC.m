@@ -2,6 +2,12 @@ function [u, nearest_satellite_idx, histories, satellites, param] = controlAlgor
 
     %startTime = datetime;
     [nearest_satellite_idx, histories, safety_distance, satellites] = findNearestSatellite(satellites, i, i, param, histories, time);
+    
+    
+    
+    
+    
+    
     %endTime = datetime;
     %executionTime = endTime - startTime;
     %timeString = [num2str(milliseconds(executionTime), '%.2f') ' ms'];

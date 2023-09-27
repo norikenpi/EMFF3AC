@@ -20,12 +20,26 @@ function satellites = setInitialSatelliteStates(param)
         %分散を指定してランダムにばらまく．
         %[position, velocity] = getSatellitePositionRandom2(i, satellites, param);
         
-
+        
         %15cmずつ置いていって，それが他の衛星と15cm離れているかを確認していくやり方
-        [position, velocity] = getSatellitePositionRandom4(i, satellites, param);
+        %これがセット
+        
+        %[position, velocity] = getSatellitePositionRandom4(i, satellites, param);
 
         %衛星の目標値を設定
-        [position_d, velocity_d] = getSatelliteDesiredPosition(i, param);
+        %[position_d, velocity_d] = getSatelliteDesiredPosition(i, param);
+        
+
+
+        %10×10×10の初期状態
+        
+        %[position, velocity] = getSatellitePosition1000(i, param);
+        %[position_d, velocity_d] = getSatelliteDesiredPosition1000(i, param);
+
+        %4衛星の初期状態
+        [position, velocity] = getSatellitePosition4(i, param);
+        [position_d, velocity_d] = getSatelliteDesiredPosition4(i, param);
+        
 
         %velocity = [0.002*i; 0.001*i; 0.001*i]; % 速度
         orientation = [0; 0; i*pi/180]; % オイラー角

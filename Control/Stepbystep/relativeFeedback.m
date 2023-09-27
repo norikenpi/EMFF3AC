@@ -73,7 +73,7 @@ function [u, satellites, histories] = relativeFeedback(i, pair_satellite_idx, sa
                   [0,0,10000,0,0,0];
                   [0,0,0,10000,0,0];
                   [0,0,0,0,10000,0];
-                  [0,0,0,0,0,10000];];
+                  [0,0,0,0,0,10000];]/100000000;
 
     K = K * adjust_mat; 
     

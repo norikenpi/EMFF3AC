@@ -50,11 +50,41 @@ function satellites = setSatelliteDipoleAC2(satellites, u, idx, pair_idx,  histo
             m2 = near_field_inv(r, m1, u, param);
         end
         
-        %磁気ダイポールの大きさを均等にする。
-        norm_sum = sqrt(norm(m1)*norm(m2));
         
-        satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum * m1/norm(m1);
-        satellites{satellite_i}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum * m2/norm(m2);
+
+        if param.assign_current
+            norm_sum = sqrt(norm(m1)*norm(m2));
+            if idx == 1
+                satellites{satellite_i}.magnetic_moment(:, param.frequency_set(freq_idx)) = sqrt(3) * norm_sum * m2/norm(m2);
+                satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum/ sqrt(3) * m1/norm(m1);
+            elseif idx == 2
+                if pair_idx == 1
+                    satellites{satellite_i}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum/ sqrt(3) * m1/norm(m1);
+                    satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx)) = sqrt(3) * norm_sum * m2/norm(m2);
+                elseif pair_idx == 3
+                    satellites{satellite_i}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum * m2/norm(m2);
+                    satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum * m1/norm(m1);
+                end
+            elseif idx == 3
+                if pair_idx == 2
+                    satellites{satellite_i}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum * m2/norm(m2);
+                    satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum * m1/norm(m1);
+                elseif pair_idx == 4
+                    satellites{satellite_i}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum/ sqrt(3) * m1/norm(m1);
+                    satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx)) = sqrt(3) * norm_sum * m2/norm(m2);
+                end
+            elseif idx == 4
+                satellites{satellite_i}.magnetic_moment(:, param.frequency_set(freq_idx)) = sqrt(3) * norm_sum * m2/norm(m2);
+                satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum/ sqrt(3) * m1/norm(m1);
+            end
+        else
+            %磁気ダイポールの大きさを均等にする。
+            norm_sum = sqrt(norm(m1)*norm(m2));
+            satellites{satellite_j}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum * m1/norm(m1);
+            satellites{satellite_i}.magnetic_moment(:, param.frequency_set(freq_idx)) = norm_sum * m2/norm(m2);
+        end
+        
+        
 
     end
 end

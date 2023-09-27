@@ -28,9 +28,9 @@ function satellites = updateSatelliteStates(satellites, param, magnetic_torques,
              0, 0, 0, 0, 0, 0;
              0, 0, 0, 0, 0, 0]/2;
         if not(param.hill_on)
-            A = [0, 0, 0, 1/2, 0, 0;
-                 0, 0, 0, 0, 1/2, 0;
-                 0, 0, 0, 0, 0, 1/2;
+            A = [0, 0, 0, 1, 0, 0;
+                 0, 0, 0, 0, 1, 0;
+                 0, 0, 0, 0, 0, 1;
                  0, 0, 0, 0, 0, 0;
                  0, 0, 0, 0, 0, 0;
                  0, 0, 0, 0, 0, 0];

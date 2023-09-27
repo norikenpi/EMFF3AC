@@ -1,9 +1,0 @@
-function nearest_idx = findNearestDistanceSatellite(satellites, idx)
-    distance_min = 1000;
-    for i = 1:param.N
-        if i ~= idx
-            distance = norm(satellites{idx} - satellites{i});
-            if distance
-        end
-    end
-end
