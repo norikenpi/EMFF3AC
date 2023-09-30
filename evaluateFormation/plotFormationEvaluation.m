@@ -2,7 +2,7 @@
 A1 = histories.relative_distance_pair(:,1);
 A2 = histories.relative_distance_pair(:,2);
 A3 = histories.relative_distance_pair(:,3);
-disp(A)
+%disp(A)
 
 % グラフをプロット
 figure;                 % 新しいフィギュアウィンドウを開く

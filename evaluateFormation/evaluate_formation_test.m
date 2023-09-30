@@ -52,9 +52,9 @@ eigenvalues2 = eig(Acl2); % eig() 関数で固有値を計算
 disp('固有値1:');
 format long
 disp(eigenvalues1);
-disp(max(eigenvalues1));
+disp(max(real(eigenvalues1)));
 
 disp('固有値2:');
 format long
 disp(eigenvalues2);
-disp(max(eigenvalues2));
+disp(max(real(eigenvalues2)));

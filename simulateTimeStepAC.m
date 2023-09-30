@@ -51,6 +51,8 @@ function [satellites, histories, param] = simulateTimeStepAC(satellites, histori
         %全ての衛星とペアを組むパターン。全ての周波数を使う。すごい重い。
         elseif param.freq_all == true
             histories.pair_idx(int32(time/param.dt)+1, idx) = idx;
+            %どの衛星とどの衛星でペア組んで制御するかはここで決める。
+            %56行をコメントにすると全ての衛星がペアになる。コメントを外すとスパニングツリーになる。
             %if idx == 1
                 for idx_j = (idx+1):(param.N)
                     parameter = 0;
