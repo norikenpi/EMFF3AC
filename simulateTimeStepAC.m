@@ -51,23 +51,23 @@ function [satellites, histories, param] = simulateTimeStepAC(satellites, histori
         %全ての衛星とペアを組むパターン。全ての周波数を使う。すごい重い。
         elseif param.freq_all == true
             histories.pair_idx(int32(time/param.dt)+1, idx) = idx;
-            for idx_j = (idx+1):param.N 
-                parameter = 0;
-                %param.C1_borderをめちゃくちゃ大きくすることで、常に目標相対位置誤差に基づく制御が可能になる。
-                if parameter > param.control_border
-                    %C1を制御
-                    u = calculateRequiredAcceleration(param, C1, idx, idx_j, satellites);
-                    histories.control_type(int32(time/param.dt)+1, idx) = 1;
-                elseif parameter <= param.control_border
-                    %目標相対位置誤差を制御
-                    u = relativeFeedback(idx, idx_j, satellites, param);
-    
-                    
-                    histories.control_type(int32(time/param.dt)+1, idx) = 2;
+            %if idx == 1
+                for idx_j = (idx+1):(param.N)
+                    parameter = 0;
+                    %param.C1_borderをめちゃくちゃ大きくすることで、常に目標相対位置誤差に基づく制御が可能になる。
+                    if parameter > param.control_border
+                        %C1を制御
+                        u = calculateRequiredAcceleration(param, C1, idx, idx_j, satellites);
+                        histories.control_type(int32(time/param.dt)+1, idx) = 1;
+                    elseif parameter <= param.control_border
+                        %目標相対位置誤差を制御
+                        %u = relativeFeedback(idx, idx_j, satellites, param);
+                        u = relativeFeedbackPD(idx, idx_j, satellites, param);
+                        histories.control_type(int32(time/param.dt)+1, idx) = 2;
+                    end
+                    satellites = setSatelliteDipoleAC2(satellites, u, idx, idx_j, histories, time, param);
                 end
-                satellites = setSatelliteDipoleAC2(satellites, u, idx, idx_j, histories, time, param);
-                
-            end
+            %end
         end
         
        
@@ -131,15 +131,20 @@ function [satellites, histories, param] = simulateTimeStepAC(satellites, histori
 
         histories.magnetic_forces_histories(int32(time/param.dt)+1, :, idx) = magnetic_forces{idx};
         magnetic_moment_sum = 0;
-
-        
-        
         %こことんでもなく時間かかるから、電流の大きさを調べたいときは他のやり方で計算した方がいいかも
         for freq_i = 1:size(param.frequency, 1)
             magnetic_moment_sum = magnetic_moment_sum + norm(satellites{idx}.magnetic_moment(:,freq_i));
         end
         histories.current_histories(int32(time/param.dt)+1, idx) = magnetic_moment_sum/(pi * param.radius^2 * param.coilN);
         
+    end
+    if param.freq_all == true
+        histories.relative_target_distance(int32(time/param.dt)+1, :, 1) = satellites{2}.position - satellites{2}.position_d - (satellites{1}.position - satellites{1}.position_d);
+        histories.relative_target_distance(int32(time/param.dt)+1, :, 2) = satellites{3}.position - satellites{3}.position_d - (satellites{2}.position - satellites{2}.position_d);
+        histories.relative_target_distance(int32(time/param.dt)+1, :, 3) = satellites{1}.position - satellites{1}.position_d - (satellites{3}.position - satellites{3}.position_d);
+        histories.relative_distance_pair(int32(time/param.dt)+1, 1) = norm(satellites{2}.position - satellites{2}.position_d - (satellites{1}.position - satellites{1}.position_d));
+        histories.relative_distance_pair(int32(time/param.dt)+1, 2) = norm(satellites{3}.position - satellites{3}.position_d - (satellites{2}.position - satellites{2}.position_d));
+        histories.relative_distance_pair(int32(time/param.dt)+1, 3) = norm(satellites{1}.position - satellites{1}.position_d - (satellites{3}.position - satellites{3}.position_d));
     end
     %endTime = datetime;
     %executionTime = endTime - startTime;

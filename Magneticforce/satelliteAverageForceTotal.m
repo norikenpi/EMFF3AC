@@ -13,6 +13,8 @@ function F_average = satelliteAverageForceTotal(satellite_i, satellite_j, time, 
     mu0 = 4*pi*1e-7; % 真空の透磁率
     r = satellite_j.position - satellite_i.position;
     r_norm = norm(r);
+    disp(r)
+    disp(param.dt/interval + 1)
     r_mat = repmat(r, 1, param.dt/interval + 1);
     
     F = - (3*mu0/(4*pi)) * ((r_mat.*dot(m_i,m_j)/r_norm^5) + (m_i.*dot(m_j,r_mat)/r_norm^5) + (m_j.*dot(m_i,r_mat)/r_norm^5) - r_mat.*(5*dot(m_i,r_mat).*dot(m_j,r_mat))/r_norm^7);

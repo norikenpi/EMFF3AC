@@ -1,6 +1,7 @@
 % シミュレーションパラメータを設定する関数。サンプリング間隔、シミュレーション時間、比例ゲイン、微分ゲイン、最大力などのパラメータを設定します。
 function param = setSimulationParameters()
     param.myu = 3.986*10^14; %重力定数
+    param.myu0 = 4*pi*1e-7;
     param.earth_radius = 6378.140*10^3; % 地球半径
     param.altitude = 500*10^3; % 高度
     r_star = param.earth_radius + param.altitude; % 地心からの距離
@@ -9,19 +10,20 @@ function param = setSimulationParameters()
     param.approximation = 'trapezoid'; % trapezoid or euler
     param.magnetic_model = 'far_field'; % near_field or far_field 発生させた電流に対して，発生する磁力をどのモデルで計算するか
     param.control_magnetic_model = 'far_field'; % near_field or far_field 所望の力に対して発生させる磁力を計算するときにどのもでるを使うか
-    param.hill_on = true; % 深宇宙想定か、軌道上想定か
+    param.hill_on = false; % 深宇宙想定か、軌道上想定か
     param.start_state = 0;
     param.start_state = [4,1,1];
     param.current_type = 'AC'; % DC or AC
-    param.dt = 0.1; % シミュレーションタイムステップ
-    param.time_step = 0.1; % 制御タイムステップ
+    param.dt = 0.01; % シミュレーションタイムステップ
+    param.time_step = 0.01; % 制御タイムステップ
 
     param.converge_check = false;
 
     
-    param.t = 0.2; % シミュレーション時間 
+    param.t = 200; % シミュレーション時間 
     %param.t = round(2*pi/param.n);
-    param.initial_error = 0.005;%初期誤差
+    param.initial_position_error = 0.01;%初期誤差
+    param.initial_velocity_error = 0.001;%初期誤差
     param.satellite_initial_distance = 0.15; %初期衛星間距離
     param.satellite_desired_distance = 0.30; %衛星間距離
 
@@ -36,9 +38,10 @@ function param = setSimulationParameters()
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 4; % 衛星の数 
+    param.N = 3; % 衛星の数 
+    param.formation = "complete";
 
-    param.two_D = false;
+    param.two_D = true;
 
     %Danil式パラメータ
     param.Kp = 10; % 比例ゲイン10^(-6)
@@ -57,7 +60,7 @@ function param = setSimulationParameters()
     param.control_border = 0.01; %常に目標相対位置誤差に基づく制御
     
     %衛星の数-1の周波数を使う場合true
-    param.freq_all = false;
+    param.freq_all = true;
 
     %param.pair_type = 'C1';
     %param.pair_type = 'distance';%このパラメータを変えることで、何を元にペアを組むかを決める。
@@ -67,7 +70,7 @@ function param = setSimulationParameters()
 
 
     %setSatelliteDipoleAC2で値を設定。
-    param.assign_current = true;
+    param.assign_current = false;
 
     %制御の終了条件
     param.border = 0.02;
@@ -91,8 +94,8 @@ function param = setSimulationParameters()
     param.moment_of_inertia = 1; % 慣性モーメント
 
     %2018年の野田さんの宇科連準拠
-    param.coilN = 1000; % 巻き数
-    param.I_max = 0.5; % 最大電流
+    param.coilN = 500; % 巻き数
+    param.I_max = 1; % 最大電流
     param.radius = 0.05; %衛星半径
     param.max_magnetic_moment = param.coilN * param.I_max * pi * param.radius^2; % 最大磁気モーメント
    
@@ -102,7 +105,7 @@ function param = setSimulationParameters()
     param.length = 0.17;
 
     %最適制御パラメータ
-    param.Q = diag([1, 1, 1, 10^4, 10^4, 10^4]); %diag([1, 1, 1, 10^4, 10^4, 10^4])
+    param.Q = diag([1, 1, 1, 1, 1, 1]); %diag([1, 1, 1, 10^4, 10^4, 10^4])
     param.R = diag([1, 1, 1]);
 
 

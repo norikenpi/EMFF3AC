@@ -19,7 +19,8 @@ function [magnetic_forces, magnetic_torques,histories] = calculateF_totalAC(sate
         %全ての衛星に対して計算
         if param.freq_all == true
             for satellite_j = (satellite_i+1):param.N
-                F_average_total = satelliteAverageForceTotal(satellites{satellite_i}, satellites{satellite_j}, time, param);
+                %F_average_total = satelliteAverageForceTotal(satellites{satellite_i}, satellites{satellite_j}, time, param);
+                F_average_total = satelliteAverageForceTotalonly2(satellite_i, satellite_j, time, param, satellites);
                 magnetic_forces{satellite_i} = magnetic_forces{satellite_i} + F_average_total;
                 magnetic_forces{satellite_j} = magnetic_forces{satellite_j} - F_average_total;
                 histories.force_histories(int32(time/param.dt)+1, :, satellite_i) = histories.force_histories(int32(time/param.dt)+1, :, satellite_i) + (F_average_total).';
