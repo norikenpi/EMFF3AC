@@ -1,4 +1,7 @@
-%台形近似の係数
+%決められた時間で、入力の最大値が最小化するような　プロファイルを計算。
+%入力プロファイルの一番最後に最大入力変数を格納
+% quadprogでやったら非凸って言われたから解けてない。
+
 n = param.n;
 m = param.mass;
 dt = param.dt;
@@ -38,34 +41,39 @@ sd = repmat([0.5; 0.5; 0; 0; 0; 0], N, 1);
 
 %S = PU + Qs_0
 P = controllability_matrix(A_d, B_d, N); %6n×3n
+P = [P, zeros(6*N, 1)]; %6n×3n+1
 Q = controllability_matrix2(A_d, N); %6n×6
 
 %最大加速度
 u_max = ones(3*N, 1)*10^(-5);
 
-%評価関数(位置に関する関数)
+%評価関数1(位置に関する関数)
 %J = xKx
 K = zeros(6*N); % 6n×6n
 K(1:3, 1:3) = eye(3); % 最終位置のみ考慮
 
 
-%評価関数(時系列入力に関する関数)
-%J = uKu
-H = P.' * K * P;
-f = (s0.' * Q.' - sd.')* K * P;
+%評価関数1(時系列入力に関する関数)
+%J = uKu + U(3N+1)
+H1 = P.' * K * P;% 3n+1×3n+1
+f1 = (s0.' * Q.' - sd.')* K * P; % 1×3n+1
+
+%評価関数2(最大入力最小)
+H2 = zeros(3*N + 1);
+f2 = [zeros(1, 3*N), 1]; 
+lamda = 100;
+
+H = H1;
+f = f1 + lamda * f2;
 
 %拘束条件(時系列入力に関する関数)
-% u_min u < u_max
-A = eye(3*N);
-ub = u_max;
-lb = -u_max;
-
-%評価関数(時系列入力に関する関数)
-
+% 最大入力との差が0より大きくなければならない。
+A = [eye(3*N), -ones(3*N,1); -eye(3*N), -ones(3*N, 1)];
+b = zeros(6*N, 1);
 
 % 入力を最適化
 [x,fval,exitflag,output,lambda] = ...
-   quadprog(H, f, [], [], [], [], lb, ub);
+   quadprog(H1, f1, A, b);
 
 % 求まった入力
 s = P * x + Q * s0;
