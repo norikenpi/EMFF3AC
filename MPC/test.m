@@ -48,10 +48,11 @@ u_max = ones(3*N, 1)*10^(-5);
 K = zeros(6*N); % 6n×6n
 K(1:3, 1:3) = eye(3); % 最終位置のみ考慮
 
+
 %評価関数(時系列入力に関する関数)
 %J = uKu
-H = P.' * K * P;
-f = (s0.' * Q.' - sd.')* K * P;
+H = P.' * K * P;% 3n×3n
+f = (s0.' * Q.' - sd.')* K * P; % 1×3n
 
 %拘束条件(時系列入力に関する関数)
 % u_min u < u_max
@@ -59,9 +60,11 @@ A = eye(3*N);
 ub = u_max;
 lb = -u_max;
 
+
+
 % 入力を最適化
 [x,fval,exitflag,output,lambda] = ...
    quadprog(H, f, [], [], [], [], lb, ub);
 
 % 求まった入力
-s = P * x + Q *  s0;
+s = P * x + Q * s0;
