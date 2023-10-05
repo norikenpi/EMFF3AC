@@ -1,0 +1,22 @@
+
+
+A = [2,2;2,2];
+B = [1;1];
+n = size(A, 1); % A行列の次元
+j = 1;
+N = 4;
+ma
+for j = 1:N
+    mat_i = zeros(n, N);
+    %j個目までは0行列
+    for i = 1:N
+        if i >= 1 && i < j
+            mat_i(:, i) = zeros(n, 1);
+        else
+            mat_i(:, i) = A^(i-j) * B;
+        end
+    end
+    mat = 
+
+end
+mat_i
