@@ -49,12 +49,7 @@ function satellites = setInitialSatelliteStates(param)
     satellites{1}.position(3) = satellites{1}.position(3)/5;
     satellites{2}.position(1) = satellites{2}.position(1)/5;
     satellites{2}.position(3) = satellites{2}.position(3)/5;
-    satellites{1}.velocity(1) = 0;
-    satellites{1}.velocity(2) = satellites{1}.velocity(2);
-    satellites{1}.velocity(3) = 0;
-    satellites{2}.velocity(1) = 0;
-    satellites{2}.velocity(2) = satellites{2}.velocity(2);
-    satellites{2}.velocity(3) = 0;
+    satellites{1}.velop(1)
     satellites = adjustSatelliteState(satellites, param);
     satellites = adjustSatelliteDesiredState(satellites, param);
     

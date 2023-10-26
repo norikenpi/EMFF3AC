@@ -33,7 +33,7 @@ function param = setSimulationParameters()
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 8; % 衛星の数    
+    param.N = 2; % 衛星の数    
 
     %Danil式パラメータ
     param.Kp = 10; % 比例ゲイン10^(-6)
@@ -83,7 +83,7 @@ function param = setSimulationParameters()
 
     %2018年の野田さんの宇科連準拠
     param.coilN = 17; % 巻き数
-    param.I_max = 100; % 最大電流
+    param.I_max = 0.1; % 最大電流
     param.radius = 0.05; %衛星半径
     param.max_magnetic_moment = param.coilN * param.I_max * pi * param.radius^2; % 最大磁気モーメント
    
@@ -335,7 +335,7 @@ function param = setSimulationParameters()
     param.magnetic_moment_arrow_scale = 10^-9;%100
     param.velocity_arrow_scale = 50;%100
     param.axis_norm = 1; %0.5
-    param.pause = 30;
+    param.pause = 300;
 
     param.force_arrow_scale = 0; %5*10^4
     param.magnetic_moment_arrow_scale = 0; %5*10^4

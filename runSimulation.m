@@ -4,7 +4,7 @@ function [satellites, histories, param] = runSimulation(satellites, param, histo
     tic;
     for time = 0:param.dt:param.t
         % 各衛星の状態を更新する
-        %disp(time)
+        disp(time)
         if param.current_type == "DC"
             [satellites, histories] = simulateTimeStep(satellites, histories, param, time);
         elseif param.current_type == "AC"
@@ -20,6 +20,7 @@ function [satellites, histories, param] = runSimulation(satellites, param, histo
             %[satellites, histories] = simulateTimeStepACAll(satellites, histories, param, time);
         end
 
+        %{
         %収束または発散のチェックを行う。
         if mod(time, param.time_step) == 0
             [converge_check, histories] = checkConverge(satellites, param, histories, time);
@@ -37,6 +38,7 @@ function [satellites, histories, param] = runSimulation(satellites, param, histo
             
             end
         end
+        %}
     end
     toc;
 end

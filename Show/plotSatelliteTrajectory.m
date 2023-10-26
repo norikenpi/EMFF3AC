@@ -20,7 +20,7 @@ function [h_traj, h_force, h_mag, h_pair] = plotSatelliteTrajectory(histories, p
         satellite_j2 = histories.pair_idx(time_i, satellite_j);
         disp(satellite_j)
         disp(satellite_j2)
-        h_pair = plotLine3D(histories.position_histories(time_i, :, satellite_j), histories.position_histories(time_i, :, satellite_j2));
+        %h_pair = plotLine3D(histories.position_histories(time_i, :, satellite_j), histories.position_histories(time_i, :, satellite_j2));
     end
     
     
