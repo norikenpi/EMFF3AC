@@ -1,4 +1,5 @@
 function matrix_3n_n = create_matrix(vec_3n)
+    % 複数の相対位置ベクトルの内積をまとめて行うための行列を作る
     % vec_3n: 3n x 1 ベクトル
     
     n = length(vec_3n) / 3; % 3次元ベクトルの個数

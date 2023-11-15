@@ -1,3 +1,6 @@
+
+
+s = s1;
 data = reorderMatrix(s);
 
 % ビデオライターオブジェクトの作成
