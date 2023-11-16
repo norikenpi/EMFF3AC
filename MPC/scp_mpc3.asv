@@ -18,16 +18,10 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 5 * 10;
+dt = 60;
 
 % 時間 N×dt秒
-N = 30 * 60;
- 
-% 秒を時間単位に変換
-hours = N * dt / 3600;
-% 展開完了時間を表示
-disp(['Time in hours: ', num2str(hours)]);
-
+N = 500;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %R = 0.01;
@@ -144,7 +138,7 @@ end
 
 % 等式制約1 (運動量保存)
 Aeq1 = [ones(N, 3*N*num), zeros(N, 1)];
-beq1 = zeros(N, 1); 
+beq1 = zeros(N, 1);
 
 % 等式制約2 (最終状態固定)
 Aeq2 = P(1:6*num,:);
@@ -156,13 +150,13 @@ beq = [beq1; beq2];
 %% 線形不等式制約線形計画問題 
 
 % linprogを使う場合
-%{
+
 [x,fval,exitflag,output,lambda] = ...
    linprog(f, A, b, Aeq, beq);
-%}
+
 
 % cvxを使う場合
-
+%{
 cvx_begin sdp quiet
     variable x(size(f, 2))
     minimize(f * x)
@@ -170,7 +164,7 @@ cvx_begin sdp quiet
         A * x <= b;
         Aeq * x == beq;
 cvx_end
-
+%}
 
 % 衛星の状態
 % s = [s(N), ... , s(0)]
@@ -198,15 +192,12 @@ xlim([-1, 1]); % xの範囲を調整
 ylim([-1, 1]); % yの範囲を調整
 hold on;
 
-colors = jet(num);
-
 % 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
-for i = 1:length(data)-1
+for i = 1:10*2:length(data)-1
     %disp(i)
     for j = 1:num
-        p = plot(data(i+2*j-2), data(i+2*j-1), 'o', 'MarkerSize', 5);
-        p.MarkerFaceColor = colors(j,:);
-        p.MarkerEdgeColor = colors(j,:);
+        p = plot(data(i+2*j-2), data(i+2*j-1), '.', 'MarkerSize', 10);
+        p.MarkerC = '*';
     end
     drawnow;
     frame = getframe(gcf);

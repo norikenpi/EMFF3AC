@@ -1,6 +1,4 @@
-%% 3基の衛星のSCP-MPC（線形不等式制約線形計画問題 linprog）
-% 衝突防止のための侵入禁止範囲は設定できていない。全ての衛星ての組み合わせを考えるのが面倒なため。
- 
+% fminconで最適化
 % 最大入力を最小化
 % 進入禁止範囲を設定
 % 初めて実行する場合はR = -1にして進入禁止範囲制約を外してください。
@@ -18,43 +16,23 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 5 * 10;
+dt = 10;
 
 % 時間 N×dt秒
-N = 30 * 60;
- 
-% 秒を時間単位に変換
-hours = N * dt / 3600;
-% 展開完了時間を表示
-disp(['Time in hours: ', num2str(hours)]);
-
-
-% 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-%R = 0.01;
-R = -1;
-
-% 初期状態
-s01 = [1/2; -1/(2*sqrt(3)); 0; 0; 0; 0];
-s02 = [-1/2; -1/(2*sqrt(3)); 0; 0; 0; 0];
-s03 = [0; 1/sqrt(3); 0; 0; 0; 0];
-s0 = [s01; s02; s03]; % 6num×1
-
-% 2衛星のそれぞれの目標状態
-sd1 = [0; 1/sqrt(3); 0; 0; 0; 0];
-sd2 = [1/2; -1/(2*sqrt(3)); 0; 0; 0; 0];
-sd3 = [-1/2; -1/(2*sqrt(3)); 0; 0; 0; 0];
-sd = [sd1; sd2; sd3];
-
+N = 500;
 
 % 衛星数
-num = length(s0)/6;
+num = 2;
 
+% 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
+R = 0.55;
+% R = -1;
 
 %% Hill方程式 宇宙ステーション入門 P108
 
 % 1衛星に関する状態方程式の係数行列
 % x_dot = A_ x + B_ u
-A_1 = [0, 0, 0, 1/2, 0, 0;
+A_ = [0, 0, 0, 1/2, 0, 0;
      0, 0, 0, 0, 1/2, 0;
      0, 0, 0, 0, 0, 1/2;
      0, 0, 0, 0, 0, 2*n;
@@ -67,7 +45,7 @@ A_1 = [0, 0, 0, 1/2, 0, 0;
      0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 0]/2; % 6×6
 
-B_1 = [0, 0, 0;
+B_ = [0, 0, 0;
      0, 0, 0;
      0, 0, 0;
      1/m, 0, 0;
@@ -75,20 +53,23 @@ B_1 = [0, 0, 0;
      0, 0, 1/m]; % 6×3
 
 %2衛星に関する状態方程式の係数行列
-%A_ = [A_, zeros(6);zeros(6),A_];
-%B_ = [B_,zeros(6,3);zeros(6,3),B_];
+A_ = [A_, zeros(6);zeros(6),A_];
+B_ = [B_,zeros(6,3);zeros(6,3),B_];
 
-A_ = [];
-B_ = [];
-
-for i = 1:num
-    A_ = blkdiag(A_, A_1);
-    B_ = blkdiag(B_, B_1);
-end
 
 % 2衛星に関する離散時間状態方程式の係数行列
 A_d = eye(6*num) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
+
+% 初期状態
+s01 = [0.5; 0; 0; 0; 0; 0];
+s02 = [-0.5; 0; 0; 0; 0; 0];
+s0 = [s01; s02]; % 6num×1
+
+% 2衛星のそれぞれの目標状態
+sd1 = [0; 0.3; 0; 0; 0; 0];
+sd2 = [0; -0.3; 0; 0; 0; 0];
+sd = [sd1; sd2];
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
 % S = PU + Qs_0
@@ -144,7 +125,8 @@ end
 
 % 等式制約1 (運動量保存)
 Aeq1 = [ones(N, 3*N*num), zeros(N, 1)];
-beq1 = zeros(N, 1); 
+beq1 = zeros(N, 1);
+
 
 % 等式制約2 (最終状態固定)
 Aeq2 = P(1:6*num,:);
@@ -161,8 +143,17 @@ beq = [beq1; beq2];
    linprog(f, A, b, Aeq, beq);
 %}
 
-% cvxを使う場合
+% fminconを使う場合
+options = optimoptions('fmincon', 'Algorithm', 'sqp');
+ub = Inf(num*N*3+1, 1);
+lb = -Inf(num*N*3+1, 1);
+fun = @(x) myfun(x, f);
+nonlcon = @(x) mycon(x, A_d, B_d, s0, sd);
+[x,fval,exitflag,output,lambda] = ...
+   fmincon(fun, x, A, b, Aeq, beq, lb, ub, nonlcon, options);
 
+% cvxを使う場合
+%{
 cvx_begin sdp quiet
     variable x(size(f, 2))
     minimize(f * x)
@@ -170,10 +161,9 @@ cvx_begin sdp quiet
         A * x <= b;
         Aeq * x == beq;
 cvx_end
-
+%}
 
 % 衛星の状態
-% s = [s(N), ... , s(0)]
 s = P * x + Q * s0;
 
 disp('Objective function value:');
@@ -198,16 +188,11 @@ xlim([-1, 1]); % xの範囲を調整
 ylim([-1, 1]); % yの範囲を調整
 hold on;
 
-colors = jet(num);
-
 % 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
-for i = 1:length(data)-1
+for i = 1:10*2:length(data)-1
     %disp(i)
-    for j = 1:num
-        p = plot(data(i+2*j-2), data(i+2*j-1), 'o', 'MarkerSize', 5);
-        p.MarkerFaceColor = colors(j,:);
-        p.MarkerEdgeColor = colors(j,:);
-    end
+    plot(data(i), data(i+1), 'o', 'MarkerSize', 10);
+    plot(data(i+2), data(i+3), 'o', 'MarkerSize', 10);
     drawnow;
     frame = getframe(gcf);
     writeVideo(v, frame);
@@ -254,7 +239,7 @@ function mat = controllability_matrix2(A, N)
 end
 
 function matrix_3n_n = create_matrix(vec_3n)
-    % 複数の相対位置ベクトルの内積をまとめて行うための行列を作る 3基以上の衛星の場合全通りの組み合わせをやる必要があるから面倒だな。
+    % 複数の相対位置ベクトルの内積をまとめて行うための行列を作る
     % vec_3n: 3n x 1 ベクトル
     
     n = length(vec_3n) / 3; % 3次元ベクトルの個数
@@ -293,4 +278,22 @@ function B = reorderMatrix(A)
         sub_vector = A(i:min(i+n-1, length(A)));
         B = [B; flip(sub_vector)];
     end
+end
+
+function [c,ceq] = mycon(x, A_d, B_d, s0, sd)
+    % xは入力
+    s_k1 = s0; % 12自由度(位置速度×2)
+    len = length(x) - 1;
+    for i = 1:length(x)/6
+       % 原点からの距離の4乗に力が反比例するとする
+       s_k2 = A_d * s_k1 + B_d * x(len - 6*i + 1:len - 6*(i-1),:)/(s_k1(1)^4 + s_k1(2)^4 + s_k1(3)^4); 
+       s_k1= s_k2;
+    end
+    s_final = s_k1;
+    c = [];
+    ceq = s_final - sd;
+end
+
+function fun = myfun(x, f)
+    fun = f * x;
 end
