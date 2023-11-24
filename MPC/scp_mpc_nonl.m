@@ -1,4 +1,10 @@
- 
+%% 2基の衛星のSCP-MPC（線形不等式制約線形計画問題 linprog）
+
+
+% 動きません
+
+
+
 % 最大入力を最小化
 % 進入禁止範囲を設定
 % 初めて実行する場合はR = -1にして進入禁止範囲制約を外してください。
@@ -25,8 +31,8 @@ N = 500;
 num = 2;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-R = 0.01;
-%R = -1;
+R = 0.1;
+% R = -1;
 
 %% Hill方程式 宇宙ステーション入門 P108
 
@@ -115,12 +121,12 @@ if not(R == -1)
     % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
     % 不等式の大小を変えるために両辺マイナスをかけている。
     A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
-    b2 = -R * calhculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * Q * s0;
+    b2 = -R * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * Q * s0;
 
     A = [A1; A2];
     b = [b1; b2];
 end
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+
 %% 等式制約
 
 % 等式制約1 (運動量保存)
@@ -135,6 +141,7 @@ Aeq = [Aeq1; Aeq2];
 beq = [beq1; beq2];
 
 %% 線形不等式制約線形計画問題 
+% 解はnum×N×3自由度
 
 % linprogを使う場合
 
@@ -226,6 +233,47 @@ function mat = controllability_matrix2(A, N)
         mat = [mat;mat_i];
     end
 
+end
+
+function mat = controllability_matrix3(A_, B_, N, s)
+    % 入力:
+    % A: nxn の行列
+    % B: nx1 のベクトル
+    % N: タイムステップの数
+    n = size(A_, 1); % A行列の次元
+    k = size(B_, 2);
+    mat = [];
+    for j = 1:N
+        for i = 1:N
+            sk = s();
+            %A = calc_A(sk);
+            %B = calc_B(sk);
+            if i >= 1 && i < j
+                mat_i(:, k*(i-1)+1: k*i) = zeros(n, k);
+            else
+                mat_i(:, k*(i-1)+1: k*i) = A^(i-j) * B; % Aは累乗じゃなくて違うAをかけないといけない。
+            end
+            
+        end
+    end
+    
+
+end
+
+function A = calc_A(A_, sk, xk)
+    % 各位置周りでのAを計算
+    % skは6自由度　力
+    % xkは3自由度　電流
+    dfdx = -6*norm(sk(1:3))^2*xk*sk(1:3).';
+    dfdx_m6 = [zeros(3), zeros(3);
+              dfdx, zeros(3)];
+    dfdx_m12 = [dfdx_m6, zeros(6);
+                zeros(6), dfdx_m6];
+    A = A_ + dfdx_m12; 
+end
+
+function B = calc_B(B_, sk)
+    dfdu = 
 end
 
 function matrix_3n_n = create_matrix(vec_3n)

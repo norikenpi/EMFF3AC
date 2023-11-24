@@ -1,6 +1,6 @@
-% 動きません。
+%% 1基の衛星のSCP-MPC（線形不等式制約線形計画問題 linprog）
+% x+y+z<0.29の範囲は進入禁止
 
-% fminconで最適化
 % 最大入力を最小化
 % 進入禁止範囲を設定
 % 初めて実行する場合はR = -1にして進入禁止範囲制約を外してください。
@@ -18,17 +18,17 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 10;
+dt = 1;
 
 % 時間 N×dt秒
-N = 500;
+N = 100;
 
 % 衛星数
-num = 2;
+num = 1;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-R = 0.55;
-% R = -1;
+%r = 0.29 ;
+r = -1;
 
 %% Hill方程式 宇宙ステーション入門 P108
 
@@ -55,23 +55,23 @@ B_ = [0, 0, 0;
      0, 0, 1/m]; % 6×3
 
 %2衛星に関する状態方程式の係数行列
-A_ = [A_, zeros(6);zeros(6),A_];
-B_ = [B_,zeros(6,3);zeros(6,3),B_];
+%A_ = [A_, zeros(6);zeros(6),A_];
+%B_ = [B_,zeros(6,3);zeros(6,3),B_];
 
 
-% 2衛星に関する離散時間状態方程式の係数行列
+% 1衛星に関する離散時間状態方程式の係数行列
 A_d = eye(6*num) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
 % 初期状態
 s01 = [0.5; 0; 0; 0; 0; 0];
 s02 = [-0.5; 0; 0; 0; 0; 0];
-s0 = [s01; s02]; % 6num×1
+s0 = s01; % 6num×1
 
 % 2衛星のそれぞれの目標状態
-sd1 = [0; 0.3; 0; 0; 0; 0];
+sd1 = [0; 0.5; 0; 0; 0; 0];
 sd2 = [0; -0.3; 0; 0; 0; 0];
-sd = [sd1; sd2];
+sd = sd1;
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
 % S = PU + Qs_0
@@ -97,30 +97,19 @@ b = b1;
 
 % 不等式制約2 (衛星間距離はR以下)
 % ノミナルの状態プロファイルを設定
-if not(R == -1)
-    nominal_s = s;
-    
-    % 状態ベクトルから位置ベクトルのみを抽出
-    C01 = [eye(3),zeros(3)];
-    C1 = [];
-    for i = 1:num*N
-        C1 = blkdiag(C1, C01);
+if not(r == -1)
+    matrix01 = [ones(1, 3), zeros(1, 3)];
+    A2_ = matrix01;
+    for i = 2:N
+        A2_ = blkdiag(A2_, matrix01);
     end
-    
-    % 相対位置ベクトルを計算する行列
-    C02 = [eye(3),-eye(3)];
-    C2 = [];
-    for i = 1:N
-        C2 = blkdiag(C2, C02);
-    end
-    
-    % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
-    % 不等式の大小を変えるために両辺マイナスをかけている。
-    A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
-    b2 = -R * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * Q * s0;
+    A2 = - A2_*P;
 
+    b2 = - (r * ones(N, 1) - A2_ * Q * s0);
+    
     A = [A1; A2];
     b = [b1; b2];
+    
 end
 
 %% 等式制約
@@ -129,30 +118,21 @@ end
 Aeq1 = [ones(N, 3*N*num), zeros(N, 1)];
 beq1 = zeros(N, 1);
 
-
 % 等式制約2 (最終状態固定)
 Aeq2 = P(1:6*num,:);
 beq2 = sd - Q(1:6*num,:) * s0;
 
-Aeq = [Aeq1; Aeq2];
-beq = [beq1; beq2];
+Aeq = Aeq2;
+beq = beq2;
 
 %% 線形不等式制約線形計画問題 
+% 解はnum×N×3自由度
 
 % linprogを使う場合
-%{
+
 [x,fval,exitflag,output,lambda] = ...
    linprog(f, A, b, Aeq, beq);
-%}
 
-% fminconを使う場合
-options = optimoptions('fmincon', 'Algorithm', 'sqp');
-ub = Inf(num*N*3+1, 1);
-lb = -Inf(num*N*3+1, 1);
-fun = @(x) myfun(x, f);
-nonlcon = @(x) mycon(x, A_d, B_d, s0, sd);
-[x,fval,exitflag,output,lambda] = ...
-   fmincon(fun, x, A, b, Aeq, beq, lb, ub, nonlcon, options);
 
 % cvxを使う場合
 %{
@@ -167,6 +147,8 @@ cvx_end
 
 % 衛星の状態
 s = P * x + Q * s0;
+s1 = s;
+u = x;
 
 disp('Objective function value:');
 %disp(fval); % linprogのみ
@@ -194,7 +176,7 @@ hold on;
 for i = 1:10*2:length(data)-1
     %disp(i)
     plot(data(i), data(i+1), 'o', 'MarkerSize', 10);
-    plot(data(i+2), data(i+3), 'o', 'MarkerSize', 10);
+    %plot(data(i+2), data(i+3), 'o', 'MarkerSize', 10);
     drawnow;
     frame = getframe(gcf);
     writeVideo(v, frame);
@@ -210,21 +192,23 @@ close(v);
 function mat = controllability_matrix(A, B, N)
     % 入力:
     % A: nxn の行列
-    % B: nx1 のベクトル
+    % B: nx3 のベクトル
     % N: 整数
     n = size(A, 1); % A行列の次元
     k = size(B, 2);
     mat = [];
     for j = 1:N
-        mat_i = zeros(n, N);
+        mat_i = zeros(n, k*N);
         %j個目までは0行列
         for i = 1:N
-            if i >= 1 && i < j
+            if i < j
                 mat_i(:, k*(i-1)+1: k*i) = zeros(n, k);
             else
                 mat_i(:, k*(i-1)+1: k*i) = A^(i-j) * B;
+
             end
         end
+        %行を足していく
         mat = [mat;mat_i];
     
     end
@@ -280,22 +264,4 @@ function B = reorderMatrix(A)
         sub_vector = A(i:min(i+n-1, length(A)));
         B = [B; flip(sub_vector)];
     end
-end
-
-function [c,ceq] = mycon(x, A_d, B_d, s0, sd)
-    % xは入力
-    s_k1 = s0; % 12自由度(位置速度×2)
-    len = length(x) - 1;
-    for i = 1:length(x)/6
-       % 原点からの距離の4乗に力が反比例するとする
-       s_k2 = A_d * s_k1 + B_d * x(len - 6*i + 1:len - 6*(i-1),:)/(s_k1(1)^4 + s_k1(2)^4 + s_k1(3)^4); 
-       s_k1= s_k2;
-    end
-    s_final = s_k1;
-    c = [];
-    ceq = s_final - sd;
-end
-
-function fun = myfun(x, f)
-    fun = f * x;
 end
