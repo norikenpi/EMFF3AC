@@ -12,9 +12,10 @@ evaluate_formation0929
 
 実際にフォーメーションの収束特性を調べる方法（3衛星）
 1. simulateTimeStepAC.mの56行目と72行目を調整して、ネットワークを変更し、シミュレーションを実行する。初期のずれはInitialize/getSatellitePosition3.mの3行目のシードで変更できる。
-2. evaluateFormation/plotFormationEvaluation.mを実行することでグラフを標示することができる。
-3. evaluateFormation/plotExponential.mを実行することで指数関数の収束性がわかる。
-4. コメントアウトした時の方が収束性が良ければ問題なし。
+2. startSimulation.mを実行
+3. evaluateFormation/plotFormationEvaluation.mを実行することでグラフを標示することができる。
+4. evaluateFormation/plotExponential.mを実行することで指数関数の収束性がわかる。
+5. コメントアウトした時の方が収束性が良ければ問題なし。
 
 
 for gradute study
