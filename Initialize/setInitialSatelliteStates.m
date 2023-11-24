@@ -43,6 +43,7 @@ function satellites = setInitialSatelliteStates(param)
         %3衛星の初期状態
         if param.formation == "complete"
             [position, velocity] = getSatellitePosition3(i, param);
+            %[position, velocity] = getSatellitePositionRandom2(i, satellites, param);
             [position_d, velocity_d] = getSatelliteDesiredPosition3(i, param);
         elseif param.formation == "road"
             [position, velocity] = getSatellitePosition3(i, param);

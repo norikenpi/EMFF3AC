@@ -3,16 +3,20 @@ function [pos, vel] = getSatelliteDesiredPosition3(i, param)
     rng(i)
 
     if i == 1
-        x = param.satellite_desired_distance/2; % -0.15から0.15の範囲で衛星を配置
+        % x = param.satellite_desired_distance/2; % -0.15から0.15の範囲で衛星を配置
+        x = param.satellite_desired_distance; % -0.15から0.15の範囲で衛星を配置
         y = 0;
         z = 0;
     elseif i == 2
-        x = -param.satellite_desired_distance/2; % -0.15から0.15の範囲で衛星を配置
+        %x = -param.satellite_desired_distance/2; % -0.15から0.15の範囲で衛星を配置
+        x = 0;
         y = 0;
         z = 0;
     elseif i == 3
-        x = 0; % -0.15から0.15の範囲で衛星を配置
-        y = -param.satellite_desired_distance*sqrt(3)/2;
+        %x = 0; % -0.15から0.15の範囲で衛星を配置
+        %y = -param.satellite_desired_distance*sqrt(3)/2;
+        x = -param.satellite_desired_distance; % -0.15から0.15の範囲で衛星を配置
+        y = 0;
         z = 0;
     end
 

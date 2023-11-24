@@ -28,8 +28,11 @@ function [u, satellites, histories] = relativeFeedbackPD(i, pair_satellite_idx, 
 
     C = 3*myu0*N*R^2/(4*m);
 
-    k0_pos = k * C * Imax^2/(d^4 * delta);
-    k0_vel = k * C * Imax^2/(d^4 * delta_dot);
+    %k0_pos = k * C * Imax^2/(d^4 * delta);
+    %k0_vel = k * C * Imax^2/(d^4 * delta_dot);
+
+    k0_pos = param.Kp * C * Imax^2/(d^4);
+    k0_vel = param.Kd * C * Imax^2/(d^4);
 
     u = - k0_pos * e - k0_vel * e_dot ; 
     %disp(u)
