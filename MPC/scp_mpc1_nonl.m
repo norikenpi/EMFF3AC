@@ -33,7 +33,7 @@ num = 1;
 r = 0.01 ;
 %R = -1;
 
-delta = 0.02;
+delta = 0.01;
 %s = s1;
 %% Hill方程式 宇宙ステーション入門 P108
 
@@ -176,7 +176,7 @@ cvx_end
 
 % 衛星の状態
 s = P * x + Q * s0 + R;
-
+u_I = x;
 disp('Objective function value:');
 %disp(fval); % linprogのみ
 disp("最大入力 u_max")

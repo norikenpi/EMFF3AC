@@ -24,7 +24,7 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 10;
+dt = 2;
 
 % 時間 N×dt秒
 N = 500;
@@ -33,10 +33,10 @@ N = 500;
 num = 2;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-r = 0.05 ;
+r = 0.01 ;
 %R = -1;
 
-delta = 0.05;
+delta = 0.5;
 %s = s1;
 
 %% Hill方程式 宇宙ステーション入門 P108
@@ -135,6 +135,28 @@ A2 = - A2_*P;
 
 b2 = - r * ones(N, 1) + A2_ * Q * s0 + A2_ * R;
 %}
+
+nominal_s = s;
+
+% 状態ベクトルから位置ベクトルのみを抽出
+C01 = [eye(3),zeros(3)];
+C1 = [];
+for i = 1:num*N
+    C1 = blkdiag(C1, C01);
+end
+
+% 相対位置ベクトルを計算する行列
+C02 = [eye(3),-eye(3)];
+C2 = [];
+for i = 1:N
+    C2 = blkdiag(C2, C02);
+end
+
+% create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
+% 不等式の大小を変えるために両辺マイナスをかけている。
+A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
+b2 = -r * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
+
 % 不等式制約3 (ノミナル軌道に対する変化量はδ trust region)
 % s - (PU + Qs0 + R) < δ
 % -s + (PU + Qs0 + R) < δ
@@ -142,8 +164,8 @@ b2 = - r * ones(N, 1) + A2_ * Q * s0 + A2_ * R;
 A3 = [-P; P];
 b3 = [delta * ones(6*N*num, 1) - s + Q * s0 + R; delta * ones(6*N*num, 1) + s - Q * s0 - R];
 
-A = [A1; A3];
-b = [b1; b3];
+A = [A1; A2; A3];
+b = [b1; b2; b3];
 
 %% 等式制約
 
@@ -180,7 +202,7 @@ cvx_end
 
 % 衛星の状態
 s = P * x + Q * s0 + R;
-
+u_I = x;
 disp('Objective function value:');
 %disp(fval); % linprogのみ
 disp("最大入力 u_max")
