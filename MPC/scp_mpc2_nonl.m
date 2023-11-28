@@ -14,6 +14,7 @@
 % F2I.mを実行して、原点距離の4乗に反比例した出力が得られるスラスターに変更
 % これを実行。
 
+% 入力の単位をμにすることでスケールを合わせていることに注意
 %% パラメータ設定
 
 % 地球を周回する衛星の角速度
@@ -24,10 +25,10 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 2;
+dt = 10;
 
 % 時間 N×dt秒
-N = 500;
+N = 1000;
 
 % 衛星数
 num = 2;
@@ -36,7 +37,7 @@ num = 2;
 r = 0.01 ;
 %R = -1;
 
-delta = 0.5;
+delta = 0.04;
 %s = s1;
 
 %% Hill方程式 宇宙ステーション入門 P108
@@ -103,6 +104,8 @@ P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
 Q = A_mat2; 
 R = A_mat*C_mat; 
 
+% ノミナル起動をもとにP, Q, Rを再計算しなおしているが、入力は前のまま。
+% つまり、trust region が大きすぎると以下を計算しても最終値が合わない。
 disp("linearize_error")
 l_s = P * u_I + Q * s0 + R;
 disp(l_s(1:3))
@@ -184,13 +187,13 @@ beq = [beq1; beq2];
 % 解はnum×N×3自由度
 
 % linprogを使う場合
-
+%{
 [x,fval,exitflag,output,lambda] = ...
    linprog(f, A, b, Aeq, beq);
-
+%}
 
 % cvxを使う場合
-%{
+
 cvx_begin sdp quiet
     variable x(size(f, 2))
     minimize(f * x)
@@ -198,7 +201,7 @@ cvx_begin sdp quiet
         A * x <= b;
         Aeq * x == beq;
 cvx_end
-%}
+
 
 % 衛星の状態
 s = P * x + Q * s0 + R;
@@ -206,7 +209,7 @@ u_I = x;
 disp('Objective function value:');
 %disp(fval); % linprogのみ
 disp("最大入力 u_max")
-disp(x(3*num*N+1))
+disp(x(3*num*N+1) * 10^(-6))
 
 
 %% 図示
@@ -331,7 +334,7 @@ function A = create_Ak(A_d, B_d, sk, uk, num)
     for i = 1:num 
         xk_i = sk(6*(i-1)+1:6*(i-1)+3);
         uk_i = uk(3*(i-1)+1:3*i);
-        dfds = -4*norm(xk_i)^(-6)*uk_i*[xk_i.', zeros(1,3)];
+        dfds = -4*norm(xk_i)^(-6)*uk_i*[xk_i.', zeros(1,3)] * 10^(-6);
         dfds_m = B_d * dfds;
         A(6*(i-1)+1:6*i,6*(i-1)+1:6*i) = A_d + dfds_m;
     end
@@ -341,7 +344,7 @@ function B = create_Bk(B_d, sk, num)
     B = zeros(6*num,3*num);
     for i = 1:num 
         xk_i = sk(6*(i-1)+1:6*(i-1)+3);
-        dfdu = eye(3)/norm(xk_i)^4;
+        dfdu = eye(3)/norm(xk_i)^4 * 10^(-6);
         B(6*(i-1)+1:6*i,3*(i-1)+1:3*i) = B_d * dfdu; 
     end
 end
@@ -352,9 +355,9 @@ function C = create_Ck(B_d, sk, uk, num)
         sk_i = sk(6*(i-1)+1:6*i);
         xk_i = sk(6*(i-1)+1:6*(i-1)+3);
         uk_i = uk(3*(i-1)+1:3*i);
-        f = uk_i/norm(xk_i)^(4);
-        dfds = -4*norm(xk_i)^(-6)*uk_i*[xk_i.', zeros(1,3)];
-        dfdu = eye(3)/norm(xk_i)^4;
+        f = uk_i/norm(xk_i)^(4) * 10^(-6);
+        dfds = -4*norm(xk_i)^(-6)*uk_i*[xk_i.', zeros(1,3)] * 10^(-6);
+        dfdu = eye(3)/norm(xk_i)^4 * 10^(-6);
         C(6*(i-1)+1:6*i,1) = B_d * (f - dfds * sk_i - dfdu * uk_i);
     end
 end

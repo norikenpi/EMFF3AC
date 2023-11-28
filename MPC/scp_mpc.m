@@ -6,6 +6,7 @@
 % 計算にだいぶ時間がかかるので、もっとタイムステップの数を少なくしてもいいかもしれません。
 % Daniel Morgan, et. al., “Spacecraft Swarm Guidance Using a Sequence of Decentralized Convex Optimizations”
 
+% 入力の単位をμにすることでスケールを合わせていることに注意
 %% パラメータ設定
 
 % 地球を周回する衛星の角速度
@@ -16,10 +17,10 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 2;
+dt = 10;
 
 % 時間 N×dt秒
-N = 500;
+N = 1000;
 
 % 衛星数
 num = 2;

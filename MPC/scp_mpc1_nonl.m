@@ -24,16 +24,16 @@ m = 1; % 1
 dt = 1;
 
 % 時間 N×dt秒
-N = 100;
+N = 200;
 
 % 衛星数
 num = 1;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 r = 0.01 ;
-%R = -1;
+r= -1;
 
-delta = 0.01;
+delta = 0.02;
 %s = s1;
 %% Hill方程式 宇宙ステーション入門 P108
 
@@ -158,14 +158,12 @@ beq = beq2;
 % 解はnum×N×3自由度
 
 % linprogを使う場合
-
 [x,fval,exitflag,output,lambda] = ...
    linprog(f, A, b, Aeq, beq);
 
-
 % cvxを使う場合
 %{
-cvx_begin sdp quiet
+cvx_begin quiet
     variable x(size(f, 2))
     minimize(f * x)
     subject to
@@ -180,7 +178,7 @@ u_I = x;
 disp('Objective function value:');
 %disp(fval); % linprogのみ
 disp("最大入力 u_max")
-disp(x(3*num*N+1))
+disp(x(3*num*N+1) * 10^(-6))
 
 
 %% 図示
@@ -302,22 +300,22 @@ end
 
 function A = create_Ak(A_d, B_d, sk, uk)
     xk = sk(1:3);
-    dfds = -4*norm(xk)^(-6)*uk*[xk.', zeros(1,3)];
+    dfds = -4*norm(xk)^(-6)*uk*[xk.', zeros(1,3)] * 10^(-6);
     dfds_m = B_d * dfds;
     A = A_d + dfds_m; 
 end
 
 function B = create_Bk(B_d, sk)
     xk = sk(1:3);
-    dfdu = eye(3)/norm(xk)^4;
+    dfdu = eye(3)/norm(xk)^4 * 10^(-6);
     B = B_d * dfdu; 
 end
 
 function C = create_Ck(B_d, sk, uk)     
     xk = sk(1:3);
-    f = uk/norm(xk)^(4);
-    dfds = -4*norm(xk)^(-6)*uk*[xk.', zeros(1,3)];
-    dfdu = eye(3)/norm(xk)^4;
+    f = uk/norm(xk)^(4) * 10^(-6);
+    dfds = -4*norm(xk)^(-6)*uk*[xk.', zeros(1,3)] * 10^(-6);
+    dfdu = eye(3)/norm(xk)^4 * 10^(-6);
     C = B_d * (f - dfds * sk - dfdu * uk);
 end
 
