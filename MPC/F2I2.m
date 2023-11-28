@@ -1,6 +1,7 @@
+% 相対距離の4乗を格納したベクトルを作成。これをスラスター入力にかけることで、同じ入力を距離の4乗に反比例した入力で再現した場合の入力が求まる。
 vec = RelativeDistanceFourthPower(s1, s0, num);
 
-u_I = u(1:end-1).*vec;
+u_I = u(1:end-1).*vec * 10^(6);
 u_I(end+1) = max(abs(u_I));
 s11 = A_d*s0 + B_d*u_I(end-3:end-1)/norm(s0(1:3))^4;
 s12 = A_d*s11 + B_d*u_I(end-6:end-4)/norm(s11(1:3))^4;

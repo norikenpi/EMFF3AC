@@ -15,6 +15,7 @@
 % F2I.mを実行して、原点距離の4乗に反比例した出力が得られるスラスターに変更
 % これを実行。
 
+% 入力の単位をμにすることでスケールを合わせていることに注意
 %% パラメータ設定
 
 % 地球を周回する衛星の角速度
@@ -28,16 +29,16 @@ m = 1; % 1
 dt = 10;
 
 % 時間 N×dt秒
-N = 100;
+N = 250;
 
 % 衛星数
 num = 2;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-r = 0.05 ;
+r = 0.01 ;
 %R = -1;
 
-delta = 0.05;
+delta = 0.005;
 %s = s1;
 %% Hill方程式 宇宙ステーション入門 P108
 
@@ -78,8 +79,8 @@ s02 = [-0.5; 0; 0; 0; 0; 0];
 s0 = [s01; s02]; % 6num×1
 
 % 2衛星のそれぞれの目標状態
-sd1 = [-0.5; 0.5; 0; 0; 0; 0];
-sd2 = [0.5; -0.5; 0; 0; 0; 0];
+sd1 = [-0; 0.5; 0; 0; 0; 0];
+sd2 = [0; -0.5; 0; 0; 0; 0];
 sd = [sd1; sd2];
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
@@ -123,18 +124,28 @@ b1 = zeros(6*N*num, 1);%6Nnum×1
 A = A1;
 b = b1;
 
-% 不等式制約2 (衛星間距離はR以下)
-% ノミナルの状態プロファイルを設定
-%{
-matrix01 = [ones(1, 3), zeros(1, 3)];
-A2_ = matrix01;
-for i = 2:N
-    A2_ = blkdiag(A2_, matrix01);
-end
-A2 = - A2_*P;
+% 不等式制約2 (衛星間距離はr以下)
+nominal_s = s;
 
-b2 = - r * ones(N, 1) + A2_ * Q * s0 + A2_ * R;
-%}
+% 状態ベクトルから位置ベクトルのみを抽出
+C01 = [eye(3),zeros(3)];
+C1 = [];
+for i = 1:num*N
+    C1 = blkdiag(C1, C01);
+end
+
+% 相対位置ベクトルを計算する行列
+C02 = [eye(3),-eye(3)];
+C2 = [];
+for i = 1:N
+    C2 = blkdiag(C2, C02);
+end
+
+% create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
+% 不等式の大小を変えるために両辺マイナスをかけている。
+A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
+b2 = -r * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
+
 % 不等式制約3 (ノミナル軌道に対する変化量はδ trust region)
 % s - (PU + Qs0 + R) < δ
 % -s + (PU + Qs0 + R) < δ
@@ -142,21 +153,21 @@ b2 = - r * ones(N, 1) + A2_ * Q * s0 + A2_ * R;
 A3 = [-P; P];
 b3 = [delta * ones(6*N*num, 1) - s + Q * s0 + R; delta * ones(6*N*num, 1) + s - Q * s0 - R];
 
-A = [A1; A3];
-b = [b1; b3];
+A = [A1; A2; A3];
+b = [b1; b2; b3];
 
 %% 等式制約
 
 % 等式制約1 (運動量保存)
-%Aeq1 = [ones(N, 3*N*num), zeros(N, 1)];
-%beq1 = zeros(N, 1);
+Aeq1 = create_Aeq1(N, num);
+beq1 = zeros(3*N, 1);
 
 % 等式制約2 (最終状態固定)
 Aeq2 = P(1:6*num,:);
 beq2 = sd - Q(1:6*num,:) * s0 - R(1:6*num,:);
 
-Aeq = Aeq2;
-beq = beq2;
+Aeq = [Aeq1; Aeq2];
+beq = [beq1; beq2];
 
 %% 線形不等式制約線形計画問題 
 % 解はnum×N×3自由度
@@ -184,7 +195,7 @@ s = P * x + Q * s0 + R;
 disp('Objective function value:');
 %disp(fval); % linprogのみ
 disp("最大入力 u_max")
-disp(x(3*num*N+1))
+disp(x(3*num*N+1) * 10^(-6))
 
 
 %% 図示
@@ -306,11 +317,12 @@ end
 
 function A = create_Ak(A_d, B_d, sk, uk, num)
     A = zeros(6*num,6*num);
-    xk_r = sk(1:3) - sk(7:9);
+    sk_r = [sk(1:6) - sk(7:12); sk(7:12) - sk(1:6)]; 
     for i = 1:num 
+        xk_ri = sk_r(6*(i-1)+1:6*(i-1)+3);
         xk_i = sk(6*(i-1)+1:6*(i-1)+3);
         uk_i = uk(3*(i-1)+1:3*i);
-        dfds = -4*norm(xk_r)^(-6)*uk_i*[xk_r.', zeros(1,3)]*(-1)^(i+1);
+        dfds = -4*norm(xk_ri)^(-6)*uk_i*[xk_ri.', zeros(1,3)] * 10^(-6);
         dfds_m = B_d * dfds;
         A(6*(i-1)+1:6*i,6*(i-1)+1:6*i) = A_d + dfds_m;
     end
@@ -318,25 +330,34 @@ end
 
 function B = create_Bk(B_d, sk, num)
     B = zeros(6*num,3*num);
-    xk_r = sk(1:3) - sk(7:9);
+    sk_r = [sk(1:6) - sk(7:12); sk(7:12) - sk(1:6)]; 
     for i = 1:num 
-        xk_i = sk(6*(i-1)+1:6*(i-1)+3);
-        dfdu = eye(3)/norm(xk_r)^4;
+        xk_ri = sk_r(6*(i-1)+1:6*(i-1)+3);
+        dfdu = eye(3)/norm(xk_ri)^4 * 10^(-6);
         B(6*(i-1)+1:6*i,3*(i-1)+1:3*i) = B_d * dfdu; 
     end
 end
 
 function C = create_Ck(B_d, sk, uk, num) 
     C = zeros(6*num,1);
-    xk_r = sk(1:3) - sk(7:9);
+    sk_r = [sk(1:6) - sk(7:12); sk(7:12) - sk(1:6)]; 
     for i = 1:num 
         sk_i = sk(6*(i-1)+1:6*i);
+        xk_ri = sk_r(6*(i-1)+1:6*(i-1)+3);
         xk_i = sk(6*(i-1)+1:6*(i-1)+3);
         uk_i = uk(3*(i-1)+1:3*i);
-        f = uk_i/norm(xk_r)^(4);
-        dfds = -4*norm(xk_r)^(-6)*uk_i*[xk_r.', zeros(1,3)]*(-1)^(i+1);
-        dfdu = eye(3)/norm(xk_r)^4;
+        f = uk_i/norm(xk_ri)^(4) * 10^(-6);
+        dfds = -4*norm(xk_ri)^(-6)*uk_i*[xk_ri.', zeros(1,3)] * 10^(-6);
+        dfdu = eye(3)/norm(xk_ri)^4 * 10^(-6);
         C(6*(i-1)+1:6*i,1) = B_d * (f - dfds * sk_i - dfdu * uk_i);
+    end
+end
+
+function Aeq1 = create_Aeq1(N, num)
+    matrix1 = [eye(3),eye(3)];
+    Aeq1 = zeros(3*N, 3*num*N+1);
+    for i = 1:N
+        Aeq1(3*(i-1)+1:3*i, 3*num*(i-1)+1:3*num*i) = matrix1;
     end
 end
 

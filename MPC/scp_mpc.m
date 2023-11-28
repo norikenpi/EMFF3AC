@@ -20,7 +20,7 @@ m = 1; % 1
 dt = 10;
 
 % 時間 N×dt秒
-N = 1000;
+N = 250;
 
 % 衛星数
 num = 2;
@@ -136,8 +136,8 @@ end
 %% 等式制約
 
 % 等式制約1 (運動量保存)
-Aeq1 = [ones(N, 3*N*num), zeros(N, 1)];
-beq1 = zeros(N, 1);
+Aeq1 = create_Aeq1(N, num);
+beq1 = zeros(3*N, 1);
 
 % 等式制約2 (最終状態固定)
 Aeq2 = P(1:6*num,:);
@@ -282,5 +282,13 @@ function B = reorderMatrix(A)
     for i = 1:n:length(A)
         sub_vector = A(i:min(i+n-1, length(A)));
         B = [B; flip(sub_vector)];
+    end
+end
+
+function Aeq1 = create_Aeq1(N, num)
+    matrix1 = [eye(3),eye(3)];
+    Aeq1 = zeros(3*N, 3*num*N+1);
+    for i = 1:N
+        Aeq1(3*(i-1)+1:3*i, 3*num*(i-1)+1:3*num*i) = matrix1;
     end
 end

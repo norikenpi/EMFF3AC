@@ -1,8 +1,11 @@
-% 原点距離の4乗の逆数を計算
+% 相対距離の4乗の逆数を計算
 function vec = RelativeDistanceFourthPower(s, s0, num)
+    % 最終状態時以外の状態を抽出
     s = [s(1+6*num:end);s0];
+    % 位置情報のみを抽出
     pos_vec = extract_3elements(s);
-    rel_pos_vec = 
+    % 相対位置を計算
+    rel_pos_vec = calc_rel_pos(pos_vec);
     vec = dist_fourth(rel_pos_vec);
     
 
@@ -16,7 +19,7 @@ function vec = RelativeDistanceFourthPower(s, s0, num)
             % 現在の位置から3要素を抽出（範囲外にならないようにチェック）
             end_index = min(i+2, n);
             extracted = [extracted; vector(i:end_index)];
-    
+            
             % 6要素分進める（3要素抽出して3要素スキップ）
             i = i + 6;
         end
@@ -33,13 +36,16 @@ function vec = RelativeDistanceFourthPower(s, s0, num)
 
 
     function rel_pos = calc_rel_pos(pos_vec)
-        n = length(vector); % ベクトルの長さを取得
+        n = length(pos_vec); % ベクトルの長さを取得
         rel_pos = []; % 抽出された要素を格納するための空のベクトル
         i = 1;
         while i <= n
-            end_index = min(i+2, n);
-            
-            rel_pos = [rel_pos;(i:end_index)];
+            pos_vec1 = pos_vec(i:i+2);
+            pos_vec2 = pos_vec(i+3:i+5);
+            rel_pios1 = pos_vec1 - pos_vec2;
+            rel_pos2 = -rel_pios1;
+            rel_pos = [rel_pos; rel_pios1; rel_pos2];
+            i = i + 6;
         end
     end
 end
