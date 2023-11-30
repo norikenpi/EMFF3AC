@@ -1,21 +1,17 @@
 %% 電磁力を用いた衛星のSCP-MPC（線形不等式制約線形計画問題 linprog）
 % 最大磁気モーメントを最小化
 % 進入禁止範囲rを設定
-% 初めて実行する場合はR = -1にして進入禁止範囲制約を外してください。
-% 2回目以降の実行は、既にある軌道をノミナル軌道としてSCP-MPCを行います。
-% 計算にだいぶ時間がかかるので、もっとタイムステップの数を少なくしてもいいかもしれません。
 % Daniel Morgan, et. al., “Spacecraft Swarm Guidance Using a Sequence of Decentralized Convex Optimizations”
 
+% シンボリック計算ツールボックスで求めた偏微分は入力に0を受け付けないから、初期値s01, s02に0をいれてはいけない。
 
+% 1. scp_mpc.mを実行してスラスター衛星の場合を計算。
+% 2. F2myu.mを実行して、スラスター入力を電流入力に変換。
+% 3. これを実行。
+% シミュレーションパラメータをscp_mpc.mと同じにする必要がある。
 
-% シンボリック計算ツールボックスで求めた偏微分は入力に0を受け付けないから、初期値に0をいれてはいけない。
+% 繰り返し最適化する場合は、このコードを何回も実行すればよい。
 
-
-% scp_mpc1.mを実行してスラスター衛星の場合を計算
-% F2I.mを実行して、原点距離の4乗に反比例した出力が得られるスラスターに変更
-% これを実行。
-
-% 入力の単位をμにすることでスケールを合わせていることに注意
 %% パラメータ設定
 
 % 地球を周回する衛星の角速度
@@ -26,18 +22,22 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 1;
+dt = 15;
 
 % 時間 N×dt秒
-N = 500;
+N = 100;
 
 % 衛星数(2以外動かない)
 num = 2;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 r = 0.01 ;
+ 
+% trust region1 位置
+delta1 = 0.005;
 
-delta = 0.001;
+% trust region2 磁気モーメント
+delta2 = 0.00000000001;
 %% Hill方程式 宇宙ステーション入門 P108
 
 % 1衛星に関する状態方程式の係数行列
@@ -72,6 +72,7 @@ A_d = eye(6) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
 % 初期状態
+% シンボリック計算ツールボックスで求めた偏微分は入力に0を受け付けないから、初期値に0をいれてはいけない。
 s01 = [0.5; 0.0000001; 0.0000001; 0; 0; 0];
 s02 = [-0.5; -0.0000001; -0.0000001; 0; 0; 0];
 s0 = [s01; s02]; % 6num×1
@@ -81,12 +82,7 @@ sd1 = [-0; 0.5; 0; 0; 0; 0];
 sd2 = [0; -0.5; 0; 0; 0; 0];
 sd = [sd1; sd2];
 
-% 各時刻の状態←各時刻の入力プロファイル,初期状態
-% S = PU + Qs_0
-%P = controllability_matrix(A_d, B_d, N); %6Nnum×3Nnum
-%P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
-%Q = controllability_matrix2(A_d, N); %6N×6num
-
+% 微分式のセル
 func_cell = create_func_cell();
 
 % ノミナル軌道sによってPとQが変わる
@@ -104,7 +100,7 @@ P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
 Q = A_mat2; 
 R = A_mat*C_mat; 
 
-disp("線形化したダイナミクスを用いて、軌道を再計算。ちゃんと目標値になっていたらok")
+disp("線形化したEMFFダイナミクスを用いて、軌道を再計算。ちゃんと目標値になっていたらok")
 l_s = P * u_myu + Q * s0 + R;
 disp(l_s(1:3))
 disp(l_s(7:9))
@@ -122,10 +118,7 @@ f = f1;
 A1 = [eye(3*N*num), -ones(3*N*num,1); -eye(3*N*num), -ones(3*N*num, 1)]; %6N×3Nnum+1
 b1 = zeros(6*N*num, 1);%6Nnum×1
 
-A = A1;
-b = b1;
-
-% 不等式制約2 (衛星間距離はr以下)
+% 不等式制約2 (衛星間距離はr以上)
 nominal_s = s;
 
 % 状態ベクトルから位置ベクトルのみを抽出
@@ -147,15 +140,22 @@ end
 A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
 b2 = -r * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
 
-% 不等式制約3 (ノミナル軌道に対する変化量はδ trust region)
+% 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
 % s - (PU + Qs0 + R) < δ
 % -s + (PU + Qs0 + R) < δ
 
 A3 = [-P; P];
-b3 = [delta * ones(6*N*num, 1) - s + Q * s0 + R; delta * ones(6*N*num, 1) + s - Q * s0 - R];
+b3 = [delta1 * ones(6*N*num, 1) - s + Q * s0 + R; delta1 * ones(6*N*num, 1) + s - Q * s0 - R];
 
-A = [A1; A2; A3];
-b = [b1; b2; b3];
+% 不等式制約4 (磁気モーメントの変化量はδ2以下)
+% U2 - U1 < δ
+% U1 - U2 < δ
+A4 = [-[eye(N*num*3), zeros(N*num*3,1)]; [eye(N*num*3), zeros(N*num*3,1)]];
+b4 = [delta2 * ones(3*N*num, 1) - u_myu(1:end-1); delta2 * ones(3*N*num, 1) + u_myu(1:end-1)];
+
+
+A = [A1; A2; A3; A4];
+b = [b1; b2; b3; b4];
 
 %% 等式制約
 
@@ -193,8 +193,6 @@ cvx_end
 % 衛星の状態
 s = P * x + Q * s0 + R;
 u_myu = x;
-disp('Objective function value:');
-%disp(fval); % linprogのみ
 disp("最大磁気モーメント u_myu_max(A)")
 disp(x(3*num*N+1))
 coilN = 1000;

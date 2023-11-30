@@ -22,6 +22,8 @@ disp([F1;F2])
 
 disp("最大電流")
 disp(u_myu(end)/(coilN * pi * radius^2))
+
+
 function u_myu = force2moment(s, s0, num, u)
     % 最終状態時以外の状態を抽出
     s = [s(1+6*num:end);s0];
@@ -34,7 +36,8 @@ function u_myu = force2moment(s, s0, num, u)
     n = length(r);
     while i <= n
         [myu1, myu2] = ru2myu(r(i:i+2), u(i:i+2));
-        u_myu = [u_myu; myu1; myu2];
+        %片方だけ保存しておけばもう片方は、相対位置ベクトルと最大入力から再現できる。
+        u_myu = [u_myu; myu1];
         i = i + 6;
     end
 end

@@ -3,7 +3,6 @@
 % 進入禁止範囲を設定
 % 初めて実行する場合はR = -1にして進入禁止範囲制約を外してください。
 % 2回目以降の実行は、既にある軌道をノミナル軌道としてSCP-MPCを行います。
-% 計算にだいぶ時間がかかるので、もっとタイムステップの数を少なくしてもいいかもしれません。
 % Daniel Morgan, et. al., “Spacecraft Swarm Guidance Using a Sequence of Decentralized Convex Optimizations”
 
 %% パラメータ設定
@@ -16,10 +15,10 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 1;
+dt = 15;
 
 % 時間 N×dt秒
-N = 500;
+N = 3;
 
 % 衛星数
 num = 2;
@@ -29,7 +28,7 @@ num = 2;
 R = -1;
 
 % trust region
-delta = 0.02;
+delta = 0.0;
 
 %% Hill方程式 宇宙ステーション入門 P108
 

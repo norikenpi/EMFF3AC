@@ -18,5 +18,5 @@ test2はtestの上位互換。
 
 test_far_field_inv.mで所望力から2つの衛星の電流を計算している。
 
-scp_mpc23_nonl.mで相対距離と電流ベクトルを利用したもの。far-field微分。
-scp_mpc.mとF2I3.mで求めた2衛星のノミナル軌道から、電磁力を用いた場合の最適軌道を求められる。
+scp_mpc_EMFF_nonl.mで相対距離と電流ベクトルを利用したもの。far-field微分。
+scp_mpc.mとF2myu.mで求めた2衛星のノミナル軌道から、電磁力を用いた場合の最適軌道を求められる。

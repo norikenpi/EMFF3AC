@@ -5,8 +5,11 @@ disp(min(b1 - A1*u_myu))
 % 不等式制約2 ( (衛星間距離はR以下)
 disp(min(b2 - A2*u_myu))
 
-% 不等式制約3 (ノミナル軌道に対する変化量はδ trust region) dispはδになるはず。
+% 不等式制約3 位置(ノミナル軌道に対する変化量はδ trust region) dispはδになるはず。
 disp(min(b3 - A3*u_myu))
+
+% 不等式制約4 磁気モーメント(ノミナル軌道に対する変化量はδ trust region) dispはδになるはず。
+disp(min(b4 - A4*u_myu))
 
 disp("等式")
 
