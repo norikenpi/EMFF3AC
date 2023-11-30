@@ -1,21 +1,32 @@
 
-% スラスター入力を磁気モーメントに変換。
-u_myu = force2moment(s1, s0, num, u(1:end-1));
+coilN = 100;
+radius = 0.05;
+I_max = 5;
+mass = 1;
 
-u_myu(end+1) = max(abs(u_myu));
+% スラスター入力を磁気モーメントに変換。
+[u_myu1, u_myu2] = force2moment(s1, s0, num, u(1:end-1), coilN, radius, I_max, mass);
+u_myu = u_myu1; 
+u_myu(end+1) = max(abs(u_myu1));
 
 r_norm = norm(r);
-coilN = 1000;
-radius = 0.05;
-I_max = 20;
-mass = 1;
 u_I = u_myu/(coilN * pi * radius^2);
 
+disp("パラメータ由来u_myu_max")
+u_myu_max = coilN * pi * radius^2 * I_max;
+disp(u_myu_max)
+
+disp("最適化由来")
+disp(max(abs(u_myu1)));
+
+
+
 disp("相手衛星から見た自分の相対位置r_val, 自分の磁気モーメントmyu1_val, 相手の磁気モーメントmyu2_valから導出される自分に働く磁力")
+disp("uの最初の入力と合ってればok")
 disp("バグ検証用出力")
 r_val = s0(1:3) - s0(7:9);
-myu1_val = u_myu(end-6:end-4);
-myu2_val = u_myu(end-3:end-1);
+myu1_val = u_myu1(end-2:end);
+myu2_val = u_myu2(end-2:end);
 F1 = f_func(r_val, myu1_val, myu2_val);
 F2 = f_func(-r_val, myu2_val, myu1_val);
 disp([F1;F2])
@@ -23,31 +34,30 @@ disp([F1;F2])
 disp("最大電流")
 disp(u_myu(end)/(coilN * pi * radius^2))
 
+%s11 = A_list{1}*s0 + B_list{1}*u_myu(7:9) + C_list{1};
 
-function u_myu = force2moment(s, s0, num, u)
+function [u_myu1, u_myu2] = force2moment(s, s0, num, u, coilN, radius, I_max, mass)
     % 最終状態時以外の状態を抽出
     s = [s(1+6*num:end);s0];
     % 位置情報のみを抽出
     pos_vec = extract_3elements(s);
     % 相対位置を計算
     r = calc_rel_pos(pos_vec);
-    u_myu = [];
+    u_myu1 = [];
+    u_myu2 = [];
     i = 1;
     n = length(r);
     while i <= n
-        [myu1, myu2] = ru2myu(r(i:i+2), u(i:i+2));
+        [myu1, myu2] = ru2myu(r(i:i+2), u(i:i+2), coilN, radius, I_max, mass);
         %片方だけ保存しておけばもう片方は、相対位置ベクトルと最大入力から再現できる。
-        u_myu = [u_myu; myu1];
+        u_myu1 = [u_myu1; myu1];
+        u_myu2 = [u_myu2; myu2];
         i = i + 6;
     end
 end
 
-function [myu1, myu2] = ru2myu(r,u)
-    r_norm = norm(r);
-    coilN = 1000;
-    radius = 0.05;
-    I_max = 20;
-    mass = 1;
+function [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max, mass)
+    r_norm = norm(r); 
     myu01 = coilN * pi * radius^2 * I_max * r/r_norm;
     myu0 = 4*pi*1e-7; % 真空の透磁率
     

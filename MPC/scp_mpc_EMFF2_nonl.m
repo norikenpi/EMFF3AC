@@ -25,7 +25,7 @@ m = 1; % 1
 dt = 15;
 
 % 時間 N×dt秒
-N = 3;
+N = 100;
 
 % 衛星数(2以外動かない)
 num = 2;
@@ -34,13 +34,12 @@ num = 2;
 r = 0.01 ;
  
 % trust region1 位置
-delta1 = 0.005;
+delta1 = 0.01;
 
 % trust region2 磁気モーメント
-delta2 = 0.00000000001;
+%delta2 = 0.00000000001;
 
-% 最大磁気モーメント
-u_myu_max = u_myu(3*N+1);
+
 %% Hill方程式 宇宙ステーション入門 P108
 
 % 1衛星に関する状態方程式の係数行列
@@ -81,8 +80,8 @@ s02 = [-0.5; -0.0000001; -0.0000001; 0; 0; 0];
 s0 = [s01; s02]; % 6num×1
 
 % 2衛星のそれぞれの目標状態
-sd1 = [-0; 0.5; 0; 0; 0; 0];
-sd2 = [0; -0.5; 0; 0; 0; 0];
+sd1 = [-0.5; 0.5; 0; 0; 0; 0];
+sd2 = [0.5; -0.5; 0; 0; 0; 0];
 sd = [sd1; sd2];
 
 % 微分式のセル
@@ -107,7 +106,8 @@ disp("線形化したEMFFダイナミクスを用いて、軌道を再計算。�
 l_s = P * u_myu + Q * s0 + R;
 disp(l_s(1:3))
 disp(l_s(7:9))
-
+% 最大磁気モーメント
+u_myu_max = u_myu(3*N+1);
 %% 評価関数
 
 % 評価関数1(最大入力最小)
@@ -196,14 +196,15 @@ cvx_end
 % 衛星の状態
 s = P * x + Q * s0 + R;
 u_myu = x;
-disp("最大磁気モーメント u_myu_max(A)")
-disp(x(3*num*N+1))
+disp("最大磁気モーメント u_myu_max()")
+disp(x(3*N+1))
 coilN = 1000;
 radius = 0.05;
 I_max = 20;
 mass = 1;
 disp("最大電流 u_myu_max(A)/(coilN * pi * radius^2)")
-disp(x(3*num*N+1)/(coilN * pi * radius^2));
+disp(x(3*N+1)/(coilN * pi * radius^2));
+
 
 
 %% 図示
@@ -325,40 +326,36 @@ end
 
 function A = create_Ak(A_d, B_d, sk, myu1, num, myu_max_val, func_cell)
     A = zeros(6*num,6*num);
-    sk_r = sk(1:6) - sk(7:12);
-    s_r = [sk_r; -sk_r]; 
-    myu = [myu1; myu_max_val*s_r/norm(s_r)];
-    for i = 1:num 
-        xk_ri = s_r(6*(i-1)+1:6*(i-1)+3);
-        dFds = dFdr_func(xk_ri, myu(3*(i-1)+1:3*i), myu_max_val, func_cell);
-        dFds = [dFds, zeros(3,3)];
-        dFds_m = B_d * dFds;
-        A(6*(i-1)+1:6*i,6*(i-1)+1:6*i) = A_d + dFds_m;
-    end
+    dFds = dFds_func(sk, myu1, myu_max_val, func_cell);
+
+    i = 1;
+    A(6*(i-1)+1:6*i,:) = [A_d, zeros(6)] + B_d * dFds;
+
+    i = 2;
+    A(6*(i-1)+1:6*i,:) = [zeros(6), A_d] - B_d * dFds;
 end
 
 function B = create_Bk(B_d, sk, num, myu_max_val, func_cell)
     B = zeros(6*num,3);
-    sk_r = [sk(1:6) - sk(7:12); sk(7:12) - sk(1:6)]; 
-    for i = 1:num 
-        xk_ri = sk_r(6*(i-1)+1:6*(i-1)+3);
-        f = f_func(xk_ri, myu_max_val, func_cell);
-        B(6*(i-1)+1:6*i,1:3) = B_d * f; 
-    end
+    F = F_func(sk, myu_max_val, func_cell);
+
+    i = 1;
+    B(6*(i-1)+1:6*i,:) = B_d * F; 
+
+    i = 2;
+    B(6*(i-1)+1:6*i,:) = - B_d * F; 
 end
 
 function C = create_Ck(B_d, sk, myu1, num, myu_max_val, func_cell) 
     C = zeros(6*num,1);
-    sk_r = sk(1:6) - sk(7:12);
-    s_r = [sk_r; -sk_r]; 
-    myu = [myu1; myu_max_val*s_r/norm(s_r)];
-    for i = 1:num 
-        sk_i = sk(6*(i-1)+1:6*i);
-        xk_ri = s_r(6*(i-1)+1:6*(i-1)+3);
-        dFds = dFdr_func(xk_ri, myu(3*(i-1)+1:3*i), myu_max_val, func_cell);
-        dFds = [dFds, zeros(3,3)];
-        C(6*(i-1)+1:6*i,1) = - B_d * dFds * sk_i;
-    end
+    dFds = dFds_func(sk, myu1, myu_max_val, func_cell);
+ 
+    i = 1;
+    C(6*(i-1)+1:6*i,1) = - B_d * dFds * sk;
+
+    i = 2;
+    C(6*(i-1)+1:6*i,1) = B_d * dFds * sk;
+
 end
 
 function Aeq1 = create_Aeq1(N, num)
@@ -384,23 +381,138 @@ function B = reorderMatrix(A)
 end
 
 function func_cell = create_func_cell()
-    syms xr yr zr myu_max
-    
-    r = [xr; yr; zr];
+    syms x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max
+     
+    r = [x1 - x2; y1 - y2; z1 - z2];
+    myu = [myu11; myu12; myu13];
     myu0 = 4*pi*1e-7; % 真空の透磁率
     
     %f = 3*myu0/(4*pi)*(dot(myu1, myu2)/norm(r)^5 * r + dot(myu1, r)/norm(r)^5 * myu2 + dot(myu2, r)/norm(r)^5 * myu1 - 5*dot(myu1, r)*dot(myu2, r)/norm(r)^7*r);
-    f = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6);
-    df_dxr = diff(f, xr);
-    df_dyr = diff(f, yr);
-    df_dzr = diff(f, zr);
-    df_dxr_func = matlabFunction(df_dxr, 'vars', [xr, yr, zr, myu_max]);
-    df_dyr_func = matlabFunction(df_dyr, 'vars', [xr, yr, zr, myu_max]);
-    df_dzr_func = matlabFunction(df_dzr, 'vars', [xr, yr, zr, myu_max]);
-    f_func0 = matlabFunction(f, 'vars', [xr, yr, zr, myu_max]);
-    func_cell = {df_dxr_func, df_dyr_func, df_dzr_func, f_func0};
+    f = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6) * myu;
+    F = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6);
+
+    df_dx1 = diff(f, x1);
+    df_dy1 = diff(f, y1);
+    df_dz1 = diff(f, z1);
+    df_dx2 = diff(f, x2);
+    df_dy2 = diff(f, y2);
+    df_dz2 = diff(f, z2);
+    df_dx1_func = matlabFunction(df_dx1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dy1_func = matlabFunction(df_dy1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dz1_func = matlabFunction(df_dz1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dx2_func = matlabFunction(df_dx2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dy2_func = matlabFunction(df_dy2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dz2_func = matlabFunction(df_dz2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    f_func0 = matlabFunction(f, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    F_func0 = matlabFunction(F, 'vars', [x1 y1 z1 x2 y2 z2 myu_max]);
+    func_cell = {df_dx1_func, df_dy1_func, df_dz1_func, df_dx2_func, df_dy2_func, df_dz2_func, f_func0, F_func0};
 end
 
+
+function dFds = dFds_func(s_val, myu, myu_max_val, func_cell)
+    df_dx1_func = func_cell{1};
+    df_dy1_func = func_cell{2};
+    df_dz1_func = func_cell{3};
+    df_dx2_func = func_cell{4};
+    df_dy2_func = func_cell{5};
+    df_dz2_func = func_cell{6};
+
+
+    x1_val = s_val(1);
+    y1_val = s_val(2); 
+    z1_val = s_val(3);
+    x2_val = s_val(7);
+    y2_val = s_val(8); 
+    z2_val = s_val(9); 
+
+    myu11_val = myu(1);
+    myu12_val = myu(2);
+    myu13_val = myu(3);
+    df_dx1 = df_dx1_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dy1 = df_dy1_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dz1 = df_dz1_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dx2 = df_dx2_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dy2 = df_dy2_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dz2 = df_dz2_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    dFds = [df_dx1, df_dy1, df_dz1, zeros(3), df_dx2, df_dy2, df_dz2, zeros(3)]; % 3×12
+end
+
+
+function F = F_func(s_val, myu_max_val, func_cell)
+    F_func0 = func_cell{8};
+    x1_val = s_val(1);
+    y1_val = s_val(2); 
+    z1_val = s_val(3); 
+    x2_val = s_val(7);
+    y2_val = s_val(8); 
+    z2_val = s_val(9);
+    F = F_func0(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu_max_val);
+end
+
+
+%{
+function dFds1 = dFds1_func(s_val, myu, myu_max_val, func_cell)
+    df_dx1_func = func_cell{1};
+    df_dy1_func = func_cell{2};
+    df_dz1_func = func_cell{3};
+
+    x1_val = s_val(1);
+    y1_val = s_val(2); 
+    z1_val = s_val(3);
+    x2_val = s_val(7);
+    y2_val = s_val(8); 
+    z2_val = s_val(9); 
+
+    myu11_val = myu(1);
+    myu12_val = myu(2);
+    myu13_val = myu(3);
+    df_dx1 = df_dx1_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dy1 = df_dy1_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dz1 = df_dz1_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    dFds1 = [df_dx1, df_dy1, df_dz1, zeros(3)]; % 3×12
+end
+
+function dFds2 = dFds2_func(s_val, myu, myu_max_val, func_cell)
+    df_dx2_func = func_cell{4};
+    df_dy2_func = func_cell{5};
+    df_dz2_func = func_cell{6};
+
+
+    x1_val = s_val(1);
+    y1_val = s_val(2); 
+    z1_val = s_val(3);
+    x2_val = s_val(7);
+    y2_val = s_val(8); 
+    z2_val = s_val(9); 
+
+    myu11_val = myu(1);
+    myu12_val = myu(2);
+    myu13_val = myu(3);
+    df_dx2 = df_dx2_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dy2 = df_dy2_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dz2 = df_dz2_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    dFds2 = [df_dx2, df_dy2, df_dz2, zeros(3)]; % 3×12
+end
+
+
+function f = f_func(s_val, myu_val, myu_max_val, func_cell)
+    f_func0 = func_cell{7};
+    x1_val = s_val(1);
+    y1_val = s_val(2); 
+    z1_val = s_val(3); 
+    x2_val = s_val(7);
+    y2_val = s_val(8); 
+    z2_val = s_val(9);
+
+    myu11_val = myu_val(1);
+    myu12_val = myu_val(2);
+    myu13_val = myu_val(3);
+    f = f_func0(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+end
+%}
+
+
+%{
 function dFdr = dFdr_func(r_val, myu, myu_max_val, func_cell)
     df_dxr_func = func_cell{1};
     df_dyr_func = func_cell{2};
@@ -414,12 +526,4 @@ function dFdr = dFdr_func(r_val, myu, myu_max_val, func_cell)
     df_dzr = df_dzr_func(xr_val, yr_val, zr_val, myu_max_val);
     dFdr = [df_dxr*myu, df_dyr*myu, df_dzr*myu]; % 3×3
 end
-
-function F = f_func(r_val, myu_max_val, func_cell)
-    f_func0 = func_cell{4};
-    xr_val = r_val(1);
-    yr_val = r_val(2); 
-    zr_val = r_val(3); 
-
-    F = f_func0(xr_val, yr_val, zr_val, myu_max_val);
-end
+%}
