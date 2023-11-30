@@ -6,7 +6,6 @@
 % 計算にだいぶ時間がかかるので、もっとタイムステップの数を少なくしてもいいかもしれません。
 % Daniel Morgan, et. al., “Spacecraft Swarm Guidance Using a Sequence of Decentralized Convex Optimizations”
 
-% 入力の単位をμにすることでスケールを合わせていることに注意
 %% パラメータ設定
 
 % 地球を周回する衛星の角速度
@@ -17,16 +16,16 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 10;
+dt = 1;
 
 % 時間 N×dt秒
-N = 250;
+N = 500;
 
 % 衛星数
 num = 2;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-R = 0.0;
+%R = 0.0;
 R = -1;
 
 % trust region
@@ -66,8 +65,8 @@ A_d = eye(6*num) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
 % 初期状態
-s01 = [0.5; 0; 0; 0; 0; 0];
-s02 = [-0.5; 0; 0; 0; 0; 0];
+s01 = [0.5; 0.0000001; 0.0000001; 0; 0; 0];
+s02 = [-0.5; -0.0000001; -0.0000001; 0; 0; 0];
 s0 = [s01; s02]; % 6num×1
 
 % 2衛星のそれぞれの目標状態
@@ -171,8 +170,6 @@ s = P * x + Q * s0;
 s1 = s;
 u = x;
 
-disp('Objective function value:');
-%disp(fval); % linprogのみ
 disp("最大入力 u_max")
 disp(x(3*num*N+1))
 

@@ -1,6 +1,6 @@
-%% 1基の原点距離に反比例した力を出力できる衛星のSCP-MPC（線形不等式制約線形計画問題 linprog）
-% 最大入力を最小化
-% 進入禁止範囲を設定
+%% 電磁力を用いた衛星のSCP-MPC（線形不等式制約線形計画問題 linprog）
+% 最大磁気モーメントを最小化
+% 進入禁止範囲rを設定
 % 初めて実行する場合はR = -1にして進入禁止範囲制約を外してください。
 % 2回目以降の実行は、既にある軌道をノミナル軌道としてSCP-MPCを行います。
 % 計算にだいぶ時間がかかるので、もっとタイムステップの数を少なくしてもいいかもしれません。
@@ -8,7 +8,7 @@
 
 
 
-% ダイナミクスは相対距離を利用
+% シンボリック計算ツールボックスで求めた偏微分は入力に0を受け付けないから、初期値に0をいれてはいけない。
 
 
 % scp_mpc1.mを実行してスラスター衛星の場合を計算
@@ -26,20 +26,18 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 10;
+dt = 1;
 
 % 時間 N×dt秒
-N = 250;
+N = 500;
 
-% 衛星数
+% 衛星数(2以外動かない)
 num = 2;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 r = 0.01 ;
-%R = -1;
 
-delta = 0.005;
-%s = s1;
+delta = 0.001;
 %% Hill方程式 宇宙ステーション入門 P108
 
 % 1衛星に関する状態方程式の係数行列
@@ -74,8 +72,8 @@ A_d = eye(6) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
 % 初期状態
-s01 = [0.5; 0; 0; 0; 0; 0];
-s02 = [-0.5; 0; 0; 0; 0; 0];
+s01 = [0.5; 0.0000001; 0.0000001; 0; 0; 0];
+s02 = [-0.5; -0.0000001; -0.0000001; 0; 0; 0];
 s0 = [s01; s02]; % 6num×1
 
 % 2衛星のそれぞれの目標状態
@@ -89,10 +87,12 @@ sd = [sd1; sd2];
 %P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
 %Q = controllability_matrix2(A_d, N); %6N×6num
 
+func_cell = create_func_cell();
+
 % ノミナル軌道sによってPとQが変わる
-A_list = create_A_list(num, N, s, s0, u_I, A_d, B_d); % {A1, A2, ... ,AN}
-B_list = create_B_list(num, N, s, s0, B_d); % {B1, B2, ... ,BN}
-C_list = create_C_list(num, N, s, s0, u_I, B_d); % {C1, C2, ... ,CN}
+A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, func_cell); % {A1, A2, ... ,AN}
+B_list = create_B_list(num, N, s, s0, u_myu, B_d, func_cell); % {B1, B2, ... ,BN}
+C_list = create_C_list(num, N, s, s0, u_myu, B_d, func_cell); % {C1, C2, ... ,CN}
 
 A_mat = create_A_mat(A_list, num, N);
 B_mat = create_B_mat(B_list, num, N);
@@ -104,9 +104,10 @@ P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
 Q = A_mat2; 
 R = A_mat*C_mat; 
 
-disp("linearize_error")
-l_s = P * u_I + Q * s0 + R;
+disp("線形化したダイナミクスを用いて、軌道を再計算。ちゃんと目標値になっていたらok")
+l_s = P * u_myu + Q * s0 + R;
 disp(l_s(1:3))
+disp(l_s(7:9))
 
 %% 評価関数
 
@@ -159,15 +160,15 @@ b = [b1; b2; b3];
 %% 等式制約
 
 % 等式制約1 (運動量保存)
-Aeq1 = create_Aeq1(N, num);
-beq1 = zeros(3*N, 1);
+%Aeq1 = create_Aeq1(N, num);
+%beq1 = zeros(3*N, 1);
 
 % 等式制約2 (最終状態固定)
 Aeq2 = P(1:6*num,:);
 beq2 = sd - Q(1:6*num,:) * s0 - R(1:6*num,:);
 
-Aeq = [Aeq1; Aeq2];
-beq = [beq1; beq2];
+Aeq = Aeq2;
+beq = beq2;
 
 %% 線形不等式制約線形計画問題 
 % 解はnum×N×3自由度
@@ -191,11 +192,17 @@ cvx_end
 
 % 衛星の状態
 s = P * x + Q * s0 + R;
-
+u_myu = x;
 disp('Objective function value:');
 %disp(fval); % linprogのみ
-disp("最大入力 u_max")
-disp(x(3*num*N+1) * 10^(-6))
+disp("最大磁気モーメント u_myu_max(A)")
+disp(x(3*num*N+1))
+coilN = 1000;
+radius = 0.05;
+I_max = 20;
+mass = 1;
+disp("最大電流 u_myu_max(A)/(coilN * pi * radius^2)")
+disp(x(3*num*N+1)/(coilN * pi * radius^2));
 
 
 %% 図示
@@ -229,7 +236,6 @@ close(v);
 
 %% 関数リスト
 
-% 関数の命名はテキトーです。すみません。
 function A_mat = create_A_mat(A_list, num, N)
     A_mat = zeros(6*num*N);
     for k = 1:N % 行
@@ -274,7 +280,7 @@ function C_mat = create_C_mat(C_list, num, N)
     end
 end
 
-function A_list = create_A_list(num, N, s, s0, u, A_d, B_d) % {A1, A2, ... ,AN}
+function A_list = create_A_list(num, N, s, s0, u, A_d, B_d, func_cell) % {A1, A2, ... ,AN}
     A_list = cell(1, N);
     for i = 1:N
         if i == 1
@@ -283,12 +289,12 @@ function A_list = create_A_list(num, N, s, s0, u, A_d, B_d) % {A1, A2, ... ,AN}
             sk = s(6*(N-i+1)*num+1:6*(N-i+2)*num);
         end
         uk = u(3*(N-i)*num+1:3*(N-i+1)*num);
-        Ak = create_Ak(A_d, B_d, sk, uk, num);
+        Ak = create_Ak(A_d, B_d, sk, uk, num, func_cell);
         A_list{i} = Ak;
     end
 end
 
-function B_list = create_B_list(num, N, s, s0, B_d) % {B1, B2, ... ,BN}
+function B_list = create_B_list(num, N, s, s0, u, B_d, func_cell) % {B1, B2, ... ,BN}
     B_list = cell(1, N);
     for i = 1:N
         if i == 1
@@ -296,12 +302,13 @@ function B_list = create_B_list(num, N, s, s0, B_d) % {B1, B2, ... ,BN}
         else 
             sk = s(6*(N-i+1)*num+1:6*(N-i+2)*num);
         end
-        B = create_Bk(B_d, sk, num);
+        uk = u(3*(N-i)*num+1:3*(N-i+1)*num);
+        B = create_Bk(B_d, sk, uk, num, func_cell);
         B_list{i} = B;
     end
 end
 
-function C_list = create_C_list(num, N, s, s0, u, B_d) % {C1, C2, ... ,CN}
+function C_list = create_C_list(num, N, s, s0, u, B_d, func_cell) % {C1, C2, ... ,CN}
     C_list = cell(1, N);
     for i = 1:N
         if i == 1
@@ -310,45 +317,66 @@ function C_list = create_C_list(num, N, s, s0, u, B_d) % {C1, C2, ... ,CN}
             sk = s(6*(N-i+1)*num+1:6*(N-i+2)*num);
         end
         uk = u(3*(N-i)*num+1:3*(N-i+1)*num);
-        C = create_Ck(B_d, sk, uk, num);
+        C = create_Ck(B_d, sk, uk, num, func_cell);
         C_list{i} = C;
     end
 end
 
-function A = create_Ak(A_d, B_d, sk, uk, num)
+function A = create_Ak(A_d, B_d, sk, uk, num, func_cell)
     A = zeros(6*num,6*num);
     sk_r = [sk(1:6) - sk(7:12); sk(7:12) - sk(1:6)]; 
     for i = 1:num 
         xk_ri = sk_r(6*(i-1)+1:6*(i-1)+3);
-        xk_i = sk(6*(i-1)+1:6*(i-1)+3);
-        uk_i = uk(3*(i-1)+1:3*i);
-        dfds = -4*norm(xk_ri)^(-6)*uk_i*[xk_ri.', zeros(1,3)] * 10^(-6);
+        if i == 1
+            uk_1 = uk(1:3);
+            uk_2 = uk(4:6);
+        elseif i == 2
+            uk_2 = uk(1:3);
+            uk_1 = uk(4:6);
+        end
+        dfds = dfdr_func(xk_ri, uk_1, uk_2, func_cell);
+        dfds = [dfds, zeros(3,3)];
         dfds_m = B_d * dfds;
         A(6*(i-1)+1:6*i,6*(i-1)+1:6*i) = A_d + dfds_m;
     end
 end
 
-function B = create_Bk(B_d, sk, num)
+function B = create_Bk(B_d, sk, uk, num, func_cell)
     B = zeros(6*num,3*num);
     sk_r = [sk(1:6) - sk(7:12); sk(7:12) - sk(1:6)]; 
     for i = 1:num 
         xk_ri = sk_r(6*(i-1)+1:6*(i-1)+3);
-        dfdu = eye(3)/norm(xk_ri)^4 * 10^(-6);
+        if i == 1
+            uk_1 = uk(1:3);
+            uk_2 = uk(4:6);
+        elseif i == 2
+            uk_2 = uk(1:3);
+            uk_1 = uk(4:6);
+        end
+        dfdu = dfdmyu1_func(xk_ri, uk_1, uk_2, func_cell);
         B(6*(i-1)+1:6*i,3*(i-1)+1:3*i) = B_d * dfdu; 
     end
 end
 
-function C = create_Ck(B_d, sk, uk, num) 
+function C = create_Ck(B_d, sk, uk, num, func_cell) 
     C = zeros(6*num,1);
     sk_r = [sk(1:6) - sk(7:12); sk(7:12) - sk(1:6)]; 
     for i = 1:num 
         sk_i = sk(6*(i-1)+1:6*i);
         xk_ri = sk_r(6*(i-1)+1:6*(i-1)+3);
-        xk_i = sk(6*(i-1)+1:6*(i-1)+3);
         uk_i = uk(3*(i-1)+1:3*i);
-        f = uk_i/norm(xk_ri)^(4) * 10^(-6);
-        dfds = -4*norm(xk_ri)^(-6)*uk_i*[xk_ri.', zeros(1,3)] * 10^(-6);
-        dfdu = eye(3)/norm(xk_ri)^4 * 10^(-6);
+
+        if i == 1
+            uk_1 = uk(1:3);
+            uk_2 = uk(4:6);
+        elseif i == 2
+            uk_2 = uk(1:3);
+            uk_1 = uk(4:6);
+        end
+        f = f_func(xk_ri, uk_1, uk_2, func_cell);
+        dfds = dfdr_func(xk_ri, uk_1, uk_2, func_cell);
+        dfds = [dfds, zeros(3,3)];
+        dfdu = dfdmyu1_func(xk_ri, uk_1, uk_2, func_cell);
         C(6*(i-1)+1:6*i,1) = B_d * (f - dfds * sk_i - dfdu * uk_i);
     end
 end
@@ -375,173 +403,126 @@ function B = reorderMatrix(A)
     end
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-%{
-
-
-
-
-
-
-
-
-function mat = controllability_matrix(A, B, N)
-    % 入力:
-    % A: nxn の行列
-    % B: nx1 のベクトル
-    % N: 整数
-    n = size(A, 1); % A行列の次元
-    k = size(B, 2);
-    mat = [];
-    for j = 1:N
-        mat_i = zeros(n, N);
-        %j個目までは0行列
-        for i = 1:N
-            if i >= 1 && i < j
-                mat_i(:, k*(i-1)+1: k*i) = zeros(n, k);
-            else
-                mat_i(:, k*(i-1)+1: k*i) = A^(i-j) * B;
-            end
-        end
-        mat = [mat;mat_i];
+function func_cell = create_func_cell()
+    syms xr yr zr myu11 myu12 myu13 myu21 myu22 myu23
     
-    end
-
-end
-
-function mat = controllability_matrix2(A, N)
-    mat = [];
-    for j = 1:N
-        mat_i = A^(N - j + 1);
-        mat = [mat;mat_i];
-    end
-
-end
-
-function mat = controllability_matrix3(A_, B_, N, s)
-    % 入力:
-    % A: nxn の行列
-    % B: nx1 のベクトル
-    % N: タイムステップの数
-    n = size(A_, 1); % A行列の行数
-    k = size(B_, 2); % B行列の列数
-    mat = [];
-    A_list = cell(1, N);
-    B_list = cell(1, N);
-    for i = 1:N
-        sk = s(6*(i-1)+1:6*i);
-        xk = x(3*(i-1)+1:3*i);
-        A = create_Ak(A_, sk, xk);
-        B = create_Bk(B_, sk);
-        A_list{i} = A;
-        B_list{i} = B;
-    end
+    r = [xr; yr; zr];
+    myu1 = [myu11; myu12; myu13];
+    myu2 = [myu21; myu22; myu23];
+    myu0 = 4*pi*1e-7; % 真空の透磁率
     
-    for j = 1:N % 行
-        for i = 1:N % 列（下から）
-            if i < j
-                mat_i(:, k*(i-1)+1: k*i) = zeros(n, k);
-            else
-                % Aは累乗じゃなくて違うAをかけないといけない。
-                % i行j列目の係数
-                AA = A_list{N-i+1};
-                for k = (N-i+1):(N-j)
-                    AA = AA * A_list{k};
-                end
-                mat_i(:, k*(i-1)+1: k*i) = AA * B_list{N-j+1};
-                % mat_i(:, k*(i-1)+1: k*i) = A^(i-j) * B;
-            end
-            
-        end
-        mat = [mat;mat_i];
-    end
-end
-
-function mat = controllability_matrix4(A_, N, s, x)
-    mat = [];
-    A_list = cell(1, N);
-    for i = 1:N
-        sk = s(6*(i-1)+1:6*i);
-        xk = x(3*(i-1)+1:3*i);
-        A = create_Ak(A_, sk, xk);
-        A_list{i} = A;
-    end
-    for j = 1:N
-        AA = A_list{j};
-        for k = j+1:N
-            AA = AA * A_list{k};
-        end
-        mat_i = AA;
-        mat = [mat;mat_i];
-    end
-end
-
-function mat = controllability_matrix5(A_, N, s, x)
-    % Aで構成された行列とCで構成された行列を掛け合わせる感じにしたい。
-end
-
-function A_mat = create_A_mat(A_list)
-    for j = 1:N % 行
-        for i = 1:N % 列（下から）
-            if i < j
-                mat_i(:, k*(i-1)+1: k*i) = zeros(n, k);
-            else
-                % Aは累乗じゃなくて違うAをかけないといけない。
-                % i行j列目の係数
-                AA = A_list{N-i+1};
-                for k = (N-i+1):(N-j)
-                    AA = AA * A_list{k};
-                end
-                mat_i(:, k*(i-1)+1: k*i) = AA * B_list{N-j+1};
-                % mat_i(:, k*(i-1)+1: k*i) = A^(i-j) * B;
-            end
-            
-        end
-        A_mat = [mat;mat_i];
-    end
-end
-
-function matrix_3n_n = create_matrix(vec_3n)
-    % 複数の相対位置ベクトルの内積をまとめて行うための行列を作る
-    % vec_3n: 3n x 1 ベクトル
+    f = 3*myu0/(4*pi)*(dot(myu1, myu2)/norm(r)^5 * r + dot(myu1, r)/norm(r)^5 * myu2 + dot(myu2, r)/norm(r)^5 * myu1 - 5*dot(myu1, r)*dot(myu2, r)/norm(r)^7*r);
     
-    n = length(vec_3n) / 3; % 3次元ベクトルの個数
-    matrix_3n_n = zeros(3*n, n); % 出力行列の初期化
+    df_dxr = diff(f, xr);
+    df_dyr = diff(f, yr);
+    df_dzr = diff(f, zr);
+    df_dmyu11 = diff(f, myu11);
+    df_dmyu12 = diff(f, myu12);
+    df_dmyu13 = diff(f, myu13);
+    df_dmyu21 = diff(f, myu21);
+    df_dmyu22 = diff(f, myu22);
+    df_dmyu23 = diff(f, myu23);
+
+    df_dxr_func = matlabFunction(df_dxr, 'vars', [xr, yr, zr, myu11, myu12, myu13, myu21, myu22, myu23]);
+    df_dyr_func = matlabFunction(df_dyr, 'vars', [xr, yr, zr, myu11, myu12, myu13, myu21, myu22, myu23]);
+    df_dzr_func = matlabFunction(df_dzr, 'vars', [xr, yr, zr, myu11, myu12, myu13, myu21, myu22, myu23]);
+    df_dmyu11_func = matlabFunction(df_dmyu11, 'vars', [xr, yr, zr, myu11, myu12, myu13, myu21, myu22, myu23]);
+    df_dmyu12_func = matlabFunction(df_dmyu12, 'vars', [xr, yr, zr, myu11, myu12, myu13, myu21, myu22, myu23]);
+    df_dmyu13_func = matlabFunction(df_dmyu13, 'vars', [xr, yr, zr, myu11, myu12, myu13, myu21, myu22, myu23]);
+    df_dmyu21_func = matlabFunction(df_dmyu21, 'vars', [xr, yr, zr, myu11, myu12, myu13, myu21, myu22, myu23]);
+    df_dmyu22_func = matlabFunction(df_dmyu22, 'vars', [xr, yr, zr, myu11, myu12, myu13, myu21, myu22, myu23]);
+    df_dmyu23_func = matlabFunction(df_dmyu23, 'vars', [xr, yr, zr, myu11, myu12, myu13, myu21, myu22, myu23]);
+    f_func0 = matlabFunction(f, 'vars', [xr, yr, zr, myu11, myu12, myu13, myu21, myu22, myu23]);
     
-    for i = 1:n
-        % 各3次元ベクトルを抽出
-        vec = vec_3n(3*(i-1)+1 : 3*i);
-        % 対応するブロックに代入
-        matrix_3n_n(3*(i-1)+1 : 3*i, i) = vec;
-    end
+    
+    func_cell = {df_dxr_func, df_dyr_func, df_dzr_func, df_dmyu11_func, df_dmyu12_func, df_dmyu13_func, df_dmyu21_func, df_dmyu22_func, df_dmyu23_func, f_func0};
 end
 
+function dfdr = dfdr_func(r_val, myu1_val, myu2_val, func_cell)
+    df_dxr_func = func_cell{1};
+    df_dyr_func = func_cell{2};
+    df_dzr_func = func_cell{3};
 
-function norms = calculate_norms(vec_3n)
-    % vec_3n: 3n x 1 ベクトル
-    
-    n = length(vec_3n) / 3; % 3次元ベクトルの個数
-    norms = zeros(n, 1); % 出力ベクトルの初期化
-    
-    for i = 1:n
-        % 各3次元ベクトルを抽出
-        vec = vec_3n(3*(i-1)+1 : 3*i);
-        % ノルムを計算して保存
-        norms(i) = norm(vec);
-    end
+    xr_val = r_val(1);
+    yr_val = r_val(2); 
+    zr_val = r_val(3); 
+
+    myu11_val = myu1_val(1);
+    myu12_val = myu1_val(2);
+    myu13_val = myu1_val(3);
+
+    myu21_val = myu2_val(1);
+    myu22_val = myu2_val(2);
+    myu23_val = myu2_val(3);
+
+    df_dxr = df_dxr_func(xr_val, yr_val, zr_val, myu11_val, myu12_val, myu13_val, myu21_val, myu22_val, myu23_val);
+    df_dyr = df_dyr_func(xr_val, yr_val, zr_val, myu11_val, myu12_val, myu13_val, myu21_val, myu22_val, myu23_val);
+    df_dzr = df_dzr_func(xr_val, yr_val, zr_val, myu11_val, myu12_val, myu13_val, myu21_val, myu22_val, myu23_val);
+
+    dfdr = [df_dxr, df_dyr, df_dzr]; % 3×3
 end
 
+function dfdmyu1 = dfdmyu1_func(r_val, myu1_val, myu2_val, func_cell)
+    df_dmyu11_func = func_cell{4};
+    df_dmyu12_func = func_cell{5};
+    df_dmyu13_func = func_cell{6};
 
-%}
+    xr_val = r_val(1);
+    yr_val = r_val(2); 
+    zr_val = r_val(3); 
+
+    myu11_val = myu1_val(1);
+    myu12_val = myu1_val(2);
+    myu13_val = myu1_val(3);
+
+    myu21_val = myu2_val(1);
+    myu22_val = myu2_val(2);
+    myu23_val = myu2_val(3);
+
+    df_dmyu1x = df_dmyu11_func(xr_val, yr_val, zr_val, myu11_val, myu12_val, myu13_val, myu21_val, myu22_val, myu23_val);
+    df_dmyu1y = df_dmyu12_func(xr_val, yr_val, zr_val, myu11_val, myu12_val, myu13_val, myu21_val, myu22_val, myu23_val);
+    df_dmyu1z = df_dmyu13_func(xr_val, yr_val, zr_val, myu11_val, myu12_val, myu13_val, myu21_val, myu22_val, myu23_val);
+
+    dfdmyu1 = [df_dmyu1x, df_dmyu1y, df_dmyu1z]; % 3×3
+end
+
+function dfdmyu2 = dfdmyu2_func(r_val, myu1_val, myu2_val, func_cell)
+    df_dmyu21_func = func_cell{7};
+    df_dmyu22_func = func_cell{8};
+    df_dmyu23_func = func_cell{9};
+
+    xr_val = r_val(1);
+    yr_val = r_val(2); 
+    zr_val = r_val(3); 
+
+    myu11_val = myu1_val(1);
+    myu12_val = myu1_val(2);
+    myu13_val = myu1_val(3);
+
+    myu21_val = myu2_val(1);
+    myu22_val = myu2_val(2);
+    myu23_val = myu2_val(3);
+
+    df_dmyu2x = df_dmyu21_func(xr_val, yr_val, zr_val, myu11_val, myu12_val, myu13_val, myu21_val, myu22_val, myu23_val);
+    df_dmyu2y = df_dmyu22_func(xr_val, yr_val, zr_val, myu11_val, myu12_val, myu13_val, myu21_val, myu22_val, myu23_val);
+    df_dmyu2z = df_dmyu23_func(xr_val, yr_val, zr_val, myu11_val, myu12_val, myu13_val, myu21_val, myu22_val, myu23_val);
+
+    dfdmyu2 = [df_dmyu2x, df_dmyu2y, df_dmyu2z]; % 3×3    
+end
+
+function F = f_func(r_val, myu1_val, myu2_val, func_cell)
+    f_func0 = func_cell{10};
+    xr_val = r_val(1);
+    yr_val = r_val(2); 
+    zr_val = r_val(3); 
+
+    myu11_val = myu1_val(1);
+    myu12_val = myu1_val(2);
+    myu13_val = myu1_val(3);
+
+    myu21_val = myu2_val(1);
+    myu22_val = myu2_val(2);
+    myu23_val = myu2_val(3);
+
+    F = f_func0(xr_val, yr_val, zr_val, myu11_val, myu12_val, myu13_val, myu21_val, myu22_val, myu23_val);
+end

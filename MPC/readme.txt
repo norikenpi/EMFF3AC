@@ -10,6 +10,13 @@ scp_mpc2_nonl.mでscp_mpc.mとF2I.mで求めた2衛星のノミナル軌道か�
 
 scp_mpc22_nonl.mで相対距離を利用した入力。scp_mpc.mとF2I2.mで求めた2衛星のノミナル軌道から、距離の4乗に反比例した力を発生できる場合の最適軌道を求められる。
 
-scp_mpc22_nonl.mで相対距離と電流ベクトルを利用したもの。
+
 
 check_condition.mでノミナル軌道が拘束条件を満たしているかチェック。
+symbolic_test.mtとsymbolic_test2でfarfieldの微分の検証をしている。
+test2はtestの上位互換。
+
+test_far_field_inv.mで所望力から2つの衛星の電流を計算している。
+
+scp_mpc23_nonl.mで相対距離と電流ベクトルを利用したもの。far-field微分。
+scp_mpc.mとF2I3.mで求めた2衛星のノミナル軌道から、電磁力を用いた場合の最適軌道を求められる。
