@@ -28,7 +28,7 @@ m = 1; % 1
 dt = 15;
 
 % 時間 N×dt秒
-N = 100;
+N = 10;
 
 % 衛星数
 num = 2;
@@ -106,6 +106,7 @@ R = A_mat*C_mat;
 disp("linearize_error")
 l_s = P * u_I + Q * s0 + R;
 disp(l_s(1:3))
+disp(l_s(7:9))
 
 %% 評価関数
 
@@ -343,12 +344,9 @@ function C = create_Ck(B_d, sk, uk, num)
     for i = 1:num 
         sk_i = sk(6*(i-1)+1:6*i);
         xk_ri = sk_r(6*(i-1)+1:6*(i-1)+3);
-        xk_i = sk(6*(i-1)+1:6*(i-1)+3);
         uk_i = uk(3*(i-1)+1:3*i);
-        f = uk_i/norm(xk_ri)^(4) * 10^(-6);
         dfds = -4*norm(xk_ri)^(-6)*uk_i*[xk_ri.', zeros(1,3)] * 10^(-6);
-        dfdu = eye(3)/norm(xk_ri)^4 * 10^(-6);
-        C(6*(i-1)+1:6*i,1) = B_d * (f - dfds * sk_i - dfdu * uk_i);
+        C(6*(i-1)+1:6*i,1) = -B_d * dfds * sk_i;
     end
 end
 
