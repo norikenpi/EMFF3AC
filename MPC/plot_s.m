@@ -12,6 +12,8 @@ end
 
 % ビデオライターオブジェクトの作成
 v = VideoWriter('points_motion_3D.avi'); % AVIファイル形式で動画を保存
+% 画質の設定（例：品質を最大に）
+v.Quality = 100;
 open(v);
 
 % フィギュアの作成
@@ -28,10 +30,12 @@ grid on; % グリッドを表示
 color_satellite1 = 'b'; % 青
 color_satellite2 = 'r'; % 赤
 
+set(gca, 'ZDir', 'reverse')
+
 % 軸のラベルを設定
-xlabel('X Axis');
-ylabel('Y Axis');
-zlabel('Z Axis');
+xlabel('X[m](軌道進行方向)');
+ylabel('Y[m](軌道面垂直方向)');
+zlabel('Z[m](地心方向)');
 
 theta = linspace(0, 2 * pi, 100); % 0から2πまでの角度を生
 
@@ -69,7 +73,7 @@ for i = 1:5:N
     plot3(satellite2(1,1), satellite2(1,2), satellite2(1,3), 'o', 'MarkerSize', 5, 'Color', color_satellite2);
     
     % 視点を変更
-    azimuth = 45; % 方位角
+    azimuth = 225; % 方位角
     elevation = 30; % 仰角
     view(azimuth, elevation);
 

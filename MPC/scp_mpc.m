@@ -73,6 +73,7 @@ s0 = [s01; s02]; % 6num×1
 %sd2 = [0.5; -0.5; 0; 0; 0; 0];
 
 %レコード盤軌道
+%√3rrが衛星間距離になることに注意
 rr = 0.1;
 
 sd1 = [-2*rr*cos(n*N*dt); sqrt(3)*rr*sin(n*N*dt); rr*sin(n*N*dt); 2*n*rr*sin(n*N*dt); sqrt(3)*n*rr*sin(n*N*dt); n*rr*cos(n*N*dt)];
