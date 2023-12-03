@@ -5,9 +5,9 @@ u_myu = force2moment(s1, s0, num, u(1:end-1));
 u_myu(end+1) = max(abs(u_myu));
 
 r_norm = norm(r);
-coilN = 1000;
+coilN = 100;
 radius = 0.05;
-I_max = 20;
+I_max = 35;
 mass = 1;
 u_I = u_myu/(coilN * pi * radius^2);
 
@@ -41,9 +41,9 @@ end
 
 function [myu1, myu2] = ru2myu(r,u)
     r_norm = norm(r);
-    coilN = 1000;
+    coilN = 100;
     radius = 0.05;
-    I_max = 20;
+    I_max = 35;
     mass = 1;
     myu01 = coilN * pi * radius^2 * I_max * r/r_norm;
     myu0 = 4*pi*1e-7; % 真空の透磁率

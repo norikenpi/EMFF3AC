@@ -13,12 +13,12 @@ n = 0.0011; % 0.0011
 
 % 衛星質量
 m = 1; % 1
-
+ 
 % タイムステップ(s)
 dt = 15;
 
 % 時間 N×dt秒
-N = 10;
+N = 250;
 
 % 衛星数
 num = 2;
@@ -64,13 +64,19 @@ A_d = eye(6*num) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
 % 初期状態
-s01 = [0.5; 0.0000001; 0.0000001; 0; 0; 0];
-s02 = [-0.5; -0.0000001; -0.0000001; 0; 0; 0];
+s01 = [0.1; 0.0000001; 0.0000001; 0; 0; 0];
+s02 = [-0.1; -0.0000001; -0.0000001; 0; 0; 0];
 s0 = [s01; s02]; % 6num×1
 
 % 2衛星のそれぞれの目標状態
-sd1 = [-0.5; 0.5; 0; 0; 0; 0];
-sd2 = [0.5; -0.5; 0; 0; 0; 0];
+%sd1 = [-0.5; 0.5; 0; 0; 0; 0];
+%sd2 = [0.5; -0.5; 0; 0; 0; 0];
+
+%レコード盤軌道
+rr = 0.1;
+
+sd1 = [-2*rr*cos(n*N*dt); sqrt(3)*rr*sin(n*N*dt); rr*sin(n*N*dt); 2*n*rr*sin(n*N*dt); sqrt(3)*n*rr*sin(n*N*dt); n*rr*cos(n*N*dt)];
+sd2 = [-2*rr*cos(n*N*dt + pi); sqrt(3)*rr*sin(n*N*dt + pi); rr*sin(n*N*dt + pi); 2*n*rr*sin(n*N*dt + pi); sqrt(3)*n*rr*sin(n*N*dt + pi); n*rr*cos(n*N*dt + pi)];
 sd = [sd1; sd2];
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
@@ -171,12 +177,15 @@ u = x;
 
 disp("最大入力 u_max")
 disp(x(3*num*N+1))
-
+I_max_list = [];
 
 %% 図示
 
 % 2衛星の動画を表示。
+%二次元座標
 data = reorderMatrix(s);
+%3次元座標
+data2 = reorderMatrix2(s);
 
 % ビデオライターオブジェクトの作成
 v = VideoWriter('points_motion.avi'); % AVIファイル形式で動画を保存
@@ -189,11 +198,25 @@ xlim([-1, 1]); % xの範囲を調整
 ylim([-1, 1]); % yの範囲を調整
 hold on;
 
+
+%{
+
 % 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
 for i = 1:10*2:length(data)-1
     %disp(i)
     plot(data(i), data(i+1), 'o', 'MarkerSize', 10);
     plot(data(i+2), data(i+3), 'o', 'MarkerSize', 10);
+    drawnow;
+    frame = getframe(gcf);
+    writeVideo(v, frame);
+end
+%}
+
+% 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
+for i = 1:10*3:length(data2)-1
+    %disp(i)
+    plot(data2(i), data2(i+1), 'o', 'MarkerSize', 10);
+    plot(data2(i+3), data2(i+4), 'o', 'MarkerSize', 10);
     drawnow;
     frame = getframe(gcf);
     writeVideo(v, frame);
@@ -275,6 +298,18 @@ function B = reorderMatrix(A)
     B = [];
     %A = 1:100;
     n = 2;
+    for i = 1:n:length(A)
+        sub_vector = A(i:min(i+n-1, length(A)));
+        B = [B; flip(sub_vector)];
+    end
+end
+
+function B = reorderMatrix2(A)
+    idx = find(mod(1:length(A), 6) == 1 | mod(1:length(A), 6) == 2 | mod(1:length(A), 6) == 3);
+    A = flip(A(idx));
+    B = [];
+    %A = 1:100;
+    n = 3;
     for i = 1:n:length(A)
         sub_vector = A(i:min(i+n-1, length(A)));
         B = [B; flip(sub_vector)];

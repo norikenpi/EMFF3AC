@@ -22,10 +22,10 @@ n = 0.0011; % 0.0011
 m = 1; % 1
 
 % タイムステップ(s)
-dt = 15;
+dt = 1;
 
 % 時間 N×dt秒
-N = 100;
+N = 250;
 
 % 衛星数(2以外動かない)
 num = 2;
@@ -34,7 +34,7 @@ num = 2;
 r = 0.01 ;
  
 % trust region1 位置
-delta1 = 0.01;
+delta1 = 0.1;
 
 % trust region2 磁気モーメント
 %delta2 = 0.00000000001;
@@ -198,13 +198,13 @@ s = P * x + Q * s0 + R;
 u_myu = x;
 disp("最大磁気モーメント u_myu_max()")
 disp(x(3*N+1))
-coilN = 1000;
+coilN = 100;
 radius = 0.05;
-I_max = 20;
+I_max = 35;
 mass = 1;
 disp("最大電流 u_myu_max(A)/(coilN * pi * radius^2)")
 disp(x(3*N+1)/(coilN * pi * radius^2));
-
+I_max_list = [I_max_list; x(3*N+1)/(coilN * pi * radius^2)];
 
 
 %% 図示
