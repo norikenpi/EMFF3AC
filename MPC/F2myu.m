@@ -4,7 +4,7 @@ u_myu = force2moment(s1, s0, num, u(1:end-1));
 
 u_myu(end+1) = max(abs(u_myu));
 
-r_norm = norm(r);
+
 coilN = 100;
 radius = 0.05;
 I_max = 35;

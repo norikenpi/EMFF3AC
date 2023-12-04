@@ -34,10 +34,10 @@ num = 2;
 r = 0.01 ;
  
 % trust region1 位置
-delta1 = 0.01;
+delta1 = 0.05;
 
 % trust region2 磁気モーメント
-delta2 = 0.25;
+delta2 = 10;
 %% Hill方程式 宇宙ステーション入門 P108
 
 % 1衛星に関する状態方程式の係数行列
@@ -84,8 +84,8 @@ s0 = [s01; s02]; % 6num×1
 %レコード盤軌道
 rr = 0.1;
 
-sd1 = [-2*rr*cos(n*N*dt); sqrt(3)*rr*sin(n*N*dt); rr*sin(n*N*dt); 2*n*rr*sin(n*N*dt); sqrt(3)*n*rr*sin(n*N*dt); n*rr*cos(n*N*dt)];
-sd2 = [-2*rr*cos(n*N*dt + pi); sqrt(3)*rr*sin(n*N*dt + pi); rr*sin(n*N*dt + pi); 2*n*rr*sin(n*N*dt + pi); sqrt(3)*n*rr*sin(n*N*dt + pi); n*rr*cos(n*N*dt + pi)];
+sd1 = [-2*rr*cos(n*N*dt); sqrt(3)*rr*sin(n*N*dt); rr*sin(n*N*dt); 2*n*rr*sin(n*N*dt); sqrt(3)*n*rr*cos(n*N*dt); n*rr*cos(n*N*dt)];
+sd2 = [-2*rr*cos(n*N*dt + pi); sqrt(3)*rr*sin(n*N*dt + pi); rr*sin(n*N*dt + pi); 2*n*rr*sin(n*N*dt + pi); sqrt(3)*n*rr*cos(n*N*dt + pi); n*rr*cos(n*N*dt + pi)];
 sd = [sd1; sd2];
 
 

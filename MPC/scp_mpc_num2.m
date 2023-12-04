@@ -21,7 +21,7 @@ dt = 15;
 N = 250;
 
 % 衛星数
-num = 2;
+num = 9;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %R = 0.0;
@@ -34,7 +34,7 @@ delta = 0.0;
 
 % 1衛星に関する状態方程式の係数行列
 % x_dot = A_ x + B_ u
-A_ = [0, 0, 0, 1/2, 0, 0;
+A = [0, 0, 0, 1/2, 0, 0;
      0, 0, 0, 0, 1/2, 0;
      0, 0, 0, 0, 0, 1/2;
      0, 0, 0, 0, 0, 2*n;
@@ -47,7 +47,7 @@ A_ = [0, 0, 0, 1/2, 0, 0;
      0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 0]/2; % 6×6
 
-B_ = [0, 0, 0;
+B = [0, 0, 0;
      0, 0, 0;
      0, 0, 0;
      1/m, 0, 0;
@@ -55,30 +55,59 @@ B_ = [0, 0, 0;
      0, 0, 1/m]; % 6×3
 
 %2衛星に関する状態方程式の係数行列
-A_ = [A_, zeros(6);zeros(6),A_];
-B_ = [B_,zeros(6,3);zeros(6,3),B_];
+%A_ = [A, zeros(6);zeros(6),A];
+%B_ = [B,zeros(6,3);zeros(6,3),B];
 
+
+A_ = A;
+B_ = B;
+
+for i = 2:num
+    A_ = blkdiag(A_, A); % BにAを対角に追加
+    B_ = blkdiag(B_, B); % BにAを対角に追加
+end
 
 % 2衛星に関する離散時間状態方程式の係数行列
 A_d = eye(6*num) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
 % 初期状態
-s01 = [0.1; 0.0000001; 0.0000001; 0; 0; 0];
-s02 = [-0.1; -0.0000001; -0.0000001; 0; 0; 0];
-s0 = [s01; s02]; % 6num×1
+s00 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
+s01 = [0.05; 0.0000001; 0.0000001; 0; 0; 0];
+s02 = [-0.05; -0.0000001; -0.0000001; 0; 0; 0];
+s03 = [-0.01; -0.0000001; -0.0000001; 0; 0; 0];
+s04 = [0.01; -0.0000001; -0.0000001; 0; 0; 0];
+
+s05 = [0.015; 0.0000001; 0.0000001; 0; 0; 0];
+s06 = [-0.015; -0.0000001; -0.0000001; 0; 0; 0];
+s07 = [-0.02; -0.0000001; -0.0000001; 0; 0; 0];
+s08 = [0.02; -0.0000001; -0.0000001; 0; 0; 0];
+
+
+
+s0 = adjust_cog([s00, s01, s02, s03, s04, s05, s06, s07, s08], num); % 6num×1
 
 % 2衛星のそれぞれの目標状態
-%sd1 = [-0.5; 0.5; 0; 0; 0; 0];
-%sd2 = [0.5; -0.5; 0; 0; 0; 0];
-
 %レコード盤軌道
 %√3rrが衛星間距離になることに注意
-rr = 0.1;
 
-sd1 = [-2*rr*cos(n*N*dt); sqrt(3)*rr*sin(n*N*dt); rr*sin(n*N*dt); 2*n*rr*sin(n*N*dt); sqrt(3)*n*rr*cos(n*N*dt); n*rr*cos(n*N*dt)];
-sd2 = [-2*rr*cos(n*N*dt + pi); sqrt(3)*rr*sin(n*N*dt + pi); rr*sin(n*N*dt + pi); 2*n*rr*sin(n*N*dt + pi); sqrt(3)*n*rr*cos(n*N*dt + pi); n*rr*cos(n*N*dt + pi)];
-sd = [sd1; sd2];
+sd0 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
+
+rr1 = 0.1;
+sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
+sd2 = [-2*rr1*cos(n*N*dt + 1*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 1*2*pi/4); rr1*sin(n*N*dt + 1*2*pi/4); 2*n*rr1*sin(n*N*dt + 1*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 1*2*pi/4); n*rr1*cos(n*N*dt + 1*2*pi/4)];
+sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
+sd4 = [-2*rr1*cos(n*N*dt + 3*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 3*2*pi/4); rr1*sin(n*N*dt + 3*2*pi/4); 2*n*rr1*sin(n*N*dt + 3*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 3*2*pi/4); n*rr1*cos(n*N*dt + 3*2*pi/4)];
+
+rr2 = sqrt(2)/10;
+sd5 = [-2*rr2*cos(n*N*dt + pi/4); sqrt(3)*rr2*sin(n*N*dt + pi/4); rr2*sin(n*N*dt + pi/4); 2*n*rr2*sin(n*N*dt + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + pi/4); n*rr2*cos(n*N*dt + pi/4)];
+sd6 = [-2*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4)];
+sd7 = [-2*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4)];
+sd8 = [-2*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4)];
+
+
+
+sd = adjust_cog([sd0, sd1, sd2, sd3, sd4, sd5, sd6, sd7, sd8], num);
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
 % S = PU + Qs_0
@@ -147,7 +176,6 @@ beq1 = zeros(3*N, 1);
 % 等式制約2 (最終状態固定)
 Aeq2 = P(1:6*num,:);
 beq2 = sd - Q(1:6*num,:) * s0;
-
 Aeq = [Aeq1; Aeq2];
 beq = [beq1; beq2];
 
@@ -180,51 +208,6 @@ disp("最大入力 u_max")
 disp(x(3*num*N+1))
 I_max_list = [];
 
-%% 図示
-
-% 2衛星の動画を表示。
-%二次元座標
-data = reorderMatrix(s);
-%3次元座標
-data2 = reorderMatrix2(s);
-
-% ビデオライターオブジェクトの作成
-v = VideoWriter('points_motion.avi'); % AVIファイル形式で動画を保存
-open(v);
-
-% フィギュアの作成
-figure;
-axis equal;
-xlim([-1, 1]); % xの範囲を調整
-ylim([-1, 1]); % yの範囲を調整
-hold on;
-
-
-%{
-
-% 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
-for i = 1:10*2:length(data)-1
-    %disp(i)
-    plot(data(i), data(i+1), 'o', 'MarkerSize', 10);
-    plot(data(i+2), data(i+3), 'o', 'MarkerSize', 10);
-    drawnow;
-    frame = getframe(gcf);
-    writeVideo(v, frame);
-end
-%}
-
-% 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
-for i = 1:10*3:length(data2)-1
-    %disp(i)
-    plot(data2(i), data2(i+1), 'o', 'MarkerSize', 10);
-    plot(data2(i+3), data2(i+4), 'o', 'MarkerSize', 10);
-    drawnow;
-    frame = getframe(gcf);
-    writeVideo(v, frame);
-end
-
-% ビデオの保存
-close(v);
 
 %% 関数リスト
 
@@ -318,9 +301,19 @@ function B = reorderMatrix2(A)
 end
 
 function Aeq1 = create_Aeq1(N, num)
-    matrix1 = [eye(3),eye(3)];
+    matrix1 = repmat(eye(3), 1, num);
     Aeq1 = zeros(3*N, 3*num*N+1);
     for i = 1:N
         Aeq1(3*(i-1)+1:3*i, 3*num*(i-1)+1:3*num*i) = matrix1;
+    end
+end
+
+function s = adjust_cog(s_mat, num)
+    
+    cog = sum(s_mat, 2)/num;
+    disp(cog)
+    s = zeros(6*num, 1);
+    for i = 1:num
+        s(6*(i-1)+1: 6*i) = s_mat(:,i) - cog;
     end
 end
