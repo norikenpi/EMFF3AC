@@ -1,4 +1,4 @@
-function plot_s(s, num, N, rr)
+function plot_s(s, num, N, rr, d_target)
     % 2衛星の動画を表示。
     %3次元座標
     data = reorderMatrix2(s);
@@ -25,9 +25,9 @@ function plot_s(s, num, N, rr)
     % フィギュアの作成
     figure;
     axis equal;
-    xlim([-0.3, 0.3]); % x軸の範囲を調整
-    ylim([-0.3, 0.3]); % y軸の範囲を調整
-    zlim([-0.3, 0.3]); % z軸の範囲を調整
+    xlim([-d_target*1.5, d_target*1.5]); % x軸の範囲を調整
+    ylim([-d_target*1.5, d_target*1.5]); % y軸の範囲を調整
+    zlim([-d_target*1.5, d_target*1.5]); % z軸の範囲を調整
     hold on;
     grid on; % グリッドを表示
     

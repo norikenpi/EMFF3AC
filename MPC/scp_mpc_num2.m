@@ -8,28 +8,29 @@
 %% パラメータ設定
 
 % 初期衛星間距離
-d_initial = 0.1;
+d_initial = 0.3;
 
 % 最終衛星間距離
-d_target = 0.2;
+d_target = 0.3;
 
-% 進入禁止範囲
-d_avoid = 0.01;
+% 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
+%d_avoid = 0.01;
+d_avoid = -1;
 
 % 衛星数　2基or5基or9基
-num = 2;
+num = 9;
 
 % 衛星質量
 m = 1; % 1
  
 % タイムステップ(s)
-dt = 15;
+dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 3;
+N = 100;
 
 % trust region 
-delta = 0.0;
+delta = 0.1;
 
 
 
@@ -74,12 +75,20 @@ end
 A_d = eye(6*num) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
+
+
 % 初期状態
+if num == 2
+    d_initial = d_initial/2;
+end
 s0 = set_initialstates(num, d_initial);
 
 % 2衛星のそれぞれの目標状態
 %目標レコード盤軌道の半径
 rr1 = d_target/2;
+if num == 2
+    rr1 = d_target/4;
+end
 rr2 = sqrt(2)*d_target/2;
 
 rr = [rr1,rr2];
@@ -107,49 +116,44 @@ f = f1;
 A1 = [eye(3*N*num), -ones(3*N*num,1); -eye(3*N*num), -ones(3*N*num, 1)]; %6N×3Nnum+1
 b1 = zeros(6*N*num, 1);%6Nnum×1
 
+A = A1;
+b = b1;
 
-% 不等式制約2(自分以外のすべての衛星との距離がd_avoid以下　L1ノルム)
-% -A2_ones1(PU + Qs0) < -d_avoid +++
-% A2_ones1(PU + Qs0) < -d_avoid ---
-% -A2_ones2(PU + Qs0) < -d_avoid +-+
-% A2_ones2(PU + Qs0) < -d_avoid -+-
-% -A2_ones3(PU + Qs0) < -d_avoid +--
-% A2_ones3(PU + Qs0) < -d_avoid -++
-% -A2_ones4(PU + Qs0) < -d_avoid --+
-% A2_ones4(PU + Qs0) < -d_avoid ++-
+if not(d_avoid == -1)
+    % 不等式制約2 (衛星間距離はR以下)
+    % ノミナルの状態プロファイルを設定
+    nominal_s = s;
+    
+    % 状態ベクトルから位置ベクトルのみを抽出
+    C01 = [eye(3),zeros(3)];
+    C1 = [];
+    for i = 1:num*N
+        C1 = blkdiag(C1, C01);
+    end
+    
+    % 相対位置ベクトルを計算する行列
+    C02 = [eye(3),-eye(3)];
+    C2 = [];
+    for i = 1:N
+        C2 = blkdiag(C2, C02);
+    end
+    
+    % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
+    % 不等式の大小を変えるために両辺マイナスをかけている。
+    A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
+    b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * Q * s0;
+    
+    A = [A1; A2];
+    b = [b1; b2];
 
-% numC2の組み合わせが存在する。
+    % 不等式制約3 (移動量はdelta以下)
+    A3 = [-P; P];
+    b3 = [delta * ones(6*N*num, 1) - s + Q * s0; delta * ones(6*N*num, 1) + s - Q * s0];
+    
+    A = [A1; A2; A3];
+    b = [b1; b2; b3];
+end
 
-A2_ones1 = create_A2_ones1(N, num);
-A2_ones2 = create_A2_ones2(N, num);
-A2_ones3 = create_A2_ones3(N, num);
-A2_ones4 = create_A2_ones4(N, num);
-A2 = [A2_ones1 * P;
-     -A2_ones1 * P;
-      A2_ones2 * P;
-     -A2_ones2 * P;
-      A2_ones3 * P;
-     -A2_ones3 * P;
-      A2_ones4 * P;
-     -A2_ones4 * P];
-A2 = [A2_ones1 * P;
-     -A2_ones1 * P;];
-conmbos = num*(num-1)/2;
-b2 = [-d_avoid * ones(3*conmbos*N, 1) - A2_ones1 * Q * s0;
-      -d_avoid * ones(3*conmbos*N, 1) + A2_ones1 * Q * s0;
-      -d_avoid * ones(3*conmbos*N, 1) - A2_ones2 * Q * s0;
-      -d_avoid * ones(3*conmbos*N, 1) + A2_ones2 * Q * s0;
-      -d_avoid * ones(3*conmbos*N, 1) - A2_ones3 * Q * s0;
-      -d_avoid * ones(3*conmbos*N, 1) + A2_ones3 * Q * s0;
-      -d_avoid * ones(3*conmbos*N, 1) - A2_ones4 * Q * s0;
-      -d_avoid * ones(3*conmbos*N, 1) + A2_ones4 * Q * s0;];
-b2 = [-d_avoid * ones(3*conmbos*N, 1) - A2_ones1 * Q * s0;
-      -d_avoid * ones(3*conmbos*N, 1) + A2_ones1 * Q * s0;];
-
-A = [A1; A2];
-b = [b1; b2];
-%A = A1;
-%b = b1;
 %% 等式制約
 
 % 等式制約1 (運動量保存)
@@ -193,7 +197,7 @@ I_max_list = [];
 
 %% 図示
 
-plot_s(s, num, N, rr)
+plot_s(s, num, N, rr, d_target)
 
 %% 関数リスト
 
@@ -261,92 +265,6 @@ function norms = calculate_norms(vec_3n)
         norms(i) = norm(vec);
     end
 end
-
-function B = reorderMatrix(A)
-    idx = find(mod(1:length(A), 6) == 1 | mod(1:length(A), 6) == 2);
-    A = flip(A(idx));
-    B = [];
-    %A = 1:100;
-    n = 2;
-    for i = 1:n:length(A)
-        sub_vector = A(i:min(i+n-1, length(A)));
-        B = [B; flip(sub_vector)];
-    end
-end
-
-function B = reorderMatrix2(A)
-    idx = find(mod(1:length(A), 6) == 1 | mod(1:length(A), 6) == 2 | mod(1:length(A), 6) == 3);
-    A = flip(A(idx));
-    B = [];
-    %A = 1:100;
-    n = 3;
-    for i = 1:n:length(A)
-        sub_vector = A(i:min(i+n-1, length(A)));
-        B = [B; flip(sub_vector)];
-    end
-end
-
-function A2_ones = create_A2_ones1(N, num)
-    % +++
-    %衛星の組み合わせの数 
-    conmbos = num*(num-1)/2;
-    A2_ones = zeros(3*conmbos*N,6*N*num);
-    for i = 1:num-1 % i個目の衛星
-        for j = i+1:num % j個目の衛星
-            for k = 1:N %1~N 時刻
-                A2_ones(num*(i-1)-2*i+1 + (j-i) + k, 6*num*(k-1)+6*(i-1)+1:6*num*(k-1)+6*(i-1)+3) = [1,1,1];
-                A2_ones(num*(i-1)-2*i+1 + (j-i) + k, 6*num*(k-1)+6*(j-1)+1:6*num*(k-1)+6*(j-1)+3) = -[1,1,1];
-            end
-        end
-    end
-
-end
-function A2_ones = create_A2_ones2(N, num)
-    % +-+
-    %衛星の組み合わせの数
-    conmbos = num*(num-1)/2;
-    A2_ones = zeros(3*conmbos*N,6*N*num);
-    for i = 1:num-1 % i個目の衛星
-        for j = i+1:num % j個目の衛星
-            for k = 1:N %1~N 時刻
-                A2_ones(num*(i-1)-2*i+1 + (j-i) + k, 6*num*(k-1)+6*(i-1)+1:6*num*(k-1)+6*(i-1)+3) = [1,-1,1];
-                A2_ones(num*(i-1)-2*i+1 + (j-i) + k, 6*num*(k-1)+6*(j-1)+1:6*num*(k-1)+6*(j-1)+3) = -[1,-1,1];
-            end
-        end
-    end
-
-end
-function A2_ones = create_A2_ones3(N, num)
-    % -++
-    %衛星の組み合わせの数
-    conmbos = num*(num-1)/2;
-    A2_ones = zeros(3*conmbos*N,6*N*num);
-    for i = 1:num-1 % i個目の衛星
-        for j = i+1:num % j個目の衛星
-            for k = 1:N %1~N 時刻
-                A2_ones(num*(i-1)-2*i+1 + (j-i) + k, 6*num*(k-1)+6*(i-1)+1:6*num*(k-1)+6*(i-1)+3) = [-1,1,1];
-                A2_ones(num*(i-1)-2*i+1 + (j-i) + k, 6*num*(k-1)+6*(j-1)+1:6*num*(k-1)+6*(j-1)+3) = -[-1,1,1];
-            end
-        end
-    end
-
-end
-function A2_ones = create_A2_ones4(N, num)
-    % ++-
-    %衛星の組み合わせの数
-    conmbos = num*(num-1)/2;
-    A2_ones = zeros(3*conmbos*N,6*N*num);
-    for i = 1:num-1 % i個目の衛星
-        for j = i+1:num % j個目の衛星
-            for k = 1:N %1~N 時刻
-                A2_ones(num*(i-1)-2*i+1 + (j-i) + k, 6*num*(k-1)+6*(i-1)+1:6*num*(k-1)+6*(i-1)+3) = [1,1,-1];
-                A2_ones(num*(i-1)-2*i+1 + (j-i) + k, 6*num*(k-1)+6*(j-1)+1:6*num*(k-1)+6*(j-1)+3) = -[1,1,-1];
-            end
-        end
-    end
-
-end
-
 %{
 A2_ones = zeros(N*num, 6*N*num);
         for j = 1:N*num
@@ -372,28 +290,28 @@ end
 
 function s0 = set_initialstates(num, d_initial)
     if num == 2
-        s01 = [d_initial/2; 0.0000001; 0.0000001; 0; 0; 0];
-        s02 = [-d_initial/2; -0.0000001; -0.0000001; 0; 0; 0];
+        s01 = [d_initial; 0.0000001; 0.0000001; 0; 0; 0];
+        s02 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
         s0 = adjust_cog([s01, s02], num); % 6num×1
 
     elseif num == 5
         s00 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        s01 = [d_initial/2; 0.0000001; 0.0000001; 0; 0; 0];
-        s02 = [-d_initial/2; -0.0000001; -0.0000001; 0; 0; 0];
-        s03 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s04 = [d_initial; -0.0000001; -0.0000001; 0; 0; 0];
+        s01 = [d_initial; 0.0000001; 0.0000001; 0; 0; 0];
+        s02 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
+        s03 = [-d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
+        s04 = [d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
         s0 = adjust_cog([s00, s01, s02, s03, s04], num); % 6num×1
     elseif num == 9
         s00 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        s01 = [d_initial/2; 0.0000001; 0.0000001; 0; 0; 0];
-        s02 = [-d_initial/2; -0.0000001; -0.0000001; 0; 0; 0];
-        s03 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s04 = [d_initial; -0.0000001; -0.0000001; 0; 0; 0];
+        s01 = [d_initial; 0.0000001; 0.0000001; 0; 0; 0];
+        s02 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
+        s03 = [-d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
+        s04 = [d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
         
-        s05 = [3*d_initial/2; 0.0000001; 0.0000001; 0; 0; 0];
-        s06 = [-3*d_initial/2; -0.0000001; -0.0000001; 0; 0; 0];
-        s07 = [-4*d_initial/2; -0.0000001; -0.0000001; 0; 0; 0];
-        s08 = [4*d_initial/2; -0.0000001; -0.0000001; 0; 0; 0];
+        s05 = [3*d_initial; 0.0000001; 0.0000001; 0; 0; 0];
+        s06 = [-3*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
+        s07 = [-4*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
+        s08 = [4*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
     
         s0 = adjust_cog([s00, s01, s02, s03, s04, s05, s06, s07, s08], num); % 6num×1
     end
