@@ -24,4 +24,17 @@ scp_mpc.mとF2myu.mで求めた2衛星のノミナル軌道から、電磁力を
 scp_mpc_EMFF2_nonl.mで相対距離と電流ベクトルを利用したもの。far-fieldを変形して、磁気モーメントに関して線形化。
 scp_mpc.mとF2myu2.mで求めた2衛星のノミナル軌道から、電磁力を用いた場合の最適軌道を求められる。
 
+scp_mpc_EMFF3_nonl.mで相対距離と電流ベクトルを利用したもの。far-fieldを変形して、磁気モーメントに関して線形化。
+
 plot_s.mで綺麗に動画化。
+
+plo_convergenceで収束の様子をグラフ化。
+
+spc_mpc_recordでレコード盤軌道への展開のスラスターのscp_mpc
+scp_mpc_EMFF_nonl_recordで
+
+
+
+takahashi_attenuation.mで高橋さんから送られた安定化制御則を高橋さんの座標系で実装
+
+scp_mpc_num.m3基以上のscp-mpcを実装。

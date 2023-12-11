@@ -2,20 +2,20 @@ function plot_s(s, num, N, rr, d_target)
     % 2衛星の動画を表示。
     %3次元座標
     data = reorderMatrix2(s);
-    satelllites = cell(1, num);
+    satellites = cell(1, num);
 
     % 衛星インスタンス生成
     for i = 1:num
-        satelllites{i} = zeros(N, 3);
+        satellites{i} = zeros(N, 3);
     end
     
     % 衛星データ格納
     for i = 1:N
         for j = 1:num
-            satelllites{j}(i,:) = data(3*num*(i-1)+3*(j-1)+1:3*num*(i-1)+3*(j-1)+3).';
+            satellites{j}(i,:) = data(3*num*(i-1)+3*(j-1)+1:3*num*(i-1)+3*(j-1)+3).';
         end
     end
-    
+    assignin('base', 'satellites', satellites)
     % ビデオライターオブジェクトの作成
     v = VideoWriter('points_motion_3D.avi'); % AVIファイル形式で動画を保存
     % 画質の設定（例：品質を最大に）
@@ -25,9 +25,9 @@ function plot_s(s, num, N, rr, d_target)
     % フィギュアの作成
     figure;
     axis equal;
-    xlim([-d_target*1.5, d_target*1.5]); % x軸の範囲を調整
-    ylim([-d_target*1.5, d_target*1.5]); % y軸の範囲を調整
-    zlim([-d_target*1.5, d_target*1.5]); % z軸の範囲を調整
+    xlim([-d_target*1.5, d_target*1.5]/3); % x軸の範囲を調整
+    ylim([-d_target*1.5, d_target*1.5]/3); % y軸の範囲を調整
+    zlim([-d_target*1.5, d_target*1.5]/3); % z軸の範囲を調整
     hold on;
     grid on; % グリッドを表示
     
@@ -60,11 +60,11 @@ function plot_s(s, num, N, rr, d_target)
        
         for j = 1:num
             % 軌道をプロット
-            plot3(satelllites{j}(1:N,1), satelllites{j}(1:N,2), satelllites{j}(1:N,3), '-', 'Color', colors(j,:));
+            plot3(satellites{j}(1:N,1), satellites{j}(1:N,2), satellites{j}(1:N,3), '-', 'Color', colors(j,:));
             % 衛星をプロット
-            plot3(satelllites{j}(i,1), satelllites{j}(i,2), satelllites{j}(i,3), '.', 'MarkerSize', 15, 'Color', colors(j,:));
+            plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 30, 'Color', colors(j,:));
             % 衛星の初期値をプロット
-            plot3(satelllites{j}(1,1), satelllites{j}(1,2), satelllites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
+            plot3(satellites{j}(1,1), satellites{j}(1,2), satellites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
         end
         % 視点を変更
         azimuth = 225; % 方位角

@@ -28,7 +28,7 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 1000;
+N = 500;
 
 % trust region 
 %delta = 0.1;
@@ -174,9 +174,10 @@ thetaP = pi/6;
 relative_mat = [eye(6),-eye(6)];
 mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
        2,0,0,0,1/n,0;
-       0,0,0,-1/(n*tan(thetaP)),0,1/n];
+       0,0,0,-1/(n*tan(thetaP)),0,1/n;
+       -1/(n*tan(thetaP)),0,1/n, 0,0,0];
 Aeq2 = mat * relative_mat * P(1:6*num,:);
-beq2 = zeros(3,1) - mat * relative_mat * Q(1:6*num,:) * s0;
+beq2 = zeros(4,1) - mat * relative_mat * Q(1:6*num,:) * s0;
 
 
 

@@ -1,15 +1,13 @@
-
-coilN = 100;
+u_106 = u * 10^(-6);
+coilN = 246;
 radius = 0.05;
-I_max = 35;
+I_max = 0.41;
 mass = 1;
-
 % スラスター入力を磁気モーメントに変換。
-[u_myu1, u_myu2] = force2moment(s1, s0, num, u(1:end-1), coilN, radius, I_max, mass);
+[u_myu1, u_myu2] = force2moment(s1, s0, num, u_106(1:end-1), coilN, radius, I_max, mass);
 u_myu = u_myu1; 
 u_myu(end+1) = max(abs(u_myu1));
 
-r_norm = norm(r);
 u_I = u_myu/(coilN * pi * radius^2);
 
 disp("パラメータ由来u_myu_max")
@@ -27,10 +25,21 @@ disp("バグ検証用出力")
 r_val = s0(1:3) - s0(7:9);
 myu1_val = u_myu1(end-2:end);
 myu2_val = u_myu2(end-2:end);
-F1 = f_func(r_val, myu1_val, myu2_val);
-F2 = f_func(-r_val, myu2_val, myu1_val);
-disp([F1;F2])
+F11 = f_func(r_val, myu1_val, myu2_val);
+F12 = f_func(-r_val, myu2_val, myu1_val);
+disp("[F1;F2]")
+disp([F11;F12])
 
+r_val = s(25:27) - s(31:33);
+myu1_val = u_myu1(4:6);
+myu2_val = u_myu2(4:6);
+F21 = f_func(r_val, myu1_val, myu2_val);
+F22 = f_func(-r_val, myu2_val, myu1_val);
+disp("[F21;F22]")
+disp([F21;F22])
+
+disp("最大磁気モーメント")
+disp(u_myu(end))
 disp("最大電流")
 disp(u_myu(end)/(coilN * pi * radius^2))
 
@@ -63,6 +72,7 @@ function [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max, mass)
     
     D = calculateD(r, myu01);
     myu02 = 4*pi*r_norm^5/(3*myu0)*inv(D)*u*mass;
+    myumyu = myu0*myu02
     myu1 = myu02;
     myu2 = myu01;
 end

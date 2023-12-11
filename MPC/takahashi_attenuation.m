@@ -2,8 +2,8 @@
 %高橋座標系になっていることに注意。
 
 num = 1;
-dt = 10;
-N = 1000;
+dt = 1;
+N = 10000;
 n = 0.0011; % 0.0011
 m = 1; % 1
 
@@ -39,7 +39,7 @@ rr = [rr1,rr2];
 rr1 = rr(1);
 %s0 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
 %s0 = [rr1*sin(0); 2*rr1*cos(0); sqrt(3)*rr1*sin(0); n*rr1*cos(0); -2*n*rr1*sin(0); sqrt(3)*n*rr1*cos(0)];
-s0 = [0.1;0.1;0.1;0;0;0];
+s0 = [0.8146;0.2238;0.0266;1.231027657282976e-04;-0.0018;2.132202447936586e-04];
 s = zeros(N,6);
 s(1,:) = s0.';
 
@@ -60,11 +60,15 @@ for i = 1:N
     C4d = 3*n*C1/kA; %目標値
     dC4 = C4-C4d; %C4偏差
     
-    r_zd = r_xy/tan(thetaP);
-    C5d = r_zd*cos(phi_xy);
+    %r_zd = r_xy/tan(thetaP);
+    %r_zd = sqrt(C2^2+C3^2)/tan(thetaP);
+    %C5d = r_zd*cos(phi_xy);
+    %C5d = r_zd*cos(atan2(C3,C2));
+    %C5d = r_zd*C2/sqrt(C2^2+C3^2);
+    C5d = C2/tan(thetaP);
     u_A = kA*n*[1/2*dC4;-C1];  
     u = [u_A;-kB*n*(C5-C5d)];
-    %u = [0;0;0];
+    u = [0;0;0];
     disp(u)
     s(i+1,:) = (A_d * s(i,:).' + B_d * u).';
     disp(s(i+1,:))

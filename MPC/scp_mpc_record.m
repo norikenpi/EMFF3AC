@@ -28,7 +28,7 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 300;
+N = 500;
 
 % trust region 
 %delta = 0.1;
@@ -83,6 +83,9 @@ if num == 2
     d_initial = d_initial/2;
 end
 s0 = set_initialstates(num, d_initial);
+s01 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
+s02 = [d_initial; d_initial; -0.0000001; 0; 0; 0];
+s0 = adjust_cog([s01, s02], num); % 6num×1
 
 % 2衛星のそれぞれの目標状態
 %目標レコード盤軌道の半径
