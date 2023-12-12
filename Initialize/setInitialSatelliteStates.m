@@ -39,7 +39,7 @@ function satellites = setInitialSatelliteStates(param)
         %4衛星の初期状態
         %[position, velocity] = getSatellitePosition4(i, param);
         %[position_d, velocity_d] = getSatelliteDesiredPosition4(i, param);
-
+           %{
         %3衛星の初期状態
         if param.formation == "complete"
             [position, velocity] = getSatellitePosition3(i, param);
@@ -48,6 +48,10 @@ function satellites = setInitialSatelliteStates(param)
             [position, velocity] = getSatellitePosition3(i, param);
             [position_d, velocity_d] = getSatelliteDesiredPosition3(i, param);
         end
+           %}
+
+        [position, velocity] = getSatellitePosition2(i, param);
+        [position_d, velocity_d] = getSatelliteDesiredPosition2(i, param);
 
         %velocity = [0.002*i; 0.001*i; 0.001*i]; % 速度
         orientation = [0; 0; i*pi/180]; % オイラー角

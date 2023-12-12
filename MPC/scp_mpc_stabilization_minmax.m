@@ -15,7 +15,7 @@ d_target = 0.925;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %d_avoid = 0.01;
-d_avoid = 0.299;
+d_avoid = 0.18;
 d_avoid = -1;
 
 d_max = 1.0122;
@@ -122,7 +122,7 @@ f = f1;
 %b1 = zeros(6*N*num, 1);%6Nnum×1
 
 if not(d_avoid == -1)
-    % 不等式制約2 (衛星間距離はR以下)
+    % 不等式制約2 (衛星間距離はd_avoid以上)
     % ノミナルの状態プロファイルを設定
     nominal_s = s;
     
@@ -195,7 +195,10 @@ cvx_begin sdp quiet
     pos = P * x + Q * s0;
 
     subject to
-        %A * x <= b;
+        if not(d_avoid == -1)
+            A * x <= b;
+        end
+
         Aeq * x == beq;
         for i = 1:N
             rel_pos = relative_mat(1:3,:) * pos(12*(i-1)+1:12*i);
@@ -212,7 +215,7 @@ s1 = s;
 u = x;
 
 disp("最大入力 u_max")
-disp(x(3*num*N)*10^(-6))
+disp(max(abs(x))*10^(-6))
 I_max_list = [];
 
 disp("安定チェック")

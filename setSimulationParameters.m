@@ -31,14 +31,14 @@ function param = setSimulationParameters()
     param.coil_split = 10;
 
     %保存先
-    param.path = 'C:/Users/masam/lab/30_simscape/20_磁石/';
+    param.path = 'C:/Users/masam/OneDrive/ドキュメント/lab/30_matlab/';
     %param.path = 'C:/Users/nakan/OneDrive/デスクトップ/kubota/';
     param.date = datetime('now','Format', 'yyyy-MM-dd-HH-mm-ss');
     param.path_data = sprintf(strcat(param.path, 'movie/%s'), param.date);
 
     param.pair_time = 0.1; % ペアリングされてる時間
 
-    param.N = 3; % 衛星の数 
+    param.N = 2; % 衛星の数 
     param.formation = "complete";
 
     param.two_D = true;
