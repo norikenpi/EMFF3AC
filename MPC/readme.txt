@@ -42,4 +42,4 @@ takahashi_attenuation.mで高橋さんから送られた安定化制御則を高
 scp_mpc_num.m 3基以上のscp-mpcを実装。
 
 takahashi_NN.mは高橋さんのNNモデル。
-takahashi_NN.mは高橋さんのトルクと力のNNモデル。
+takahashi_NN2.mは高橋さんのトルクと力のNNモデル。これを使ってスラスターから電磁力モデルに変換できる。

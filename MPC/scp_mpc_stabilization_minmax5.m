@@ -20,6 +20,7 @@ d_target = 0.925;
 d_avoid = 0.18;
 d_avoid = -1;
 
+% 制御可能範囲(m)
 d_max = 1.0122;
 
 % 衛星数　2基or5基or9基
@@ -27,11 +28,12 @@ num = 5;
 
 % 衛星質量
 m = 1; % 1
+m = 0.38; % 1
  
 % タイムステップ(s)
 dt = 10;
 
-% 時間 シミュレーション時間はN×dt秒250
+% 時間 シミュレーション時間はN×dt秒
 N = 50;
 
 % trust region 
@@ -46,11 +48,11 @@ pair_set = [1,2;
 
 % 初期状態
 %s0 = set_initialstates(num, d_initial);
-s01 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
-s02 = [d_initial/2; d_initial; -0.0000001; 0; 0; 0];
-s03 = [-d_initial; d_initial/2; 0.0000001; 0; 0; 0];
-s04 = [d_initial/2; -d_initial/2; -0.0000001; 0; 0; 0];
-s05 = [d_initial; d_initial; 0.0000001; 0; 0; 0];
+s01 = [d_initial; d_initial; 0.0000001; 0; 0; 0];
+s02 = [-d_initial; d_initial; -0.0000001; 0; 0; 0];
+s03 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
+s04 = [d_initial; -d_initial; -0.0000001; 0; 0; 0];
+s05 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
 s0 = adjust_cog([s01, s02,s03, s04, s05], num); % 6num×1
 
 
@@ -61,17 +63,31 @@ s0 = adjust_cog([s01, s02,s03, s04, s05], num); % 6num×1
 % n = sqrt(myu/r_star^3); % 地球を周回する衛星の角速度 宇宙ステーション入門 p107
 n = 0.0011; % 0.0011
 
+% J2項
+J2 = 1.08263e-3;
+% 地球半径
+Re = 6.371e6;
+% 軌道半径
+r_ref = 7.071e6;
+% 軌道傾斜角
+i_ref = 0;
+
+var_s = 3*J2*Re^2*(1+3*cos(2*i_ref))/(8*r_ref^2);
+
+c = sqrt(1+var_s);
+
 % 1衛星に関する状態方程式の係数行列
 % x_dot = A_ x + B_ u
+
 A = [0, 0, 0, 1/2, 0, 0;
      0, 0, 0, 0, 1/2, 0;
      0, 0, 0, 0, 0, 1/2;
-     3*n^2, 0, 0, 0, 2*n, 0;
-     0, 0, 0, -2*n, 0, 0;
-     0, 0, -n^2, 0, 0, 0]+...
-    [3*n^2, 0, 0, 1, 2*n, 0;
-     0, 0, 0, -2*n, 1, 0;
-     0, 0, -n^2, 0, 0, 1;
+     (5*c^2-2)*n^2, 0, 0, 0, 2*n*c, 0;
+     0, 0, 0, -2*n*c, 0, 0;
+     0, 0, -(n*c)^2, 0, 0, 0]+...
+    [(5*c^2-2)*n^2, 0, 0, 1, 2*n*c, 0;
+     0, 0, 0, -2*n*c, 1, 0;
+     0, 0, -(n*c)^2, 0, 0, 1;
      0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 0]/2; % 6×6
@@ -107,13 +123,13 @@ rr = [rr1,rr2];
 % S = PU + Qs_0
 disp("P生成")
 tic
-P = create_P(A_d, B_d, N); %6Nnum×3Nnum
+P = create_P(A_d, B_d, N, num); %6Nnum×3Nnum
 %P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
 elapsed_time = toc;
 disp(['P生成 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
 disp("Q生成")
 tic
-Q = create_Q(A_d, N); %6N×6num
+Q = create_Q(A_d, N, num); %6N×6num
 elapsed_time = toc;
 disp(['Q生成 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
 %% 評価関数
@@ -132,11 +148,11 @@ if not(d_avoid == -1)
     % ノミナルの状態プロファイルを設定
     nominal_s = s;
     
-    A2 = zeros(N*num*(num-1), 3*num*N);
-    b2 = zeros(N*num*(num-1), 1);
+    A2 = zeros(N*num*(num-1)/2, 3*num*N);
+    b2 = zeros(N*num*(num-1)/2, 1);
 
     for i = 1:num-1
-        for j = i:num
+        for j = i+1:num
             % 状態ベクトルから衛星iと衛星jの位置ベクトルのみ抽出
             relative_mat_all = zeros(N, 6*num*N);
             relative_mat = zeros(3, 6*num);
@@ -148,7 +164,7 @@ if not(d_avoid == -1)
             % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
             % 不等式の大小を変えるために両辺マイナスをかけている。
             A2(N*(i-1)+1:N*i,:) = -create_matrix(relative_mat_all * nominal_s).' * relative_mat_all * P; %500×3001
-            b2(N*(i-1)+1:N*i,:) = -d_avoid * calculate_norms(relative_mat_all * nominal_s) + create_matrix(relative_mat_all * nominal_s).' * relative_mat_all * Q * s0;
+            b2(N*(i-1)+1:N*i) = -d_avoid * calculate_norms(relative_mat_all * nominal_s) + create_matrix(relative_mat_all * nominal_s).' * relative_mat_all * Q * s0;
         end
     end
 
@@ -256,7 +272,8 @@ u = x;
 
 disp("最大入力 u_max")
 tic
-disp(max(abs(x))*10^(-6))
+u_max = max(abs(x))*10^(-6);
+disp(u_max)
 I_max_list = [];
 
 disp("安定チェック")
@@ -270,20 +287,73 @@ tic
 plot_s(s, num, N, rr, d_target, pair_set)
 elapsed_time = toc;
 disp(['図示 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
+
+%% 拘束条件チェック
+
+disp("衛星間距離はd_avoid以上")
+all_dist_list = calc_all_dist(num, N, s);
+disp(min(all_dist_list))
+
+disp("ペア組んでいる衛星間距離はd_max以下")
+pair_dist_list = calc_pair_dist(N, pair_set, s);
+disp(max(pair_dist_list))
+
+disp("運動量保存")
+disp(max(abs(beq - Aeq*x)))
+
+disp("最終状態固定")
+disp(max(abs(beq2 - Aeq2*x)))
+
 %% 関数リスト
 
-% 関数の命名はテキトーです。すみません。
+function all_dist_list = calc_all_dist(num, N, s)
+    all_dist_list = zeros(N*num*(num-1)/2,1);
+    data = reorderMatrix2(s);
+    satellites = cell(1, num);
 
-function P = create_P(A, B, N)
+    % 衛星インスタンス生成
+    for i = 1:num
+        satellites{i} = zeros(N, 3);
+    end
+    
+    % 衛星データ格納
+    for i = 1:N
+        for j = 1:num
+            satellites{j}(i,:) = data(3*num*(i-1)+3*(j-1)+1:3*num*(i-1)+3*(j-1)+3).';
+        end
+    end
+    for i = 1:num-1
+        for j = i+1:num
+            all_dist_list(N*((num-i/2)*(i-1)+(j-i)-1)+1:N*((num-i/2)*(i-1)+(j-i))) = vecnorm(satellites{i} - satellites{j}, 2, 2);
+        end
+    end
+
+end
+
+function pair_dist_list = calc_pair_dist(N, pair_set, s)
+    pair_dist_list = zeros(4*N, 1);
+    for i = 1:N
+        % ペア間最大距離制約　5基なので4ペア
+        for j = 1:4
+            sat1 = pair_set(j,1);
+            sat2 = pair_set(j,2);
+            sat1_pos = s(6*5*(i-1)+6*(sat1-1)+1:6*5*(i-1)+6*(sat1-1)+3);
+            sat2_pos = s(6*5*(i-1)+6*(sat2-1)+1:6*5*(i-1)+6*(sat2-1)+3);
+            pair_dist_list(4*(i-1)+j) = norm(sat1_pos - sat2_pos);
+        end
+    end
+end
+
+function P = create_P(A, B, N, num)
     % 入力:
     % A: nxn の行列
     % B: nx1 のベクトル
     % N: 整数
-    n = size(A, 1); % A行列の次元
-    k = size(B, 2);
-    P = [];
+    n = 6*num; % A行列の次元
+    k = 3*num;
+    P = zeros(n*N, k*N);
     for j = 1:N
-        mat_i = zeros(n, N);
+        mat_i = zeros(n, k*N);
         %j個目までは0行列
         for i = 1:N
             if i >= 1 && i < j
@@ -292,17 +362,18 @@ function P = create_P(A, B, N)
                 mat_i(:, k*(i-1)+1: k*i) = A^(i-j) * B;
             end
         end
-        P = [P;mat_i];
-    
+
+        P(n*(j-1)+1:n*j,:) = mat_i;
     end
 
 end
 
-function Q = create_Q(A, N)
-    Q = [];
+function Q = create_Q(A, N, num)
+    n = 6*num;
+    Q = zeros(n*N, n);
     for j = 1:N
         mat_i = A^(N - j + 1);
-        Q = [Q;mat_i];
+        Q(n*(j-1)+1:n*j,:) = mat_i;
     end
 
 end
@@ -455,13 +526,12 @@ function plot_s(s, num, N, rr, d_target, pair_set)
     % フィギュアの作成
     figure;
     axis equal;
-    xlim([-d_target*1.5, d_target*1.5]/3); % x軸の範囲を調整
-    ylim([-d_target*1.5, d_target*1.5]/3); % y軸の範囲を調整
-    zlim([-d_target*1.5, d_target*1.5]/3); % z軸の範囲を調整
+    xlim([-d_target*1.5, d_target*1.5]); % x軸の範囲を調整
+    ylim([-d_target*1.5, d_target*1.5]); % y軸の範囲を調整
+    zlim([-d_target*1.5, d_target*1.5]); % z軸の範囲を調整
     hold on;
     grid on; % グリッドを表示
     
-    set(gca, 'ZDir', 'reverse')
     
     % 軸のラベルを設定
     xlabel('X[m](地心方向)');
@@ -533,3 +603,5 @@ function B = reorderMatrix2(A)
         B = [B; flip(sub_vector)];
     end
 end
+
+
