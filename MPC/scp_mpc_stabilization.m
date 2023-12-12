@@ -187,13 +187,14 @@ beq = [beq1; beq2];
 % 解はnum×N×3自由度
 
 % linprogを使う場合
-
+%{
 [x,fval,exitflag,output,lambda] = ...
    linprog(f, A, b, Aeq, beq);
 
+%}
 
 % cvxを使う場合
-%{
+
 cvx_begin sdp quiet
     variable x(size(f, 2))
     minimize(f * x)
@@ -201,7 +202,7 @@ cvx_begin sdp quiet
         A * x <= b;
         Aeq * x == beq;
 cvx_end
-%}
+
 
 % 衛星の状態
 s = P * x + Q * s0;

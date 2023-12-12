@@ -31,10 +31,15 @@ plot_s.mで綺麗に動画化。
 plo_convergenceで収束の様子をグラフ化。
 
 spc_mpc_recordでレコード盤軌道への展開のスラスターのscp_mpc
-scp_mpc_EMFF_nonl_recordで
+scp_mpc_EMFF_nonl_recordで片側固定のfar fieldで最適化
+
+scp_mpc_stabilization.mで2衛星の安定化制御を取り込んだ最適化。最終状態の拘束条件は4つになってる。
+scp_mpc_stabilization_minmax.mでscp_mpc_stabilizationの最大値最小化問題の表現を変更。
 
 
+takahashi_attenuation.mで高橋さんから送られた安定化制御則を高橋さんの座標系で実装。単純なフィードバック制御。
 
-takahashi_attenuation.mで高橋さんから送られた安定化制御則を高橋さんの座標系で実装
+scp_mpc_num.m 3基以上のscp-mpcを実装。
 
-scp_mpc_num.m3基以上のscp-mpcを実装。
+takahashi_NN.mは高橋さんのNNモデル。
+takahashi_NN.mは高橋さんのトルクと力のNNモデル。
