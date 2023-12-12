@@ -8,17 +8,17 @@
 %% パラメータ設定
 
 % 初期衛星間距離
-d_initial = 0.3;
-
-% 最終衛星間距離
-d_target = 0.925;
+d_initial = 0.4;
+s01 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
+s02 = [d_initial; d_initial; -0.0000001; 0; 0; 0];
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-%d_avoid = 0.01;
-d_avoid = 0.18;
+%d_avoid = 0.18;
+d_avoid = 0.8;
 d_avoid = -1;
 
 d_max = 1.0122;
+d_max = 1.0122*5;
 
 % 衛星数　2基or5基or9基
 num = 2;
@@ -30,11 +30,10 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 500;
+N = 100;
 
 % trust region 
 %delta = 0.1;
-
 
 
 
@@ -79,28 +78,7 @@ A_d = eye(6*num) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
 
-
-% 初期状態
-if num == 2
-    d_initial = d_initial/2;
-end
-s0 = set_initialstates(num, d_initial);
-s01 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
-s02 = [d_initial; d_initial; -0.0000001; 0; 0; 0];
 s0 = adjust_cog([s01, s02], num); % 6num×1
-% 2衛星のそれぞれの目標状態
-%目標レコード盤軌道の半径
-rr1 = d_target/2;
-if num == 2
-    rr1 = d_target/4;
-end
-rr2 = sqrt(2)*d_target/2;
-
-rr = [rr1,rr2];
-
-%rr = create_rr(num)
-
-sd = set_targetstates(num, rr, n, N, dt);
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
 % S = PU + Qs_0
@@ -109,10 +87,6 @@ P = create_P(A_d, B_d, N); %6Nnum×3Nnum
 Q = create_Q(A_d, N); %6N×6num
 
 %% 評価関数
-
-% 評価関数1(最大入力最小)
-f1 = [zeros(1, 3*N*num), 1]; 
-f = f1;
 
 %% 不等式制約
 
@@ -125,6 +99,28 @@ if not(d_avoid == -1)
     % 不等式制約2 (衛星間距離はd_avoid以上)
     % ノミナルの状態プロファイルを設定
     nominal_s = s;
+    %{
+    A2 = zeros(N*num*(num-1), 3*num*N);
+    b2 = zeros(N*num*(num-1), 1);
+    
+    for i = 1:num-1
+        for j = i:num
+            % 状態ベクトルから衛星iと衛星jの位置ベクトルのみ抽出
+            relative_mat_all = zeros(N, 6*num*N);
+            relative_mat = zeros(3, 6*num);
+            relative_mat(:,6*(i-1)+1:6*(i-1)+3) = eye(3);
+            relative_mat(:,6*(j-1)+1:6*(j-1)+3) = -eye(3);
+            for k = 1:N
+                relative_mat_all(3*(k-1)+1:3*k, 6*num*(k-1)+1:6*num*k) = relative_mat;
+            end
+            % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
+            % 不等式の大小を変えるために両辺マイナスをかけている。
+            A2(N*(i-1)+1:N*i,:) = -create_matrix(relative_mat_all * nominal_s).' * relative_mat_all * P; %500×3001
+            b2(N*(i-1)+1:N*i,:) = -d_avoid * calculate_norms(relative_mat_all * nominal_s) + create_matrix(relative_mat_all * nominal_s).' * relative_mat_all * Q * s0;
+        end
+    end
+    %}
+    
     
     % 状態ベクトルから位置ベクトルのみを抽出
     C01 = [eye(3),zeros(3)];
@@ -165,8 +161,8 @@ Aeq1 = create_Aeq1(N, num);
 beq1 = zeros(3*N, 1);
 
 % 等式制約2 (最終状態固定)
-Aeq2 = P(1:6*num,:);
-beq2 = sd - Q(1:6*num,:) * s0;
+%Aeq2 = P(1:6*num,:);
+%beq2 = sd - Q(1:6*num,:) * s0;
 
 
 % 等式制約2 (相対軌道安定化)

@@ -8,15 +8,17 @@
 %% パラメータ設定
 
 % 初期衛星間距離
-d_initial = 0.3;
+%d_initial = 0.3;
 
 % 最終衛星間距離
 d_target = 0.925;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %d_avoid = 0.01;
-d_avoid = 0.299;
-d_avoid = -1;
+d_avoid = 0.18;
+%d_avoid = -1;
+
+d_max = 1.0122;
 
 % 衛星数　2基or5基or9基
 num = 5;
@@ -28,13 +30,26 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 100;
+N = 50;
 
 % trust region 
 %delta = 0.1;
 
+%ペアセット
+pair_set = [1,2;
+            2,3;
+            3,4;
+            4,5];
 
 
+% 初期状態
+%s0 = set_initialstates(num, d_initial);
+s01 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
+s02 = [d_initial/2; d_initial; -0.0000001; 0; 0; 0];
+s03 = [-d_initial; d_initial/2; 0.0000001; 0; 0; 0];
+s04 = [d_initial/2; -d_initial/2; -0.0000001; 0; 0; 0];
+s05 = [d_initial; d_initial; 0.0000001; 0; 0; 0];
+s0 = adjust_cog([s01, s02,s03, s04, s05], num); % 6num×1
 
 %% Hill方程式 宇宙ステーション入門 P108
 
@@ -76,81 +91,62 @@ end
 A_d = eye(6*num) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
-
-
-% 初期状態
-if num == 2
-    d_initial = d_initial/2;
-end
-s0 = set_initialstates(num, d_initial);
-s01 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
-s02 = [d_initial/2; d_initial; -0.0000001; 0; 0; 0];
-s03 = [-d_initial; d_initial/2; 0.0000001; 0; 0; 0];
-s04 = [d_initial/2; -d_initial/2; -0.0000001; 0; 0; 0];
-s05 = [d_initial; d_initial; 0.0000001; 0; 0; 0];
-s0 = adjust_cog([s01, s02,s03, s04, s05], num); % 6num×1
 % 2衛星のそれぞれの目標状態
+
 %目標レコード盤軌道の半径
+%{
 rr1 = d_target/2;
 if num == 2
     rr1 = d_target/4;
 end
 rr2 = sqrt(2)*d_target/2;
-
 rr = [rr1,rr2];
-
-%rr = create_rr(num)
-
+rr = create_rr(num)
 sd = set_targetstates(num, rr, n, N, dt);
+%}
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
 % S = PU + Qs_0
 P = create_P(A_d, B_d, N); %6Nnum×3Nnum
-P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
+%P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
 Q = create_Q(A_d, N); %6N×6num
 
 %% 評価関数
-
-% 評価関数1(最大入力最小)
-f1 = [zeros(1, 3*N*num), 1]; 
-f = f1;
 
 %% 不等式制約
 
 % 不等式制約1(全ての入力は最大入力以下)
 % 最大入力との差が0より大きくなければならない。
-A1 = [eye(3*N*num), -ones(3*N*num,1); -eye(3*N*num), -ones(3*N*num, 1)]; %6N×3Nnum+1
-b1 = zeros(6*N*num, 1);%6Nnum×1
-
-A = A1;
-b = b1;
+%A1 = [eye(3*N*num), -ones(3*N*num,1); -eye(3*N*num), -ones(3*N*num, 1)]; %6N×3Nnum+1
+%b1 = zeros(6*N*num, 1);%6Nnum×1
 
 if not(d_avoid == -1)
-    % 不等式制約2 (衛星間距離はR以下)
+    % 不等式制約2 (衛星間距離はd_avoid以上)
     % ノミナルの状態プロファイルを設定
     nominal_s = s;
     
-    % 状態ベクトルから位置ベクトルのみを抽出
-    C01 = [eye(3),zeros(3)];
-    C1 = [];
-    for i = 1:num*N
-        C1 = blkdiag(C1, C01);
+    A2 = zeros(N*num*(num-1), 3*num*N);
+    b2 = zeros(N*num*(num-1), 1);
+
+    for i = 1:num-1
+        for j = i:num
+            % 状態ベクトルから衛星iと衛星jの位置ベクトルのみ抽出
+            relative_mat_all = zeros(N, 6*num*N);
+            relative_mat = zeros(3, 6*num);
+            relative_mat(:,6*(i-1)+1:6*(i-1)+3) = eye(3);
+            relative_mat(:,6*(j-1)+1:6*(j-1)+3) = -eye(3);
+            for k = 1:N
+                relative_mat_all(3*(k-1)+1:3*k, 6*num*(k-1)+1:6*num*k) = relative_mat;
+            end
+            % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
+            % 不等式の大小を変えるために両辺マイナスをかけている。
+            A2(N*(i-1)+1:N*i,:) = -create_matrix(relative_mat_all * nominal_s).' * relative_mat_all * P; %500×3001
+            b2(N*(i-1)+1:N*i,:) = -d_avoid * calculate_norms(relative_mat_all * nominal_s) + create_matrix(relative_mat_all * nominal_s).' * relative_mat_all * Q * s0;
+        end
     end
-    
-    % 相対位置ベクトルを計算する行列
-    C02 = [eye(3),-eye(3)];
-    C2 = [];
-    for i = 1:N
-        C2 = blkdiag(C2, C02);
-    end
-    
-    % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
-    % 不等式の大小を変えるために両辺マイナスをかけている。
-    A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
-    b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * Q * s0;
-    
-    A = [A1; A2];
-    b = [b1; b2];
+
+    A = A2;
+    b = b2;
 
     % 不等式制約3 (移動量はdelta以下)
     %A3 = [-P; P];
@@ -160,6 +156,8 @@ if not(d_avoid == -1)
     %b = [b1; b2; b3];
 end
 
+
+
 %% 等式制約
 
 % 等式制約1 (運動量保存)
@@ -167,52 +165,69 @@ Aeq1 = create_Aeq1(N, num);
 beq1 = zeros(3*N, 1);
 
 % 等式制約2 (最終状態固定)
-Aeq2 = P(1:6*num,:);
-beq2 = sd - Q(1:6*num,:) * s0;
+%Aeq2 = P(1:6*num,:);
+%beq2 = sd - Q(1:6*num,:) * s0;
 
 
-% 等式制約2 (相対軌道安定化)
+% 等式制約2 (相対軌道安定化) %5基なのでペア
 kA = 2e-3;
 thetaP = pi/6;
-relative_mat1 = [eye(6),-eye(6),zeros(6),zeros(6),zeros(6)];
-relative_mat2 = [zeros(6),eye(6),-eye(6),zeros(6),zeros(6)];
-relative_mat3 = [zeros(6),zeros(6),eye(6),-eye(6),zeros(6)];
-relative_mat4 = [zeros(6),zeros(6),zeros(6),eye(6),-eye(6)];
+relative_mat6 = [eye(6),-eye(6)];
 mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
        2,0,0,0,1/n,0;
-       0,0,0,-1/(n*tan(thetaP)),0,1/n];
-Aeq21 = mat * relative_mat1 * P(1:6*num,:);
-beq21 = zeros(3,1) - mat * relative_mat1 * Q(1:6*num,:) * s0;
-Aeq22 = mat * relative_mat2 * P(1:6*num,:);
-beq22 = zeros(3,1) - mat * relative_mat2 * Q(1:6*num,:) * s0;
-Aeq23 = mat * relative_mat3 * P(1:6*num,:);
-beq23 = zeros(3,1) - mat * relative_mat3 * Q(1:6*num,:) * s0;
-Aeq24 = mat * relative_mat4 * P(1:6*num,:);
-beq24 = zeros(3,1) - mat * relative_mat4 * Q(1:6*num,:) * s0;
-Aeq2 = [Aeq21;Aeq22;Aeq23;Aeq24];
-beq2 = [beq21;beq22;beq23;beq24];
+       0,0,0,-1/(n*tan(thetaP)),0,1/n;
+       -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+
+
+
+Aeq2 = zeros(4*4,3*N*5);
+beq2 = zeros(4*4,1);
+
+for j = 1:4 
+    sat1 = pair_set(j,1);
+    sat2 = pair_set(j,2);
+    Aeq_ = mat * (P(6*(sat1-1)+1:6*sat1,:) - P(6*(sat2-1)+1:6*sat2,:));
+    beq_ = zeros(4,1) - mat * (Q(6*(sat1-1)+1:6*sat1,:) - Q(6*(sat2-1)+1:6*sat2,:)) * s0;
+    Aeq2(4*(j-1)+1:4*j,:) = Aeq_;
+    beq2(4*(j-1)+1:4*j) = beq_;
+end
+
 
 Aeq = [Aeq1; Aeq2];
 beq = [beq1; beq2];
+
 %% 線形不等式制約線形計画問題 
+
 % 解はnum×N×3自由度
-
-% linprogを使う場合
-
-[x,fval,exitflag,output,lambda] = ...
-   linprog(f, A, b, Aeq, beq);
-
-
-% cvxを使う場合
-%{
 cvx_begin sdp quiet
-    variable x(size(f, 2))
-    minimize(f * x)
+    variable x(3*N*num)
+    minimize(max(x))
+    
+    pos = P * x + Q * s0; % 5*N*num
+
     subject to
-        A * x <= b;
+        if not(d_avoid == -1)
+            %進入禁止範囲設定
+            A * x <= b;
+        end
+        
+        %運動量保存＆最終状態で軌道安定完了
         Aeq * x == beq;
+
+        for i = 1:N
+            % ペア間最大距離制約　5基なので4ペア
+            for j = 1:4
+                sat1 = pair_set(j,1);
+                sat2 = pair_set(j,2);
+                sat1_pos = pos(6*5*(i-1)+6*(sat1-1)+1:6*5*(i-1)+6*(sat1-1)+3);
+                sat2_pos = pos(6*5*(i-1)+6*(sat2-1)+1:6*5*(i-1)+6*(sat2-1)+3);
+                rel_pos = sat1_pos - sat2_pos ;
+                [d_max^2, rel_pos.';
+                 rel_pos, eye(3)] >= 0;
+            end
+        end
 cvx_end
-%}
+
 
 % 衛星の状態
 s = P * x + Q * s0;
@@ -220,26 +235,16 @@ s1 = s;
 u = x;
 
 disp("最大入力 u_max")
-disp(x(3*num*N+1)*10^(-6))
+disp(max(abs(x))*10^(-6))
 I_max_list = [];
 
 disp("安定チェック")
-x_r1 = s(1:6)-s(7:12);
-x_r2 = s(7:12)-s(13:18);
-x_r3 = s(13:18)-s(19:24);
-x_r4 = s(19:24)-s(25:30);
-error1 = mat * x_r1;
-error2 = mat * x_r2;
-error3 = mat * x_r3;
-error4 = mat * x_r4;
-disp(error1)
-disp(error2)
-disp(error3)
-disp(error4)
-
+x_r = s(1:6)-s(7:12);
+error = mat * x_r;
+disp(error)
 %% 図示
 
-plot_s(s, num, N, rr, d_target)
+plot_s(s, num, N, rr, d_target, pair_set)
 
 %% 関数リスト
 
@@ -264,6 +269,7 @@ function P = create_P(A, B, N)
             end
         end
         P = [P;mat_i];
+    
     end
 
 end
@@ -314,7 +320,7 @@ A2_ones = zeros(N*num, 6*N*num);
 %}
 function Aeq1 = create_Aeq1(N, num)
     matrix1 = repmat(eye(3), 1, num);
-    Aeq1 = zeros(3*N, 3*num*N+1);
+    Aeq1 = zeros(3*N, 3*num*N);
     for i = 1:N
         Aeq1(3*(i-1)+1:3*i, 3*num*(i-1)+1:3*num*i) = matrix1;
     end
@@ -397,7 +403,7 @@ function sd = set_targetstates(num, rr, n, N, dt)
 end
 
 
-function plot_s(s, num, N, rr, d_target)
+function plot_s(s, num, N, rr, d_target, pair_set)
     % 2衛星の動画を表示。
     %3次元座標
     data = reorderMatrix2(s);
@@ -440,7 +446,7 @@ function plot_s(s, num, N, rr, d_target)
     
     theta = linspace(0, 2 * pi, 100); % 0から2πまでの角度を生
     colors = hsv(num); % HSVカラースペースを使用してN個の異なる色を生成
-    
+
     % 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
     for i = 1:10:N
         cla;
@@ -468,6 +474,14 @@ function plot_s(s, num, N, rr, d_target)
             plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 60, 'Color', colors(j,:));
             % 衛星の初期値をプロット
             plot3(satellites{j}(1,1), satellites{j}(1,2), satellites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
+            
+        end
+
+        for j = 1:4
+            disp(j)
+            sat1 = pair_set(j,1);
+            sat2 = pair_set(j,2);
+            plot3([satellites{sat1}(i,1), satellites{sat2}(i,1)], [satellites{sat1}(i,2), satellites{sat2}(i,2)], [satellites{sat1}(i,3), satellites{sat2}(i,3)],  '-', 'Color', 'k', 'LineWidth', 2);
         end
         % 視点を変更
         azimuth = 225; % 方位角
