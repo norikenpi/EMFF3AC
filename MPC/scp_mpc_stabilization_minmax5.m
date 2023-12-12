@@ -10,7 +10,7 @@
 rng(1);
 
 % 初期衛星間距離
-d_initial = 0.3;
+d_initial = d_avoid*1.1;
 
 % 最終衛星間距離
 d_target = 0.925;
@@ -18,9 +18,9 @@ d_target = 0.925;
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %d_avoid = 0.18;
 d_avoid = 0.18;
-%d_avoid = -1;
+d_avoid = -1;
 
-sqrt_d_avoid = sqrt((0.18+0.01)^2/2);
+%sqrt_d_avoid = sqrt((0.18+0.01)^2/2);
 
 % 制御可能範囲(m)
 d_max = 1.0122;
@@ -50,10 +50,10 @@ pair_set = [1,2;
 
 % 初期状態
 %s0 = set_initialstates(num, d_initial);
-s01 = [sqrt_d_avoid; sqrt_d_avoid; 0.0000001; 0; 0; 0];
-s02 = [-sqrt_d_avoid; sqrt_d_avoid; -0.0000001; 0; 0; 0];
-s03 = [-sqrt_d_avoid; -sqrt_d_avoid; 0.0000001; 0; 0; 0];
-s04 = [sqrt_d_avoid; -sqrt_d_avoid; -0.0000001; 0; 0; 0];
+s01 = [d_initial; d_initial; 0.0000001; 0; 0; 0];
+s02 = [-d_initial; d_initial; -0.0000001; 0; 0; 0];
+s03 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
+s04 = [d_initial; -d_initial; -0.0000001; 0; 0; 0];
 s05 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
 s0 = adjust_cog([s01, s02,s03, s04, s05], num); % 6num×1
 
@@ -574,6 +574,7 @@ function plot_s(s, num, N, rr, d_target, pair_set)
         end
 
         for j = 1:4
+            % ペアリングを表示
             sat1 = pair_set(j,1);
             sat2 = pair_set(j,2);
             plot3([satellites{sat1}(i,1), satellites{sat2}(i,1)], [satellites{sat1}(i,2), satellites{sat2}(i,2)], [satellites{sat1}(i,3), satellites{sat2}(i,3)],  '-', 'Color', 'k', 'LineWidth', 2);

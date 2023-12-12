@@ -10,7 +10,7 @@
 rng(1);
 
 % 初期衛星間距離
-d_initial = 0.3;
+d_initial = d_avoid*1.1;
 
 % 最終衛星間距離
 d_target = 0.925;
@@ -18,7 +18,7 @@ d_target = 0.925;
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %d_avoid = 0.18;
 d_avoid = 0.18;
-%d_avoid = -1;
+d_avoid = -1;
 
 sqrt_d_avoid = sqrt((0.18+0.01)^2/2);
 
@@ -26,7 +26,7 @@ sqrt_d_avoid = sqrt((0.18+0.01)^2/2);
 d_max = 1.0122;
 
 % 衛星数　2基or5基or9基
-num = 5;
+num = 100;
 
 % 衛星質量
 m = 1; % 1
@@ -36,26 +36,18 @@ m = 0.38; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒
-N = 100;
+N = 50;
 
 % trust region 
 %delta = 0.1;
 
 %ペアセット
-pair_set = [1,2;
-            2,3;
-            3,4;
-            4,5];
+pair_set = [(1:num-1)', (2:num)'];
 
 
 % 初期状態
-%s0 = set_initialstates(num, d_initial);
-s01 = [sqrt_d_avoid; sqrt_d_avoid; 0.0000001; 0; 0; 0];
-s02 = [-sqrt_d_avoid; sqrt_d_avoid; -0.0000001; 0; 0; 0];
-s03 = [-sqrt_d_avoid; -sqrt_d_avoid; 0.0000001; 0; 0; 0];
-s04 = [sqrt_d_avoid; -sqrt_d_avoid; -0.0000001; 0; 0; 0];
-s05 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-s0 = adjust_cog([s01, s02,s03, s04, s05], num); % 6num×1
+s0 = set_initialstates_grid100(num, d_initial);
+s0 = adjust_cog(s0, num); % 6num×1
 
 
 
@@ -119,7 +111,7 @@ B_d = dt*B_; % 6num×3num
 
 rr1 = d_target/4;
 rr2 = sqrt(2)*d_target/2;
-rr = [rr1,rr2];
+rr = [rr1,rr2]*10;
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
 % S = PU + Qs_0
@@ -200,7 +192,7 @@ disp(['Aeq1 beq1 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2s
 %beq2 = sd - Q(1:6*num,:) * s0;
 
 
-% 等式制約2 (相対軌道安定化) %5基なのでペア
+% 等式制約2 (相対軌道安定化) 
 disp("Aeq2 beq2生成")
 tic
 kA = 2e-3;
@@ -210,13 +202,10 @@ mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
        2,0,0,0,1/n,0;
        0,0,0,-1/(n*tan(thetaP)),0,1/n;
        -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+Aeq2 = zeros(4*(num-1),3*N*num);
+beq2 = zeros(4*(num-1),1);
 
-
-
-Aeq2 = zeros(4*4,3*N*5);
-beq2 = zeros(4*4,1);
-
-for j = 1:4 
+for j = 1:num-1 
     sat1 = pair_set(j,1);
     sat2 = pair_set(j,2);
     Aeq_ = mat * (P(6*(sat1-1)+1:6*sat1,:) - P(6*(sat2-1)+1:6*sat2,:));
@@ -307,6 +296,21 @@ disp("最終状態固定")
 disp(max(abs(beq2 - Aeq2*x)))
 
 %% 関数リスト
+function s0 = set_initialstates_grid100(num, d)
+    x_list = zeros(1,num);
+    y_list = kron(flip((9*d/2)*(-4.5:4.5)/4.5), ones(1, 10));
+    for i = 1:10
+        if mod(i,2) == 0
+            x_list(10*(i-1)+1:10*i) = flip((9*d/2)*(-4.5:4.5)/4.5);
+        else
+            x_list(10*(i-1)+1:10*i) = (9*d/2)*(-4.5:4.5)/4.5;
+        end
+    end
+    low = -5/10e5;
+    high = 5/10e5;
+    z_list = low + (high - low) .* rand(num, 1).';
+    s0 = [x_list; y_list; z_list; zeros(1,num); zeros(1,num); zeros(1,num)];
+end
 
 function all_dist_list = calc_all_dist(num, N, s)
     all_dist_list = zeros(N*num*(num-1)/2,1);
@@ -432,73 +436,6 @@ function s = adjust_cog(s_mat, num)
     end
 end
 
-function s0 = set_initialstates(num, d_initial)
-    if num == 2
-        s01 = [0.0000001; -d_initial; 0.0000001; 0; 0; 0];
-        s02 = [-0.0000001; d_initial; -0.0000001; 0; 0; 0];
-        s0 = adjust_cog([s01, s02], num); % 6num×1
-
-    elseif num == 5
-        s00 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        s01 = [d_initial; 0.0000001; 0.0000001; 0; 0; 0];
-        s02 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s03 = [-d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        s04 = [d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        s0 = adjust_cog([s00, s01, s02, s03, s04], num); % 6num×1
-    elseif num == 9
-        s00 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        s01 = [d_initial; 0.0000001; 0.0000001; 0; 0; 0];
-        s02 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s03 = [-d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        s04 = [d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        
-        s05 = [3*d_initial; 0.0000001; 0.0000001; 0; 0; 0];
-        s06 = [-3*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s07 = [-4*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s08 = [4*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-    
-        s0 = adjust_cog([s00, s01, s02, s03, s04, s05, s06, s07, s08], num); % 6num×1
-    end
-end
-
-function sd = set_targetstates(num, rr, n, N, dt)
-    if num == 2
-        rr1 = rr(1);
-        %sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
-        %sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd1 = [rr1*sin(n*N*dt); 2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); n*rr1*cos(n*N*dt); -2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt)];
-        sd3 = [rr1*sin(n*N*dt + 2*2*pi/4); 2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4); -2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd = adjust_cog([sd1, sd3], num);
-    elseif num == 5
-        rr1 = rr(1);
-        sd0 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
-        sd2 = [-2*rr1*cos(n*N*dt + 1*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 1*2*pi/4); rr1*sin(n*N*dt + 1*2*pi/4); 2*n*rr1*sin(n*N*dt + 1*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 1*2*pi/4); n*rr1*cos(n*N*dt + 1*2*pi/4)];
-        sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd4 = [-2*rr1*cos(n*N*dt + 3*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 3*2*pi/4); rr1*sin(n*N*dt + 3*2*pi/4); 2*n*rr1*sin(n*N*dt + 3*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 3*2*pi/4); n*rr1*cos(n*N*dt + 3*2*pi/4)];
-        
-        sd = adjust_cog([sd0, sd1, sd2, sd3, sd4], num);
-    elseif num == 9
-        rr1 = rr(1);
-        rr2 = rr(2);
-    
-        sd0 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
-        sd2 = [-2*rr1*cos(n*N*dt + 1*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 1*2*pi/4); rr1*sin(n*N*dt + 1*2*pi/4); 2*n*rr1*sin(n*N*dt + 1*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 1*2*pi/4); n*rr1*cos(n*N*dt + 1*2*pi/4)];
-        sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd4 = [-2*rr1*cos(n*N*dt + 3*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 3*2*pi/4); rr1*sin(n*N*dt + 3*2*pi/4); 2*n*rr1*sin(n*N*dt + 3*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 3*2*pi/4); n*rr1*cos(n*N*dt + 3*2*pi/4)];
-        
-        
-        sd5 = [-2*rr2*cos(n*N*dt + pi/4); sqrt(3)*rr2*sin(n*N*dt + pi/4); rr2*sin(n*N*dt + pi/4); 2*n*rr2*sin(n*N*dt + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + pi/4); n*rr2*cos(n*N*dt + pi/4)];
-        sd6 = [-2*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4)];
-        sd7 = [-2*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4)];
-        sd8 = [-2*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4)];
-        
-        
-        sd = adjust_cog([sd0, sd1, sd2, sd3, sd4, sd5, sd6, sd7, sd8], num);
-    end
-end
-
 
 function plot_s(s, num, N, rr, d_target, pair_set)
     % 2衛星の動画を表示。
@@ -573,7 +510,8 @@ function plot_s(s, num, N, rr, d_target, pair_set)
             
         end
 
-        for j = 1:4
+        for j = 1:num-1
+            % ペアリングを表示
             sat1 = pair_set(j,1);
             sat2 = pair_set(j,2);
             plot3([satellites{sat1}(i,1), satellites{sat2}(i,1)], [satellites{sat1}(i,2), satellites{sat2}(i,2)], [satellites{sat1}(i,3), satellites{sat2}(i,3)],  '-', 'Color', 'k', 'LineWidth', 2);
