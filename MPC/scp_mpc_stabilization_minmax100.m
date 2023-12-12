@@ -9,21 +9,23 @@
 % シード設定
 rng(1);
 
+% 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
+%d_avoid = 0.18;
+d_avoid = 0.18;
+d_avoid = -1;
+
 % 初期衛星間距離
 d_initial = d_avoid*1.1;
 
 % 最終衛星間距離
 d_target = 0.925;
 
-% 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-%d_avoid = 0.18;
-d_avoid = 0.18;
-d_avoid = -1;
+
 
 sqrt_d_avoid = sqrt((0.18+0.01)^2/2);
 
 % 制御可能範囲(m)
-d_max = 1.0122;
+d_max = 10122;
 
 % 衛星数　2基or5基or9基
 num = 100;
@@ -240,11 +242,11 @@ cvx_begin sdp quiet
 
         for i = 1:N
             % ペア間最大距離制約　5基なので4ペア
-            for j = 1:4
+            for j = 1:(num-1)
                 sat1 = pair_set(j,1);
                 sat2 = pair_set(j,2);
-                sat1_pos = pos(6*5*(i-1)+6*(sat1-1)+1:6*5*(i-1)+6*(sat1-1)+3);
-                sat2_pos = pos(6*5*(i-1)+6*(sat2-1)+1:6*5*(i-1)+6*(sat2-1)+3);
+                sat1_pos = pos(6*num*(i-1)+6*(sat1-1)+1:6*num*(i-1)+6*(sat1-1)+3);
+                sat2_pos = pos(6*num*(i-1)+6*(sat2-1)+1:6*num*(i-1)+6*(sat2-1)+3);
                 rel_pos = sat1_pos - sat2_pos ;
                 [d_max^2, rel_pos.';
                  rel_pos, eye(3)] >= 0;
@@ -465,9 +467,9 @@ function plot_s(s, num, N, rr, d_target, pair_set)
     % フィギュアの作成
     figure;
     axis equal;
-    xlim([-d_target*1.5, d_target*1.5]); % x軸の範囲を調整
-    ylim([-d_target*1.5, d_target*1.5]); % y軸の範囲を調整
-    zlim([-d_target*1.5, d_target*1.5]); % z軸の範囲を調整
+    xlim([-10, 10]); % x軸の範囲を調整
+    ylim([-10, 10]); % y軸の範囲を調整
+    zlim([-6, 6]); % z軸の範囲を調整
     hold on;
     grid on; % グリッドを表示
     
@@ -502,11 +504,11 @@ function plot_s(s, num, N, rr, d_target, pair_set)
        
         for j = 1:num
             % 軌道をプロット
-            plot3(satellites{j}(1:N,1), satellites{j}(1:N,2), satellites{j}(1:N,3), '-', 'Color', colors(j,:));
+            plot3(satellites{j}(1:N,1), satellites{j}(1:N,2), satellites{j}(1:N,3), '-', 'MarkerSize', 5, 'Color', colors(j,:));
             % 衛星をプロット
-            plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 60, 'Color', colors(j,:));
+            plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 20, 'Color', colors(j,:));
             % 衛星の初期値をプロット
-            plot3(satellites{j}(1,1), satellites{j}(1,2), satellites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
+            %plot3(satellites{j}(1,1), satellites{j}(1,2), satellites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
             
         end
 
@@ -517,7 +519,7 @@ function plot_s(s, num, N, rr, d_target, pair_set)
             plot3([satellites{sat1}(i,1), satellites{sat2}(i,1)], [satellites{sat1}(i,2), satellites{sat2}(i,2)], [satellites{sat1}(i,3), satellites{sat2}(i,3)],  '-', 'Color', 'k', 'LineWidth', 2);
         end
         % 視点を変更
-        azimuth = 225; % 方位角
+        azimuth = 270; % 方位角 180でレコード盤真横
         elevation = 30; % 仰角
         view(azimuth, elevation);
     
