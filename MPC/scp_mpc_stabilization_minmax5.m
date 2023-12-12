@@ -6,17 +6,19 @@
 % Daniel Morgan, et. al., “Spacecraft Swarm Guidance Using a Sequence of Decentralized Convex Optimizations”
 
 %% パラメータ設定
+% シード設定
+rng(1);
 
 % 初期衛星間距離
-%d_initial = 0.3;
+d_initial = 0.3;
 
 % 最終衛星間距離
 d_target = 0.925;
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-%d_avoid = 0.01;
+%d_avoid = 0.18;
 d_avoid = 0.18;
-%d_avoid = -1;
+d_avoid = -1;
 
 d_max = 1.0122;
 
@@ -50,6 +52,8 @@ s03 = [-d_initial; d_initial/2; 0.0000001; 0; 0; 0];
 s04 = [d_initial/2; -d_initial/2; -0.0000001; 0; 0; 0];
 s05 = [d_initial; d_initial; 0.0000001; 0; 0; 0];
 s0 = adjust_cog([s01, s02,s03, s04, s05], num); % 6num×1
+
+
 
 %% Hill方程式 宇宙ステーション入門 P108
 
@@ -94,23 +98,24 @@ B_d = dt*B_; % 6num×3num
 % 2衛星のそれぞれの目標状態
 
 %目標レコード盤軌道の半径
-%{
-rr1 = d_target/2;
-if num == 2
-    rr1 = d_target/4;
-end
+
+rr1 = d_target/4;
 rr2 = sqrt(2)*d_target/2;
 rr = [rr1,rr2];
-rr = create_rr(num)
-sd = set_targetstates(num, rr, n, N, dt);
-%}
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
 % S = PU + Qs_0
+disp("P生成")
+tic
 P = create_P(A_d, B_d, N); %6Nnum×3Nnum
 %P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
+elapsed_time = toc;
+disp(['P生成 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
+disp("Q生成")
+tic
 Q = create_Q(A_d, N); %6N×6num
-
+elapsed_time = toc;
+disp(['Q生成 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
 %% 評価関数
 
 %% 不等式制約
@@ -121,6 +126,8 @@ Q = create_Q(A_d, N); %6N×6num
 %b1 = zeros(6*N*num, 1);%6Nnum×1
 
 if not(d_avoid == -1)
+    disp("A b生成")
+    tic
     % 不等式制約2 (衛星間距離はd_avoid以上)
     % ノミナルの状態プロファイルを設定
     nominal_s = s;
@@ -154,6 +161,9 @@ if not(d_avoid == -1)
     
     %A = [A1; A2; A3];
     %b = [b1; b2; b3];
+    elapsed_time = toc;
+    disp(['A b生成 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
+    
 end
 
 
@@ -161,15 +171,20 @@ end
 %% 等式制約
 
 % 等式制約1 (運動量保存)
+disp("Aeq1 beq1生成")
+tic
 Aeq1 = create_Aeq1(N, num);
 beq1 = zeros(3*N, 1);
-
+elapsed_time = toc;
+disp(['Aeq1 beq1 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
 % 等式制約2 (最終状態固定)
 %Aeq2 = P(1:6*num,:);
 %beq2 = sd - Q(1:6*num,:) * s0;
 
 
 % 等式制約2 (相対軌道安定化) %5基なのでペア
+disp("Aeq2 beq2生成")
+tic
 kA = 2e-3;
 thetaP = pi/6;
 relative_mat6 = [eye(6),-eye(6)];
@@ -191,13 +206,15 @@ for j = 1:4
     Aeq2(4*(j-1)+1:4*j,:) = Aeq_;
     beq2(4*(j-1)+1:4*j) = beq_;
 end
-
+elapsed_time = toc;
+disp(['Aeq2 beq2生成 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
 
 Aeq = [Aeq1; Aeq2];
 beq = [beq1; beq2];
 
 %% 線形不等式制約線形計画問題 
-
+disp("最適化開始")
+tic
 % 解はnum×N×3自由度
 cvx_begin sdp quiet
     variable x(3*N*num)
@@ -228,6 +245,9 @@ cvx_begin sdp quiet
         end
 cvx_end
 
+elapsed_time = toc;
+disp(['最適化 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
+
 
 % 衛星の状態
 s = P * x + Q * s0;
@@ -235,17 +255,21 @@ s1 = s;
 u = x;
 
 disp("最大入力 u_max")
+tic
 disp(max(abs(x))*10^(-6))
 I_max_list = [];
 
 disp("安定チェック")
+tic
 x_r = s(1:6)-s(7:12);
 error = mat * x_r;
 disp(error)
 %% 図示
-
+disp("図示開始")
+tic
 plot_s(s, num, N, rr, d_target, pair_set)
-
+elapsed_time = toc;
+disp(['図示 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
 %% 関数リスト
 
 % 関数の命名はテキトーです。すみません。
@@ -478,7 +502,6 @@ function plot_s(s, num, N, rr, d_target, pair_set)
         end
 
         for j = 1:4
-            disp(j)
             sat1 = pair_set(j,1);
             sat2 = pair_set(j,2);
             plot3([satellites{sat1}(i,1), satellites{sat2}(i,1)], [satellites{sat1}(i,2), satellites{sat2}(i,2)], [satellites{sat1}(i,3), satellites{sat2}(i,3)],  '-', 'Color', 'k', 'LineWidth', 2);

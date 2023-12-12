@@ -96,8 +96,6 @@ rr2 = sqrt(2)*d_target/2;
 
 rr = [rr1,rr2];
 
-%rr = create_rr(num)
-
 sd = set_targetstates(num, rr, n, N, dt);
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
