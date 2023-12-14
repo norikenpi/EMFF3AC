@@ -6,13 +6,21 @@
 % Daniel Morgan, et. al., “Spacecraft Swarm Guidance Using a Sequence of Decentralized Convex Optimizations”
 
 %% パラメータ設定
-% シード設定
-rng(1);
+current_time = datetime('now', 'Format', 'yyyy-MM-dd HH:mm:ss');
+disp(['現在時刻: ', char(current_time)]);
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %d_avoid = 0.18;
 d_avoid = 0.18;
 d_avoid = -1;
+if d_avoid == -1
+    clear;
+    d_avoid = -1;
+end
+
+% シード設定
+rng(1);
+
 
 % 初期衛星間距離
 d_initial = d_avoid*1.1;
@@ -38,7 +46,7 @@ m = 0.38; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒
-N = 50;
+N = 5;
 
 % trust region 
 %delta = 0.1;
@@ -224,6 +232,8 @@ beq = [beq1; beq2];
 %% 線形不等式制約線形計画問題 
 disp("最適化開始")
 tic
+
+clear rel_pos;
 % 解はnum×N×3自由度
 cvx_begin sdp quiet
     variable x(3*N*num)
@@ -239,9 +249,25 @@ cvx_begin sdp quiet
         
         %運動量保存＆最終状態で軌道安定完了
         Aeq * x == beq;
-
+          
+       
+        %rel_pos = zeros(3, N*(num-1));
         for i = 1:N
-            % ペア間最大距離制約　5基なので4ペア
+            % ペア間最大距離制約　100基なので99ペア
+            for j = 1:(num-1)
+                sat1 = pair_set(j,1);
+                sat2 = pair_set(j,2);
+                sat1_pos = pos(6*num*(i-1)+6*(sat1-1)+1:6*num*(i-1)+6*(sat1-1)+3);
+                sat2_pos = pos(6*num*(i-1)+6*(sat2-1)+1:6*num*(i-1)+6*(sat2-1)+3);
+                rel_pos(:,(num-1)*(i-1)+j) = sat1_pos - sat2_pos ;   
+            end
+        end
+        [d_max^2*eye(N*(num-1)), rel_pos.';
+         rel_pos, eye(3)] >= 0;
+%{ 
+      
+        for i = 1:N
+            % ペア間最大距離制約　100基なので99ペア
             for j = 1:(num-1)
                 sat1 = pair_set(j,1);
                 sat2 = pair_set(j,2);
@@ -252,7 +278,10 @@ cvx_begin sdp quiet
                  rel_pos, eye(3)] >= 0;
             end
         end
+%}
+        
 cvx_end
+cvx_status
 
 elapsed_time = toc;
 disp(['最適化 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(rem(elapsed_time, 60)), '秒']);
@@ -283,18 +312,18 @@ disp(['図示 実行時間: ', num2str(floor(elapsed_time/60)), '分 ', num2str(
 
 %% 拘束条件チェック
 
-disp("衛星間距離はd_avoid以上")
+disp(['衛星間距離が',num2str(d_avoid),'以上になっていればok'])
 all_dist_list = calc_all_dist(num, N, s);
 disp(min(all_dist_list))
 
-disp("ペア組んでいる衛星間距離はd_max以下")
+disp(['ペア組んでいる衛星間距離が',num2str(d_max),'以下になっていればok'])
 pair_dist_list = calc_pair_dist(N, pair_set, s);
 disp(max(pair_dist_list))
 
-disp("運動量保存")
+disp("運動量保存(すごい小さな値になっていればok)")
 disp(max(abs(beq - Aeq*x)))
 
-disp("最終状態固定")
+disp("最終状態固定(すごい小さな値になっていればok)")
 disp(max(abs(beq2 - Aeq2*x)))
 
 %% 関数リスト

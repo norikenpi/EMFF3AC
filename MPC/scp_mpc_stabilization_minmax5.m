@@ -9,9 +9,6 @@
 % シード設定
 rng(1);
 
-% 初期衛星間距離
-d_initial = d_avoid*1.1;
-
 % 最終衛星間距離
 d_target = 0.925;
 
@@ -19,6 +16,9 @@ d_target = 0.925;
 %d_avoid = 0.18;
 d_avoid = 0.18;
 d_avoid = -1;
+
+% 初期衛星間距離
+d_initial = -0.18*1.1;
 
 %sqrt_d_avoid = sqrt((0.18+0.01)^2/2);
 
@@ -49,7 +49,6 @@ pair_set = [1,2;
 
 
 % 初期状態
-%s0 = set_initialstates(num, d_initial);
 s01 = [d_initial; d_initial; 0.0000001; 0; 0; 0];
 s02 = [-d_initial; d_initial; -0.0000001; 0; 0; 0];
 s03 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
@@ -432,72 +431,6 @@ function s = adjust_cog(s_mat, num)
     end
 end
 
-function s0 = set_initialstates(num, d_initial)
-    if num == 2
-        s01 = [0.0000001; -d_initial; 0.0000001; 0; 0; 0];
-        s02 = [-0.0000001; d_initial; -0.0000001; 0; 0; 0];
-        s0 = adjust_cog([s01, s02], num); % 6num×1
-
-    elseif num == 5
-        s00 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        s01 = [d_initial; 0.0000001; 0.0000001; 0; 0; 0];
-        s02 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s03 = [-d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        s04 = [d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        s0 = adjust_cog([s00, s01, s02, s03, s04], num); % 6num×1
-    elseif num == 9
-        s00 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        s01 = [d_initial; 0.0000001; 0.0000001; 0; 0; 0];
-        s02 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s03 = [-d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        s04 = [d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        
-        s05 = [3*d_initial; 0.0000001; 0.0000001; 0; 0; 0];
-        s06 = [-3*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s07 = [-4*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s08 = [4*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-    
-        s0 = adjust_cog([s00, s01, s02, s03, s04, s05, s06, s07, s08], num); % 6num×1
-    end
-end
-
-function sd = set_targetstates(num, rr, n, N, dt)
-    if num == 2
-        rr1 = rr(1);
-        %sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
-        %sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd1 = [rr1*sin(n*N*dt); 2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); n*rr1*cos(n*N*dt); -2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt)];
-        sd3 = [rr1*sin(n*N*dt + 2*2*pi/4); 2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4); -2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd = adjust_cog([sd1, sd3], num);
-    elseif num == 5
-        rr1 = rr(1);
-        sd0 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
-        sd2 = [-2*rr1*cos(n*N*dt + 1*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 1*2*pi/4); rr1*sin(n*N*dt + 1*2*pi/4); 2*n*rr1*sin(n*N*dt + 1*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 1*2*pi/4); n*rr1*cos(n*N*dt + 1*2*pi/4)];
-        sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd4 = [-2*rr1*cos(n*N*dt + 3*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 3*2*pi/4); rr1*sin(n*N*dt + 3*2*pi/4); 2*n*rr1*sin(n*N*dt + 3*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 3*2*pi/4); n*rr1*cos(n*N*dt + 3*2*pi/4)];
-        
-        sd = adjust_cog([sd0, sd1, sd2, sd3, sd4], num);
-    elseif num == 9
-        rr1 = rr(1);
-        rr2 = rr(2);
-    
-        sd0 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
-        sd2 = [-2*rr1*cos(n*N*dt + 1*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 1*2*pi/4); rr1*sin(n*N*dt + 1*2*pi/4); 2*n*rr1*sin(n*N*dt + 1*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 1*2*pi/4); n*rr1*cos(n*N*dt + 1*2*pi/4)];
-        sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd4 = [-2*rr1*cos(n*N*dt + 3*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 3*2*pi/4); rr1*sin(n*N*dt + 3*2*pi/4); 2*n*rr1*sin(n*N*dt + 3*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 3*2*pi/4); n*rr1*cos(n*N*dt + 3*2*pi/4)];
-        
-        
-        sd5 = [-2*rr2*cos(n*N*dt + pi/4); sqrt(3)*rr2*sin(n*N*dt + pi/4); rr2*sin(n*N*dt + pi/4); 2*n*rr2*sin(n*N*dt + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + pi/4); n*rr2*cos(n*N*dt + pi/4)];
-        sd6 = [-2*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4)];
-        sd7 = [-2*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4)];
-        sd8 = [-2*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4)];
-        
-        
-        sd = adjust_cog([sd0, sd1, sd2, sd3, sd4, sd5, sd6, sd7, sd8], num);
-    end
-end
 
 
 function plot_s(s, num, N, rr, d_target, pair_set)

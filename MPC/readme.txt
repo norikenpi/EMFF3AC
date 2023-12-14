@@ -35,6 +35,11 @@ scp_mpc_EMFF_nonl_recordで片側固定のfar fieldで最適化
 
 scp_mpc_stabilization.mで2衛星の安定化制御を取り込んだ最適化。最終状態の拘束条件は4つになってる。
 scp_mpc_stabilization_minmax.mでscp_mpc_stabilizationの最大値最小化問題の表現を変更。
+scp_mpc_stabilization_minmax5.mでscp_mpc_stabilizationの5基バージョン
+scp_mpc_stabilization_minmax100.mでscp_mpc_stabilizationの100基バージョン
+
+
+
 
 
 takahashi_attenuation.mで高橋さんから送られた安定化制御則を高橋さんの座標系で実装。単純なフィードバック制御。

@@ -1,6 +1,7 @@
 clc; close all; clear all
 %% NN model constants
 load("NN_optimal_power_1212")
+rng(1)
 Weight_nor_label = Weight_nor_label_power;
 Bias_nor_label = Bias_nor_label_power;
 constants = cell(7,1);
@@ -23,11 +24,16 @@ tau_max = 3.5e-7; tau_min = 1e-20;% for norm(tau)~=0
 EM_con = (mu_0)/(8*pi*d^4);
 [power_per_EM_con,l_cvx] = cvx_optimization(d,Control_LOS,EM_con);
 power_per_EM_con
+
+
 % prediction
-predicted_optimal_power = prediction(input,constants)
+predicted_optimal_power = prediction(input,constants) %inputは相対位置、力、距離 constantsは重み
+%d = s;%相対距離を計算
+%input = 
 
 
 function predicted_optimal_power = prediction(input,constants)
+%{
     Bias_nor_input=constants{1};
     Weight_nor_input=constants{2};
     weight1=constants{3};
@@ -38,6 +44,21 @@ function predicted_optimal_power = prediction(input,constants)
     nor_input = (input- Bias_nor_input)*inv(Weight_nor_input);
     nor_label = double(weight2*max(weight1*nor_input.'+offset1, 0));
     predicted_optimal_power = Weight_nor_label*nor_label + Bias_nor_label;
+%}
+    input = input.';
+    Bias_nor_input=constants{1}.';
+    Weight_nor_input=constants{2};
+    weight1=constants{3};
+    offset1=constants{4};
+    weight2=constants{5};
+    Weight_nor_label=constants{6};
+    Bias_nor_label=constants{7};
+    nor_input = inv(Weight_nor_input)*(input- Bias_nor_input);
+    nor_label = double(weight2*max(weight1 * nor_input + offset1, 0));
+    predicted_optimal_power = Weight_nor_label*nor_label + Bias_nor_label;
+
+    %input_vec = input.';
+    %Bias_nor_input_vec = Bias_nor_input.'
 end
 
 function [power_per_EM_con,l] = cvx_optimization(d,Control_LOS,EM_con)
