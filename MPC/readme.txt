@@ -38,13 +38,15 @@ scp_mpc_stabilization_minmax.mでscp_mpc_stabilizationの最大値最小化問�
 scp_mpc_stabilization_minmax5.mでscp_mpc_stabilizationの5基バージョン
 scp_mpc_stabilization_minmax100.mでscp_mpc_stabilizationの100基バージョン
 
-
-
-
-
 takahashi_attenuation.mで高橋さんから送られた安定化制御則を高橋さんの座標系で実装。単純なフィードバック制御。
 
 scp_mpc_num.m 3基以上のscp-mpcを実装。
 
 takahashi_NN.mは高橋さんのNNモデル。
 takahashi_NN2.mは高橋さんのトルクと力のNNモデル。これを使ってスラスターから電磁力モデルに変換できる。
+
+scp_mpc_stabilization_min_energy.mは総Csの最小化を目指すもの。
+scp_mpc_EMFF_stabilization_min_energy.mは総Csの最小化を目指すもので、最大推力は太陽光パネルの生成電力によって決まる。
+
+scp_mpc_stabilization_optimal_power.mはNNモデルを用いて、電力の最小化をするもの未完成。NNモデルが完成する見込みがないためボツ
+
