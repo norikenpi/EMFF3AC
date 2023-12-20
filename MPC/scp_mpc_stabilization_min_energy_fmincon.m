@@ -11,14 +11,7 @@
 %d_avoid = 0.18;
 d_avoid = 0.01;
 d_avoid = -1;
-if d_avoid == -1
-    clear;
-    d_avoid = -1;
-else
-    %これを外すと以下のエラーが出る。
-    %cvx から double に変換できません。
-    clearvars u_mat
-end
+
 
 
 % 初期衛星間距離
@@ -95,10 +88,12 @@ B = [0, 0, 0;
 %2衛星に関する状態方程式の係数行
 A_ = A;
 B_ = B;
+
 for i = 2:num
     A_ = blkdiag(A_, A); % BにAを対角に追加
     B_ = blkdiag(B_, B); % BにAを対角に追加
 end
+
 
 % 2衛星に関する離散時間状態方程式の係数行列
 A_d = eye(6*num) + dt*A_; % 6num×6num
@@ -182,6 +177,10 @@ if not(d_avoid == -1)
 
 end
 
+% 不等式制約4 (進入禁止制約。重心に対する範囲を設定)
+% これは非凸だからだめだ。
+%A4 = -P;
+%b4 = - 0.09 * ones(6*N*num, 1) + Q * s0;
 
 %% 等式制約
 
@@ -195,7 +194,7 @@ beq1 = zeros(3*N, 1);
 
 
 % 等式制約2 (相対軌道安定化)
-kA = 2e-3; % 2e-3
+kA = 2e-3;
 thetaP = pi/6;
 relative_mat = [eye(6),-eye(6)];
 mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
@@ -211,36 +210,7 @@ beq = beq1;
 d_max_list = d_max * ones(N, 1);
 %% 線形不等式制約線形計画問題 
 
-% 解はnum×N×3自由度
-cvx_begin sdp quiet
-    variable x(3*N*num)
-    minimize(1+sum(abs(mat * relative_mat * (P(1:6*num,:) * x + Q(1:6*num,:) * s0))))
-
-    pos = P * x + Q * s0;
-
-    subject to
-        % 不等式制約
-
-        if not(d_avoid == -1)
-        % 進入禁止制約
-            A2 * x <= b2;
-        end
-
-        % 太陽光パネルの発電量拘束
-        for i = 1:num*N
-            u_mat(:,i) = x(3*(i-1)+1:3*i);   
-        end
-        [P_max*eye(N*num), u_mat.';
-         u_mat, eye(3)] >= 0;
-
-        % 等式制約
-        Aeq * x == beq;
-
-
-        
-cvx_end
-cvx_status
-
+[x, fval, exitflag, output] = solveOptimizationProblem(n, num, u_list2, Aeq, beq, N, P_max, P, Q, s0, d_avoid);
 
 % 衛星の状態
 s = P * x + Q * s0;
@@ -265,9 +235,68 @@ disp(sum(abs(error)))
 plot_s(s, num, N, rr, d_target)
 
 %% 関数リスト
+function [x, fval, exitflag, output] = solveOptimizationProblem(n, num, x0, Aeq, beq, N, P_max, P, Q, s0, d_avoid)
+    % 初期化
+    A = [];  % 不等式制約 A*x <= b の A
+    b = [];  % 不等式制約 A*x <= b の b
+    lb = []; % 変数の下限
+    ub = []; % 変数の上限
 
-% 関数の命名はテキトーです。すみません。
+    % オプションの設定
+    options = optimoptions('fmincon', ...
+                       'Algorithm', 'sqp', ...
+                       'TolFun', 1e-6, ...
+                       'TolX', 1e-6, ...
+                       'TolCon', 1e-6, ...
+                       'Display', 'iter', ...
+                       'MaxIterations', 400, ...
+                       'StepTolerance', 1e-6);
 
+
+    fun =  @(x) objectiveFunction(n, num, x, P, Q, s0);
+
+    c_ceq = @(x) nonlinearConstraints(x, num, N, P_max, P, Q, s0, d_avoid);
+
+    % fminconの呼び出し
+    [x, fval, exitflag, output] = fmincon(fun, x0, A, b, Aeq, beq, lb, ub, c_ceq, options);
+end
+
+function f = objectiveFunction(n, num, x, P, Q, s0)
+    % 目的関数の計算
+    kA = 2e-3;
+    thetaP = pi/6;
+    relative_mat = [eye(6),-eye(6)];
+    mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+           2,0,0,0,1/n,0;
+           0,0,0,-1/(n*tan(thetaP)),0,1/n;
+           -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+    f = sum(abs(mat * relative_mat * (P(1:6*num,:) * x + Q(1:6*num,:) * s0))); % xを用いた計算
+end
+
+function [c, ceq] = nonlinearConstraints(x, num, N, P_max, P, Q, s0, d_avoid)
+    
+    % 非線形制約の計算
+    % 発電量拘束
+    P_list = zeros(N,1);
+    for i = 1:num*N
+        P_list(i) = norm(x(3*(i-1)+1:3*i))^2 - P_max;   
+    end
+
+    % 進入禁止制約
+    dist_margin_list = zeros(N,1);
+    relative_mat = [eye(6),-eye(6)];
+    s = P * x + Q * s0;
+    for i = 1:N
+        dist_margin_list(i) = d_avoid/2 - norm(s(6*(i-1)+1:6*i+3));   
+    end
+
+    % 制御可能範囲制約
+    %%%%%%%%%%%%%%%%%%%
+    
+    c = [P_list;dist_margin_list];  % 不等式制約 c(x) <= 0 進入禁止制約、発電量拘束
+    c = P_list;
+    ceq = [];% 等式制約 ceq(x) = 0
+end
 function P = create_P(A, B, N)
     % 入力:
     % A: nxn の行列
@@ -520,3 +549,4 @@ function B = reorderMatrix2(A)
         B = [B; flip(sub_vector)];
     end
 end
+
