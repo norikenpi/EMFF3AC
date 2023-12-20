@@ -13,7 +13,7 @@
 % 繰り返し最適化する場合は、このコードを何回も実行すればよい。
 
 %% パラメータ設定
-
+tic;
 % 初期衛星間距離
 d_initial = 0.3;
 
@@ -23,6 +23,7 @@ d_target = 0.925;
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %d_avoid = 0.01;
 d_avoid = 0.299;
+d_avoid = 0.01;
 
 % 衛星数　2基or5基or9基
 num = 2;
@@ -34,11 +35,11 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 300;
+N = 10;
 
 % trust region 
-delta = 0.05;
-
+delta_r = 0.3;
+delta_myu = myu_max*2;
 % trust region 
 %delta2 = 10;
 
@@ -90,6 +91,9 @@ if num == 2
     d_initial = d_initial/2;
 end
 s0 = set_initialstates(num, d_initial);
+s01 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
+s02 = [d_initial; d_initial; -0.0000001; 0; 0; 0];
+s0 = adjust_cog([s01, s02], num); % 6num×1
 
 % 2衛星のそれぞれの目標状態
 %目標レコード盤軌道の半径
@@ -175,13 +179,13 @@ b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * n
 % -s + (PU + Qs0 + R) < δ
 
 A3 = [-P; P];
-b3 = [delta * ones(6*N*num, 1) - s + Q * s0 + R; delta * ones(6*N*num, 1) + s - Q * s0 - R];
+b3 = [delta_r * ones(6*N*num, 1) - s + Q * s0 + R; delta_r * ones(6*N*num, 1) + s - Q * s0 - R];
 
 % 不等式制約4 (磁気モーメントの変化量はδ2以下)
 % U2 - U1 < δ
 % U1 - U2 < δ
-%A4 = [-[eye(N*3), zeros(N*3,1)]; [eye(N*3), zeros(N*3,1)]];
-%b4 = [delta2 * ones(3*N, 1) - u_myu(1:end-1); delta2 * ones(3*N, 1) + u_myu(1:end-1)];
+A4 = [-[eye(N*3), zeros(N*3,1)]; [eye(N*3), zeros(N*3,1)]];
+b4 = [delta_myu * ones(3*N, 1) - u_myu(1:end-1); delta_myu * ones(3*N, 1) + u_myu(1:end-1)];
 
 
 A = [A1; A2; A3];
@@ -235,8 +239,8 @@ I_max_list = [I_max_list; x(3*N+1)/(coilN * pi * radius^2)];
 
 %% 図示
 
-plot_s(s, num, N, rr, d_target)
-
+%plot_s(s, num, N, rr, d_target)
+time = toc
 %% 関数リスト
 
 function A_mat = create_A_mat(A_list, num, N)

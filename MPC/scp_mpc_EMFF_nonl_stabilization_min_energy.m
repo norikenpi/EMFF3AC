@@ -9,18 +9,12 @@
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %d_avoid = 0.18;
-d_avoid = 0.18;
-d_avoid = -1;
-if d_avoid == -1
-    clear;
-    d_avoid = -1;
-end
+
+%d_avoid = -1;
 
 
-% 初期衛星間距離
-d_initial = 0.4;
-s01 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
-s02 = [d_initial; d_initial; -0.0000001; 0; 0; 0];
+tic;
+
 
 
 % 最終衛星間距離
@@ -30,46 +24,47 @@ scale = 10^(-6);
 
 % 制御可能範囲(m)
 d_max = 1.0122;
-d_max = 1.0122*3;
+d_max = 1.0122*5;
 
 % 衛星数　2基or5基or9基
 num = 2;
 
 % 衛星質量
-%m = 1; % 1
-m = 0.38; % 1
+m = 1; % 1
+%m = 0.38; % 1
  
 % タイムステップ(s)
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 10;
+N = 250;
+
+%u_max = 1e-9;
+coilN = 140;
+radius = 0.05;
+d_avoid = radius*6;
+% 初期衛星間距離
+d_initial = d_avoid/2;
+s01 = [-d_initial; -d_initial; 0; 0; 0; 0];
+s02 = [d_initial; d_initial; -0; 0; 0; 0];
+
+P_max = 10; % W
+rho = 1.68e-7; % Ω/m
+wire_length = 140*0.05*2*pi;
+wire_S = (0.2e-3)^2*pi;
+R_rho = rho * wire_length/wire_S; 
+I_max = sqrt(P_max/R_rho);
+myu_max = I_max * coilN * radius^2 * pi;
+disp("最大電流設定")
+disp(I_max)
+disp("最大磁気モーメント設定")
+disp(myu_max)
+
 
 % trust region 
-%delta = 0.1;
+delta_r = 0.01;
+delta_myu = myu_max/10000000;
 
-% 衛星パラメータ
-coilN = 246;
-radius = 0.03;
-
-% 太陽光パネルの発電量
-P_max = 2.75; % W
-
-% 太陽光パネルの発電量から導出される最大電流
-R = 1;
-I_max = sqrt(P_max/R);
-disp("最大電流")
-disp(I_max)
-
-% 最大電流と制御可能範囲から導出される最大推力
-func_cell = create_func_cell();
-s_val = d_max*[0.00001;0;0.00001;0;0;0;1;0;0;0;0;0];
-myu_max_val = coilN * pi * radius^2 * I_max;
-F_max = norm(F_func(s_val, myu_max_val, func_cell)*myu_max_val*[0;1;0]/scale);
-
-disp("最大推力（最も衛星間距離が離れた時に磁気モーメントが直交するときの最大磁力）")
-disp("小さすぎると軌道ダイナミクスによって距離制約が維持できなくなり解なしになる")
-disp(F_max*scale)
 %% Hill方程式 宇宙ステーション入門 P108
 
 % 地球を周回する衛星の角速度
@@ -101,10 +96,12 @@ B = [0, 0, 0;
 %2衛星に関する状態方程式の係数行
 A_ = A;
 B_ = B;
+%{
 for i = 2:num
     A_ = blkdiag(A_, A); % BにAを対角に追加
     B_ = blkdiag(B_, B); % BにAを対角に追加
 end
+%}
 
 % 2衛星に関する離散時間状態方程式の係数行列
 A_d = eye(6*num) + dt*A_; % 6num×6num
@@ -115,11 +112,32 @@ rr2 = sqrt(2)*d_target/2;
 rr = [rr1,rr2];
 s0 = adjust_cog([s01, s02], num); % 6num×1
 
-% 各時刻の状態←各時刻の入力プロファイル,初期状態
-% S = PU + Qs_0
-P = create_P(A_d, B_d, N); %6Nnum×3Nnum
-%P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
-Q = create_Q(A_d, N); %6N×6num
+% 微分式のセル
+func_cell = create_func_cell();
+
+% ノミナル軌道sによってPとQが変わる
+A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, u_myu_max, func_cell); % {A1, A2, ... ,AN}
+B_list = create_B_list(num, N, s, s0, u_myu, B_d, u_myu_max, func_cell); % {B1, B2, ... ,BN}
+C_list = create_C_list(num, N, s, s0, u_myu, B_d, u_myu_max, func_cell); % {C1, C2, ... ,CN}
+
+A_mat = create_A_mat(A_list, num, N);
+B_mat = create_B_mat(B_list, num, N);
+A_mat2 = create_A_mat2(A_list, num, N);
+C_mat = create_C_mat(C_list, num, N);
+
+P = A_mat*B_mat; %6Nnum×3Nnum
+Q = A_mat2; 
+R = A_mat*C_mat; 
+
+disp("1ステップ検証")
+F = F_func(s0, u_myu_max, func_cell);
+s11 = A_d * s0 + B_d*F*u_myu(7:9);
+disp(s11)
+
+disp("線形化したEMFFダイナミクスを用いて、軌道を再計算。ちゃんと目標値になっていたらok")
+l_s = P * u_myu + Q * s0 + R;
+disp(l_s(1:3))
+disp(l_s(7:9))
 
 %% 評価関数
 
@@ -134,29 +152,7 @@ if not(d_avoid == -1)
     % 不等式制約2 (衛星間距離はd_avoid以上)
     % ノミナルの状態プロファイルを設定
     nominal_s = s;
-    %{
-    A2 = zeros(N*num*(num-1), 3*num*N);
-    b2 = zeros(N*num*(num-1), 1);
-    
-    for i = 1:num-1
-        for j = i:num
-            % 状態ベクトルから衛星iと衛星jの位置ベクトルのみ抽出
-            relative_mat_all = zeros(N, 6*num*N);
-            relative_mat = zeros(3, 6*num);
-            relative_mat(:,6*(i-1)+1:6*(i-1)+3) = eye(3);
-            relative_mat(:,6*(j-1)+1:6*(j-1)+3) = -eye(3);
-            for k = 1:N
-                relative_mat_all(3*(k-1)+1:3*k, 6*num*(k-1)+1:6*num*k) = relative_mat;
-            end
-            % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
-            % 不等式の大小を変えるために両辺マイナスをかけている。
-            A2(N*(i-1)+1:N*i,:) = -create_matrix(relative_mat_all * nominal_s).' * relative_mat_all * P; %500×3001
-            b2(N*(i-1)+1:N*i,:) = -d_avoid * calculate_norms(relative_mat_all * nominal_s) + create_matrix(relative_mat_all * nominal_s).' * relative_mat_all * Q * s0;
-        end
-    end
-    %}
-    
-    
+        
     % 状態ベクトルから位置ベクトルのみを抽出
     C01 = [eye(3),zeros(3)];
     C1 = [];
@@ -179,12 +175,20 @@ if not(d_avoid == -1)
     A = A2;
     b = b2;
 
-    % 不等式制約3 (移動量はdelta以下)
-    %A3 = [-P; P];
-    %b3 = [delta * ones(6*N*num, 1) - s + Q * s0; delta * ones(6*N*num, 1) + s - Q * s0];
+    % 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
+    % s - (PU + Qs0 + R) < δ
+    % -s + (PU + Qs0 + R) < δ
     
-    %A = [A1; A2; A3];
-    %b = [b1; b2; b3];
+    A3 = [-P; P];
+    b3 = [delta_r * ones(6*N*num, 1) - s + Q * s0 + R; delta_r * ones(6*N*num, 1) + s - Q * s0 - R];
+    
+    % 不等式制約4 (磁気モーメントの変化量はδ2以下)
+    % U2 - U1 < δ
+    % U1 - U2 < δ
+    A4 = [-[eye(N*3), zeros(N*3,1)]; [eye(N*3), zeros(N*3,1)]];
+    b4 = [delta_myu * ones(3*N, 1) - u_myu(1:end-1); delta_myu * ones(3*N, 1) + u_myu(1:end-1)];
+    A = [A2; A3; A4];
+    b = [b2; b3; b4];
 
 end
 
@@ -192,16 +196,9 @@ end
 
 %% 等式制約
 
-% 等式制約1 (運動量保存)
-Aeq1 = create_Aeq1(N, num);
-beq1 = zeros(3*N, 1);
 
-% 等式制約2 (最終状態固定)
-%Aeq2 = P(1:6*num,:);
-%beq2 = sd - Q(1:6*num,:) * s0;
+%% 線形不等式制約線形計画問題 
 
-
-% 等式制約2 (相対軌道安定化)
 kA = 2e-3;
 thetaP = pi/6;
 relative_mat = [eye(6),-eye(6)];
@@ -209,46 +206,27 @@ mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
        2,0,0,0,1/n,0;
        0,0,0,-1/(n*tan(thetaP)),0,1/n;
        -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-%Aeq2 = mat * relative_mat * P(1:6*num,:);
-%beq2 = zeros(4,1) - mat * relative_mat * Q(1:6*num,:) * s0;
-
-
-Aeq = Aeq1;
-beq = beq1;
-d_max_list = d_max * ones(N, 1);
-%% 線形不等式制約線形計画問題 
 
 % 解はnum×N×3自由度
 cvx_begin sdp quiet
     variable x(3*N*num)
     minimize(sum(abs(mat * relative_mat * (P(1:6*num,:) * x + Q(1:6*num,:) * s0))))
 
-    pos = P * x + Q * s0;
+    %pos = P * x + Q * s0;
 
     subject to
         % 不等式制約
-
-        if not(d_avoid == -1)
         % 進入禁止制約
-            A * x <= b;
-        end
-        
-        % 制御可能範囲制約
-        for i = 1:N
-            rel_pos = relative_mat(1:3,:) * pos(12*(i-1)+1:12*i);
-            [d_max^2, rel_pos.';
-             rel_pos, eye(3)] >= 0;
-        end
+        % 位置trust region
+        % 磁気モーメントtrust region
+        A * x <= b;
 
         % 太陽光パネルの発電量拘束
         for i = 1:num*N
-            u_mat(:,i) = x(3*(i-1)+1:3*i);   
+            myu_mat(:,i) = x(3*(i-1)+1:3*i);   
         end
-        [F_max^2*eye(N*num), u_mat.';
-         u_mat, eye(3)] >= 0;
-
-        % 等式制約
-        Aeq * x == beq;
+        [myu_max^2*eye(N*num), myu_mat.';
+         myu_mat, eye(3)] >= 0;
 
         
 cvx_end
@@ -264,7 +242,7 @@ disp("最大入力 u_max")
 disp(max(abs(x))*scale)
 
 disp("最大電力")
-disp((max(vecnorm(u_mat,2,1))*scale)^2)
+disp((max(vecnorm(myu_mat,2,1))*scale)^2)
 
 disp("安定チェック")
 x_r = s(1:6)-s(7:12);
@@ -278,37 +256,216 @@ plot_s(s, num, N, rr, d_target)
 
 % 関数の命名はテキトーです。すみません。
 
-function P = create_P(A, B, N)
-    % 入力:
-    % A: nxn の行列
-    % B: nx1 のベクトル
-    % N: 整数
-    n = size(A, 1); % A行列の次元
-    k = size(B, 2);
-    P = [];
-    for j = 1:N
-        mat_i = zeros(n, N);
-        %j個目までは0行列
-        for i = 1:N
-            if i >= 1 && i < j
-                mat_i(:, k*(i-1)+1: k*i) = zeros(n, k);
-            else
-                mat_i(:, k*(i-1)+1: k*i) = A^(i-j) * B;
+
+function A_mat = create_A_mat(A_list, num, N)
+    A_mat = zeros(6*num*N);
+    for k = 1:N % 行
+        for i = 1:N  % 列
+            if i <= k-1
+                mat = zeros(6*num);
+            elseif i == k
+                mat = eye(6*num);
+            elseif k+1 <= i
+                mat = eye(6*num);
+                for j = (N-i+2):(N-k+1)
+                    mat = A_list{j}*mat;
+                end
             end
+            A_mat((k-1)*6*num+1:k*6*num, (i-1)*6*num+1:i*6*num) = mat;
         end
-        P = [P;mat_i];
-    
     end
+end
+
+function B_mat = create_B_mat(B_list, num, N)
+    B_mat = zeros(6*num*N, 3*N);
+    for i = 1:N
+        B_mat((i-1)*6*num+1:i*6*num, (i-1)*3+1:i*3) = B_list{N - i + 1};
+    end
+end
+
+function A_mat2 = create_A_mat2(A_list, num, N)
+    A_mat2 = zeros(6*num*N, 6*num);
+    for i = 1:N
+        mat = eye(6*num);
+        for j = 1:(N-i+1)
+            mat = A_list{j} * mat;
+        end
+        A_mat2((i-1)*6*num+1:i*6*num, :) = mat;
+    end
+end
+
+function C_mat = create_C_mat(C_list, num, N)
+    C_mat = zeros(6*num*N, 1);
+    for i = 1:N
+        C_mat((i-1)*6*num+1:i*6*num, :) = C_list{N-i+1};
+    end
+end
+
+function A_list = create_A_list(num, N, s, s0, myu1, A_d, B_d, myu_max_val, func_cell) % {A1, A2, ... ,AN}
+    A_list = cell(1, N);
+    for i = 1:N
+        if i == 1
+            sk = s0;
+        else 
+            sk = s(6*(N-i+1)*num+1:6*(N-i+2)*num);
+        end
+        u1 = myu1(3*(N-i)+1:3*(N-i+1));
+        Ak = create_Ak(A_d, B_d, sk, u1, num, myu_max_val, func_cell);
+        A_list{i} = Ak;
+    end
+end
+
+function B_list = create_B_list(num, N, s, s0, myu1, B_d, myu_max_val, func_cell) % {B1, B2, ... ,BN}
+    B_list = cell(1, N);
+    for i = 1:N
+        if i == 1
+            sk = s0;
+        else 
+            sk = s(6*(N-i+1)*num+1:6*(N-i+2)*num);
+        end
+        u1 = myu1(3*(N-i)+1:3*(N-i+1));
+        B = create_Bk(B_d, sk, num, myu_max_val, func_cell);
+        B_list{i} = B;
+    end
+end
+
+function C_list = create_C_list(num, N, s, s0, myu1, B_d, myu_max_val, func_cell) % {C1, C2, ... ,CN}
+    C_list = cell(1, N);
+    for i = 1:N
+        if i == 1
+            sk = s0;
+        else 
+            sk = s(6*(N-i+1)*num+1:6*(N-i+2)*num);
+        end
+        u1 = myu1(3*(N-i)+1:3*(N-i+1));
+        C = create_Ck(B_d, sk, u1, num, myu_max_val, func_cell);
+        C_list{i} = C;
+    end
+end
+
+function A = create_Ak(A_d, B_d, sk, myu1, num, myu_max_val, func_cell)
+    A = zeros(6*num,6*num);
+    dFds = dFds_func(sk, myu1, myu_max_val, func_cell);
+
+    i = 1;
+    A(6*(i-1)+1:6*i,:) = A_d(1:6,:) + B_d(1:6,:) * dFds;
+
+    i = 2;
+    A(6*(i-1)+1:6*i,:) = A_d(7:12,:) - B_d(7:12,:) * dFds;
+end
+
+function B = create_Bk(B_d, sk, num, myu_max_val, func_cell)
+    B = zeros(6*num,3);
+    F = F_func(sk, myu_max_val, func_cell);
+
+    i = 1;
+    B(6*(i-1)+1:6*i,:) = B_d(1:6,:) * F; 
+
+    i = 2;
+    B(6*(i-1)+1:6*i,:) = - B_d(7:12,:) * F; 
+end
+
+function C = create_Ck(B_d, sk, myu1, num, myu_max_val, func_cell) 
+    C = zeros(6*num,1);
+    dFds = dFds_func(sk, myu1, myu_max_val, func_cell);
+ 
+    i = 1;
+    C(6*(i-1)+1:6*i,1) = - B_d(1:6,:) * dFds * sk;
+
+    i = 2;
+    C(6*(i-1)+1:6*i,1) = B_d(7:12,:) * dFds * sk;
 
 end
 
-function Q = create_Q(A, N)
-    Q = [];
-    for j = 1:N
-        mat_i = A^(N - j + 1);
-        Q = [Q;mat_i];
+function Aeq1 = create_Aeq1(N, num)
+    matrix1 = [eye(3),eye(3)];
+    Aeq1 = zeros(3*N, 3*num*N+1);
+    for i = 1:N
+        Aeq1(3*(i-1)+1:3*i, 3*num*(i-1)+1:3*num*i) = matrix1;
     end
+end
 
+
+
+function B = reorderMatrix(A)
+    idx = find(mod(1:length(A), 6) == 1 | mod(1:length(A), 6) == 2);
+    A = flip(A(idx));
+    B = [];
+    %A = 1:100;
+    n = 2;
+    for i = 1:n:length(A)
+        sub_vector = A(i:min(i+n-1, length(A)));
+        B = [B; flip(sub_vector)];
+    end
+end
+
+function func_cell = create_func_cell()
+    syms x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max
+     
+    r = [x1 - x2; y1 - y2; z1 - z2];
+    myu = [myu11; myu12; myu13];
+    myu0 = 4*pi*1e-7; % 真空の透磁率
+    
+    %f = 3*myu0/(4*pi)*(dot(myu1, myu2)/norm(r)^5 * r + dot(myu1, r)/norm(r)^5 * myu2 + dot(myu2, r)/norm(r)^5 * myu1 - 5*dot(myu1, r)*dot(myu2, r)/norm(r)^7*r);
+    f = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6) * myu;
+    F = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6);
+
+    df_dx1 = diff(f, x1);
+    df_dy1 = diff(f, y1);
+    df_dz1 = diff(f, z1);
+    df_dx2 = diff(f, x2);
+    df_dy2 = diff(f, y2);
+    df_dz2 = diff(f, z2);
+    df_dx1_func = matlabFunction(df_dx1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dy1_func = matlabFunction(df_dy1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dz1_func = matlabFunction(df_dz1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dx2_func = matlabFunction(df_dx2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dy2_func = matlabFunction(df_dy2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dz2_func = matlabFunction(df_dz2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    f_func0 = matlabFunction(f, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    F_func0 = matlabFunction(F, 'vars', [x1 y1 z1 x2 y2 z2 myu_max]);
+    func_cell = {df_dx1_func, df_dy1_func, df_dz1_func, df_dx2_func, df_dy2_func, df_dz2_func, f_func0, F_func0};
+end
+
+
+function dFds = dFds_func(s_val, myu, myu_max_val, func_cell)
+    df_dx1_func = func_cell{1};
+    df_dy1_func = func_cell{2};
+    df_dz1_func = func_cell{3};
+    df_dx2_func = func_cell{4};
+    df_dy2_func = func_cell{5};
+    df_dz2_func = func_cell{6};
+
+
+    x1_val = s_val(1);
+    y1_val = s_val(2); 
+    z1_val = s_val(3);
+    x2_val = s_val(7);
+    y2_val = s_val(8); 
+    z2_val = s_val(9); 
+
+    myu11_val = myu(1);
+    myu12_val = myu(2);
+    myu13_val = myu(3);
+    df_dx1 = df_dx1_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dy1 = df_dy1_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dz1 = df_dz1_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dx2 = df_dx2_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dy2 = df_dy2_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    df_dz2 = df_dz2_func(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu11_val, myu12_val, myu13_val, myu_max_val);
+    dFds = [df_dx1, df_dy1, df_dz1, zeros(3), df_dx2, df_dy2, df_dz2, zeros(3)]; % 3×12
+end
+
+
+function F = F_func(s_val, myu_max_val, func_cell)
+    F_func0 = func_cell{8};
+    x1_val = s_val(1);
+    y1_val = s_val(2); 
+    z1_val = s_val(3); 
+    x2_val = s_val(7);
+    y2_val = s_val(8); 
+    z2_val = s_val(9);
+    F = F_func0(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu_max_val);
 end
 
 function matrix_3n_n = create_matrix(vec_3n)
@@ -326,7 +483,6 @@ function matrix_3n_n = create_matrix(vec_3n)
     end
 end
 
-
 function norms = calculate_norms(vec_3n)
     % vec_3n: 3n x 1 ベクトル
     
@@ -340,12 +496,7 @@ function norms = calculate_norms(vec_3n)
         norms(i) = norm(vec);
     end
 end
-%{
-A2_ones = zeros(N*num, 6*N*num);
-        for j = 1:N*num
-            A2_ones(j, 6*(j-1)+1:6*(j-1)+3) = ones(1,3);
-        end
-%}
+
 function Aeq1 = create_Aeq1(N, num)
     matrix1 = repmat(eye(3), 1, num);
     Aeq1 = zeros(3*N, 3*num*N);
@@ -362,74 +513,6 @@ function s = adjust_cog(s_mat, num)
         s(6*(i-1)+1: 6*i) = s_mat(:,i) - cog;
     end
 end
-
-function s0 = set_initialstates(num, d_initial)
-    if num == 2
-        s01 = [0.0000001; -d_initial; 0.0000001; 0; 0; 0];
-        s02 = [-0.0000001; d_initial; -0.0000001; 0; 0; 0];
-        s0 = adjust_cog([s01, s02], num); % 6num×1
-
-    elseif num == 5
-        s00 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        s01 = [d_initial; 0.0000001; 0.0000001; 0; 0; 0];
-        s02 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s03 = [-d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        s04 = [d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        s0 = adjust_cog([s00, s01, s02, s03, s04], num); % 6num×1
-    elseif num == 9
-        s00 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        s01 = [d_initial; 0.0000001; 0.0000001; 0; 0; 0];
-        s02 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s03 = [-d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        s04 = [d_initial*2; -0.0000001; -0.0000001; 0; 0; 0];
-        
-        s05 = [3*d_initial; 0.0000001; 0.0000001; 0; 0; 0];
-        s06 = [-3*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s07 = [-4*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-        s08 = [4*d_initial; -0.0000001; -0.0000001; 0; 0; 0];
-    
-        s0 = adjust_cog([s00, s01, s02, s03, s04, s05, s06, s07, s08], num); % 6num×1
-    end
-end
-
-function sd = set_targetstates(num, rr, n, N, dt)
-    if num == 2
-        rr1 = rr(1);
-        %sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
-        %sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd1 = [rr1*sin(n*N*dt); 2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); n*rr1*cos(n*N*dt); -2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt)];
-        sd3 = [rr1*sin(n*N*dt + 2*2*pi/4); 2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4); -2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd = adjust_cog([sd1, sd3], num);
-    elseif num == 5
-        rr1 = rr(1);
-        sd0 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
-        sd2 = [-2*rr1*cos(n*N*dt + 1*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 1*2*pi/4); rr1*sin(n*N*dt + 1*2*pi/4); 2*n*rr1*sin(n*N*dt + 1*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 1*2*pi/4); n*rr1*cos(n*N*dt + 1*2*pi/4)];
-        sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd4 = [-2*rr1*cos(n*N*dt + 3*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 3*2*pi/4); rr1*sin(n*N*dt + 3*2*pi/4); 2*n*rr1*sin(n*N*dt + 3*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 3*2*pi/4); n*rr1*cos(n*N*dt + 3*2*pi/4)];
-        
-        sd = adjust_cog([sd0, sd1, sd2, sd3, sd4], num);
-    elseif num == 9
-        rr1 = rr(1);
-        rr2 = rr(2);
-    
-        sd0 = [0.0000001; 0.0000001; 0.0000001; 0; 0; 0];
-        sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
-        sd2 = [-2*rr1*cos(n*N*dt + 1*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 1*2*pi/4); rr1*sin(n*N*dt + 1*2*pi/4); 2*n*rr1*sin(n*N*dt + 1*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 1*2*pi/4); n*rr1*cos(n*N*dt + 1*2*pi/4)];
-        sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
-        sd4 = [-2*rr1*cos(n*N*dt + 3*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 3*2*pi/4); rr1*sin(n*N*dt + 3*2*pi/4); 2*n*rr1*sin(n*N*dt + 3*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 3*2*pi/4); n*rr1*cos(n*N*dt + 3*2*pi/4)];
-        
-        
-        sd5 = [-2*rr2*cos(n*N*dt + pi/4); sqrt(3)*rr2*sin(n*N*dt + pi/4); rr2*sin(n*N*dt + pi/4); 2*n*rr2*sin(n*N*dt + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + pi/4); n*rr2*cos(n*N*dt + pi/4)];
-        sd6 = [-2*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 1*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 1*2*pi/4 + pi/4)];
-        sd7 = [-2*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 2*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 2*2*pi/4 + pi/4)];
-        sd8 = [-2*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4); sqrt(3)*rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); 2*n*rr2*sin(n*N*dt + 3*2*pi/4 + pi/4); sqrt(3)*n*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4); n*rr2*cos(n*N*dt + 3*2*pi/4 + pi/4)];
-        
-        
-        sd = adjust_cog([sd0, sd1, sd2, sd3, sd4, sd5, sd6, sd7, sd8], num);
-    end
-end
-
 
 function plot_s(s, num, N, rr, d_target)
     % 2衛星の動画を表示。
@@ -518,7 +601,6 @@ function plot_s(s, num, N, rr, d_target)
     
 end
 
-
 function B = reorderMatrix2(A)
     idx = find(mod(1:length(A), 6) == 1 | mod(1:length(A), 6) == 2 | mod(1:length(A), 6) == 3);
     A = flip(A(idx));
@@ -531,42 +613,3 @@ function B = reorderMatrix2(A)
     end
 end
 
-
-function func_cell = create_func_cell()
-    syms x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max
-     
-    r = [x1 - x2; y1 - y2; z1 - z2];
-    myu = [myu11; myu12; myu13];
-    myu0 = 4*pi*1e-7; % 真空の透磁率
-    
-    %f = 3*myu0/(4*pi)*(dot(myu1, myu2)/norm(r)^5 * r + dot(myu1, r)/norm(r)^5 * myu2 + dot(myu2, r)/norm(r)^5 * myu1 - 5*dot(myu1, r)*dot(myu2, r)/norm(r)^7*r);
-    f = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6) * myu;
-    F = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6);
-
-    df_dx1 = diff(f, x1);
-    df_dy1 = diff(f, y1);
-    df_dz1 = diff(f, z1);
-    df_dx2 = diff(f, x2);
-    df_dy2 = diff(f, y2);
-    df_dz2 = diff(f, z2);
-    df_dx1_func = matlabFunction(df_dx1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
-    df_dy1_func = matlabFunction(df_dy1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
-    df_dz1_func = matlabFunction(df_dz1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
-    df_dx2_func = matlabFunction(df_dx2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
-    df_dy2_func = matlabFunction(df_dy2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
-    df_dz2_func = matlabFunction(df_dz2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
-    f_func0 = matlabFunction(f, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
-    F_func0 = matlabFunction(F, 'vars', [x1 y1 z1 x2 y2 z2 myu_max]);
-    func_cell = {df_dx1_func, df_dy1_func, df_dz1_func, df_dx2_func, df_dy2_func, df_dz2_func, f_func0, F_func0};
-end
-
-function F = F_func(s_val, myu_max_val, func_cell)
-    F_func0 = func_cell{8};
-    x1_val = s_val(1);
-    y1_val = s_val(2); 
-    z1_val = s_val(3); 
-    x2_val = s_val(7);
-    y2_val = s_val(8); 
-    z2_val = s_val(9);
-    F = F_func0(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu_max_val);
-end

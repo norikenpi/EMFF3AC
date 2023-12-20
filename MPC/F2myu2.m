@@ -1,8 +1,14 @@
 
+
+
+%%
+%最大電流のチューニング大事だよ。
+%%
+
 u_106 = u * 10^(-6);
 coilN = 246;
 radius = 0.05;
-I_max = 0.41;
+I_max = 8.2;
 mass = 1;
 % スラスター入力を磁気モーメントに変換。
 [u_myu1, u_myu2] = force2moment(s1, s0, num, u_106(1:end-1), coilN, radius, I_max, mass);

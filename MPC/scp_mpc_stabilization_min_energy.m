@@ -10,7 +10,7 @@
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %d_avoid = 0.18;
 d_avoid = 0.01;
-d_avoid = -1;
+%d_avoid = -1;
 if d_avoid == -1
     clear;
     d_avoid = -1;
@@ -244,7 +244,7 @@ cvx_status
 
 % 衛星の状態
 s = P * x + Q * s0;
-s1 = s;
+%s1 = s;
 u = x;
 
 disp("最大入力 u_max")

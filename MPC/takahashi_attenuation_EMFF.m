@@ -3,7 +3,7 @@
 
 num = 1;
 dt = 10;
-N = 250;
+N = 10;
 n = 0.0011; % 0.0011
 m = 1; % 1
 %u_max = 1e-9;
@@ -18,10 +18,9 @@ I_max = sqrt(P_max/R_rho);
 
 myu_max = I_max * coilN * radius^2 * pi;
 
-
 d_avoid = radius*6;
 % 初期衛星間距離
-d_initial = d_avoid/2;
+d_initial = d_avoid/1.5;
 
 s0 = [d_initial; d_initial; -0.0000001; 0; 0; 0];
 
@@ -76,29 +75,35 @@ rd = 0;
 
 for i = 1:N
     X = s(i,:).';
-    C110 = coord2const(X, n);
-    kA = 2;%2e-3;
-    kB = 1;%1e-3;
-    C1 = C110(1); C4 = C110(4); C5 = C110(5);
-    C2 = C110(2); C3 = C110(3);
-    r_xy = C110(7); phi_xy = C110(8); %phi_xy = atan2(o_r_ji(1),o_r_ji(2)/2);
-    C4d = 3*n*C1/kA; %目標値
-    dC4 = C4-C4d; %C4偏差
-    C5d = C2/tan(thetaP);
-    u_A = n*[1/2*dC4;-C1];  
-    u = [kA*u_A;-kB*n*(C5-C5d)];
-    r = s(i,1:3).'*2; % 2衛星を考慮して2倍にする
-    [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max);
-    %u = [0;0;0];
-    if norm(myu1) > myu_max
-        u = myu_max* u/norm(myu1);
-        myu1 = myu_max * myu1/norm(myu1);
-        disp("over myu1")
+    if norm(X(1:3)) > d_avoid/2
+        C110 = coord2const(X, n);
+        kA = 2;%2e-3;
+        kB = 1;%1e-3;
+        C1 = C110(1); C4 = C110(4); C5 = C110(5);
+        C2 = C110(2); C3 = C110(3);
+        r_xy = C110(7); phi_xy = C110(8); %phi_xy = atan2(o_r_ji(1),o_r_ji(2)/2);
+        C4d = 3*n*C1/kA; %目標値
+        dC4 = C4-C4d; %C4偏差
+        C5d = C2/tan(thetaP);
+        u_A = n*[1/2*dC4;-C1];  
+        u = [kA*u_A;-kB*n*(C5-C5d)];
+        r = s(i,1:3).'*2; % 2衛星を考慮して2倍にする
+        [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max);
+        %u = [0;0;0];
+        if norm(myu1) > myu_max
+            u = myu_max* u/norm(myu1);
+            myu1 = myu_max * myu1/norm(myu1);
+            disp("over myu1")
+        end
+        u_list(3*(i-1)+1:3*i,:) = u;
+        myu_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
+        myu_list2(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
+        s(i+1,:) = (A_d * s(i,:).' + B_d * u).';
+    else 
+        k_avoid = 1e-1;
+        u = k_avoid * u_max * X(1:3)/norm(X(1:3));
+        disp("avoid")
     end
-    u_list(3*(i-1)+1:3*i,:) = u;
-    myu_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
-    myu_list2(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
-    s(i+1,:) = (A_d * s(i,:).' + B_d * u).';
 end
 
 satellites{1} = s(:,1:3);
@@ -166,7 +171,7 @@ function plot_s(satellites, num, N, rr, d_target)
     colors = hsv(num); % HSVカラースペースを使用してN個の異なる色を生成
     
     % 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
-    for i = 1:100:N
+    for i = 1:1:N
         cla;
         
         for j = 1:length(rr)

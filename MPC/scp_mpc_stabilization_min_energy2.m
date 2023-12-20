@@ -6,23 +6,42 @@
 % Daniel Morgan, et. al., “Spacecraft Swarm Guidance Using a Sequence of Decentralized Convex Optimizations”
 
 %% パラメータ設定
-tic;
+
+% 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
+%d_avoid = 0.18;
+d_avoid = 0.01;
+d_avoid = -1;
+
+if d_avoid == -1
+    clear;
+    d_avoid = -1;
+else
+    %これを外すと以下のエラーが出る。
+    %cvx から double に変換できません。
+    clearvars u_mat
+end
+
 % 初期衛星間距離
-d_initial = 0.3;
+d_initial = 0.4;
+s01 = [-d_initial; -d_initial; 0; 0; 0; 0];
+s02 = [d_initial; d_initial; -0; 0; 0; 0];
+
 
 % 最終衛星間距離
 d_target = 0.925;
 
-% 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-%d_avoid = 0.01;
-d_avoid = 0.299;
-d_avoid = -1;
+scale = 10^(-6);
+
+% 制御可能範囲(m)
+d_max = 1.0122;
+d_max = 1.0122*5;
 
 % 衛星数　2基or5基or9基
 num = 2;
 
 % 衛星質量
 m = 1; % 1
+%m = 0.38; % 1
  
 % タイムステップ(s)
 dt = 10;
@@ -30,9 +49,17 @@ dt = 10;
 % 時間 シミュレーション時間はN×dt秒250
 N = 250;
 
-% trust region 
-%delta = 0.1;
-
+%u_max = 1e-9;
+coilN = 140;
+radius = 0.05;
+P_max = 10/scale; % W
+rho = 1.68e-7; % Ω/m
+wire_length = 140*0.05*2*pi;
+wire_S = (0.2e-3)^2*pi;
+R_rho = rho * wire_length/wire_S; 
+I_max = sqrt(P_max/R_rho);
+disp("最大電流設定")
+disp(I_max)
 
 
 
@@ -47,12 +74,12 @@ n = 0.0011; % 0.0011
 A = [0, 0, 0, 1/2, 0, 0;
      0, 0, 0, 0, 1/2, 0;
      0, 0, 0, 0, 0, 1/2;
-     0, 0, 0, 0, 0, 2*n;
-     0, -n^2, 0, 0, 0, 0;
-     0, 0, 3*n^2, -2*n, 0, 0]+...
-    [0, 0, 0, 1, 0, 2*n;
-     0, -n^2, 0, 0, 1, 0;
-     0, 0, 3*n^2, -2*n, 0, 1;
+     3*n^2, 0, 0, 0, 2*n, 0;
+     0, 0, 0, -2*n, 0, 0;
+     0, 0, -n^2, 0, 0, 0]+...
+    [3*n^2, 0, 0, 1, 2*n, 0;
+     0, 0, 0, -2*n, 1, 0;
+     0, 0, -n^2, 0, 0, 1;
      0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 0]/2; % 6×6
@@ -62,76 +89,42 @@ B = [0, 0, 0;
      0, 0, 0;
      1/m, 0, 0;
      0, 1/m, 0;
-     0, 0, 1/m]*10^(-6); % 6×3
+     0, 0, 1/m]*scale; % 6×3
 
 %2衛星に関する状態方程式の係数行
 A_ = A;
 B_ = B;
+%{
 for i = 2:num
     A_ = blkdiag(A_, A); % BにAを対角に追加
     B_ = blkdiag(B_, B); % BにAを対角に追加
 end
+%}
 
 % 2衛星に関する離散時間状態方程式の係数行列
-A_d = eye(6*num) + dt*A_; % 6num×6num
+A_d = eye(6) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
-
-
-% 初期状態
-if num == 2
-    d_initial = d_initial/2;
-end
-s0 = set_initialstates(num, d_initial);
-s01 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
-s02 = [d_initial; d_initial; -0.0000001; 0; 0; 0];
-s0 = adjust_cog([s01, s02], num); % 6num×1
-
-% 2衛星のそれぞれの目標状態
-%目標レコード盤軌道の半径
-rr1 = d_target/2;
-if num == 2
-    rr1 = d_target/4;
-end
+rr1 = d_target/4;
 rr2 = sqrt(2)*d_target/2;
-
 rr = [rr1,rr2];
+%s0 = adjust_cog([s01, s02], num); % 6num×1
+s0 = s01;
 
-%rr = create_rr(num)
-
-sd = set_targetstates(num, rr, n, N, dt);
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
 % S = PU + Qs_0
 P = create_P(A_d, B_d, N); %6Nnum×3Nnum
-P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
+%P = [P, zeros(6*N*num, 1)]; %6N×3Nnum+1
 Q = create_Q(A_d, N); %6N×6num
 
-%% 評価関数
-
-% 評価関数1(最大入力最小)
-f1 = [zeros(1, 3*N*num), 1]; 
-f = f1;
-
 %% 不等式制約
-
-% 不等式制約1(全ての入力は最大入力以下)
-% 最大入力との差が0より大きくなければならない。
-A1 = [eye(3*N*num), -ones(3*N*num,1); -eye(3*N*num), -ones(3*N*num, 1)]; %6N×3Nnum+1
-b1 = zeros(6*N*num, 1);%6Nnum×1
-
-A = A1;
-b = b1;
-
 if not(d_avoid == -1)
-    % 不等式制約2 (衛星間距離はR以下)
-    % ノミナルの状態プロファイルを設定
     nominal_s = s;
-    
     % 状態ベクトルから位置ベクトルのみを抽出
     C01 = [eye(3),zeros(3)];
     C1 = [];
-    for i = 1:num*N
+    for i = 1:N
         C1 = blkdiag(C1, C01);
     end
     
@@ -144,69 +137,146 @@ if not(d_avoid == -1)
     
     % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
     % 不等式の大小を変えるために両辺マイナスをかけている。
-    A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
-    b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * Q * s0;
-    
-    A = [A1; A2];
-    b = [b1; b2];
-
-    % 不等式制約3 (移動量はdelta以下)
-    %A3 = [-P; P];
-    %b3 = [delta * ones(6*N*num, 1) - s + Q * s0; delta * ones(6*N*num, 1) + s - Q * s0];
-    
-    %A = [A1; A2; A3];
-    %b = [b1; b2; b3];
+    A2 = -create_matrix(C1 * nominal_s).' * C1 * P; %500×3001
+    b2 = -d_avoid * calculate_norms(C1 * nominal_s) + create_matrix(C1 * nominal_s).' * C1 * Q * s0;
 end
 
 %% 等式制約
 
 % 等式制約1 (運動量保存)
-Aeq1 = create_Aeq1(N, num);
-beq1 = zeros(3*N, 1);
+
+%Aeq1 = create_Aeq1(N, num);
+%beq1 = zeros(3*N, 1);
 
 % 等式制約2 (最終状態固定)
-Aeq2 = P(1:6*num,:);
-beq2 = sd - Q(1:6*num,:) * s0;
-Aeq = [Aeq1; Aeq2];
-beq = [beq1; beq2];
+%Aeq2 = P(1:6*num,:);
+%beq2 = sd - Q(1:6*num,:) * s0;
 
+
+% 等式制約2 (相対軌道安定化)
+kA = 2e-3;
+thetaP = pi/6;
+mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+       2,0,0,0,1/n,0;
+       0,0,0,-1/(n*tan(thetaP)),0,1/n;
+       -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+
+d_max_list = d_max * ones(N, 1);
 %% 線形不等式制約線形計画問題 
+
 % 解はnum×N×3自由度
-
-% linprogを使う場合
-
-[x,fval,exitflag,output,lambda] = ...
-   linprog(f, A, b, Aeq, beq);
-
-
-% cvxを使う場合
-%{
 cvx_begin sdp quiet
-    variable x(size(f, 2))
-    minimize(f * x)
-    subject to
-        A * x <= b;
-        Aeq * x == beq;
-cvx_end
-%}
+    variable x(3*N)
+    minimize(sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0))))
 
+    subject to
+        % 不等式制約
+
+        if not(d_avoid == -1)
+        % 進入禁止制約
+            A2 * x <= b2;
+        end
+
+        % 太陽光パネルの発電量拘束
+        for i = 1:N
+            u_mat(:,i) = x(3*(i-1)+1:3*i);   
+        end
+        [P_max*eye(N), u_mat.';
+         u_mat, eye(3)] >= 0;
+
+
+        
+cvx_end
+cvx_status
 % 衛星の状態
 s = P * x + Q * s0;
 s1 = s;
 u = x;
 
 disp("最大入力 u_max")
-disp(x(3*num*N+1)*10^(-6))
-I_max_list = [];
+disp(max(abs(x))*scale)
 
+%disp("最大電力")
+%disp((max(vecnorm(u_mat,2,1))*scale)^2)
+
+disp("安定チェック")
+error = mat * s(1:6);
+disp(error)
+
+disp("最小化したい評価値")
+disp(sum(abs(error)))
 %% 図示
 
 plot_s(s, num, N, rr, d_target)
-time = toc
+
 %% 関数リスト
 
-% 関数の命名はテキトーです。すみません。
+function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, P_max, P, Q, s0, d_avoid)
+    % 初期化
+    A = [];  % 不等式制約 A*x <= b の A
+    b = [];  % 不等式制約 A*x <= b の b
+    Aeq = [];
+    beq = []; 
+    lb = []; % 変数の下限
+    ub = []; % 変数の上限
 
+    % オプションの設定
+    options = optimoptions('fmincon', ...
+                       'Algorithm', 'sqp', ...
+                       'TolFun', 1e-6, ...
+                       'TolX', 1e-6, ...
+                       'TolCon', 1e-6, ...
+                       'Display', 'iter', ...
+                       'MaxIterations', 400, ...
+                       'StepTolerance', 1e-6);
+
+
+    fun =  @(x) objectiveFunction(n, x, P, Q, s0);
+
+    c_ceq = @(x) nonlinearConstraints(x, N, P_max, P, Q, s0, d_avoid);
+
+    % fminconの呼び出し
+    [x, fval, exitflag, output] = fmincon(fun, x0, A, b, Aeq, beq, lb, ub, c_ceq, options);
+end
+
+function f = objectiveFunction(n, x, P, Q, s0)
+    % 目的関数の計算
+    kA = 2e-3;
+    thetaP = pi/6;
+    %relative_mat = [eye(6),-eye(6)];
+    mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+           2,0,0,0,1/n,0;
+           0,0,0,-1/(n*tan(thetaP)),0,1/n;
+           -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+    
+    f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0))); % xを用いた計算
+end
+
+function [c, ceq] = nonlinearConstraints(x, N, P_max, P, Q, s0, d_avoid)
+    
+    % 非線形制約の計算
+    % 発電量拘束
+    
+    P_list = zeros(N,1);
+    for i = 1:N
+        P_list(i) = norm(x(3*(i-1)+1:3*i))^2 - P_max;   
+    end
+    
+
+    % 進入禁止制約
+    dist_margin_list = zeros(N,1);
+    relative_mat = [eye(6),-eye(6)];
+    s = P * x + Q * s0;
+    for i = 1:N
+        dist_margin_list(i) = d_avoid/2 - norm(s(6*(i-1)+1:6*(i-1)+3));   
+    end
+
+    % 制御可能範囲制約
+    %%%%%%%%%%%%%%%%%%%
+    
+    c = [P_list; dist_margin_list];  % 不等式制約 c(x) <= 0 進入禁止制約、発電量拘束90-iop[k
+    ceq = [];% 等式制約 ceq(x) = 0
+end
 function P = create_P(A, B, N)
     % 入力:
     % A: nxn の行列
@@ -277,7 +347,7 @@ A2_ones = zeros(N*num, 6*N*num);
 %}
 function Aeq1 = create_Aeq1(N, num)
     matrix1 = repmat(eye(3), 1, num);
-    Aeq1 = zeros(3*N, 3*num*N+1);
+    Aeq1 = zeros(3*N, 3*num*N);
     for i = 1:N
         Aeq1(3*(i-1)+1:3*i, 3*num*(i-1)+1:3*num*i) = matrix1;
     end
@@ -294,8 +364,8 @@ end
 
 function s0 = set_initialstates(num, d_initial)
     if num == 2
-        s01 = [d_initial; 0.0000001; 0.0000001; 0; 0; 0];
-        s02 = [-d_initial; -0.0000001; -0.0000001; 0; 0; 0];
+        s01 = [0.0000001; -d_initial; 0.0000001; 0; 0; 0];
+        s02 = [-0.0000001; d_initial; -0.0000001; 0; 0; 0];
         s0 = adjust_cog([s01, s02], num); % 6num×1
 
     elseif num == 5
@@ -324,8 +394,10 @@ end
 function sd = set_targetstates(num, rr, n, N, dt)
     if num == 2
         rr1 = rr(1);
-        sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
-        sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
+        %sd1 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
+        %sd3 = [-2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); rr1*sin(n*N*dt + 2*2*pi/4); 2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4)];
+        sd1 = [rr1*sin(n*N*dt); 2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); n*rr1*cos(n*N*dt); -2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt)];
+        sd3 = [rr1*sin(n*N*dt + 2*2*pi/4); 2*rr1*cos(n*N*dt + 2*2*pi/4); sqrt(3)*rr1*sin(n*N*dt + 2*2*pi/4); n*rr1*cos(n*N*dt + 2*2*pi/4); -2*n*rr1*sin(n*N*dt + 2*2*pi/4); sqrt(3)*n*rr1*cos(n*N*dt + 2*2*pi/4)];
         sd = adjust_cog([sd1, sd3], num);
     elseif num == 5
         rr1 = rr(1);
@@ -356,3 +428,107 @@ function sd = set_targetstates(num, rr, n, N, dt)
         sd = adjust_cog([sd0, sd1, sd2, sd3, sd4, sd5, sd6, sd7, sd8], num);
     end
 end
+
+
+function plot_s(s, num, N, rr, d_target)
+    % 2衛星の動画を表示。
+    %3次元座標
+    data = reorderMatrix2(s);
+    satellites = cell(1, 2);
+
+    % 衛星インスタンス生成
+    for i = 1:num
+        satellites{i} = zeros(N, 3);
+    end
+    
+    % 衛星データ格納
+    for i = 1:N
+        for j = 1:1 % for j = 1:num
+            satellites{j}(i,:) = data(3*(i-1)+3*(j-1)+1:3*(i-1)+3*(j-1)+3).';
+        end
+    end
+
+    satellites{2} = -satellites{1}; 
+    assignin('base', 'satellites', satellites)
+
+    % ビデオライターオブジェクトの作成
+    v = VideoWriter('points_motion_3D.avi'); % AVIファイル形式で動画を保存
+    % 画質の設定（例：品質を最大に）
+    v.Quality = 100;
+    open(v);
+    
+    % フィギュアの作成
+    figure;
+    axis equal;
+    xlim([-d_target*1.5, d_target*1.5]/3); % x軸の範囲を調整
+    ylim([-d_target*1.5, d_target*1.5]/3); % y軸の範囲を調整
+    zlim([-d_target*1.5, d_target*1.5]/3); % z軸の範囲を調整
+    hold on;
+    grid on; % グリッドを表示
+    
+    set(gca, 'ZDir', 'reverse')
+    
+    % 軸のラベルを設定
+    xlabel('X[m](地心方向)');
+    ylabel('Y[m](軌道進行方向)');
+    zlabel('Z[m](軌道面垂直方向)');
+    
+    theta = linspace(0, 2 * pi, 100); % 0から2πまでの角度を生
+    colors = hsv(num); % HSVカラースペースを使用してN個の異なる色を生成
+    
+    % 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
+    for i = 1:10:N
+        cla;
+        
+        for j = 1:length(rr)
+            % レコード盤軌道をプロット
+            %x1 = -2*rr(j)*cos(theta); % x座標を計算
+            %y1 = sqrt(3)*rr(j)*sin(theta); % y座標を計算
+            %z1 = rr(j)*sin(theta);
+            x1 = rr(j)*sin(theta);% x座標を計算
+            y1 = 2*rr(j)*cos(theta); % y座標を計算2*rr(j)*cos(theta);
+            z1 = sqrt(3)*rr(j)*sin(theta);
+            plot3(x1, y1, z1, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 1); % 円を灰色で描画
+        end
+
+        % x軸方向の点線を描画
+        y_position = -1:0.1:1; % x軸方向の点線のx座標を指定
+        x_position = zeros(size(y_position)); % y座標はすべて0に設定
+        plot(x_position, y_position, 'k--', 'LineWidth', 1.5); % 点線を描画
+       
+        for j = 1:num
+            % 軌道をプロット
+            plot3(satellites{j}(1:N,1), satellites{j}(1:N,2), satellites{j}(1:N,3), '-', 'Color', colors(j,:));
+            % 衛星をプロット
+            plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 60, 'Color', colors(j,:));
+            % 衛星の初期値をプロット
+            plot3(satellites{j}(1,1), satellites{j}(1,2), satellites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
+        end
+        % 視点を変更
+        azimuth = 225; % 方位角
+        elevation = 30; % 仰角
+        view(azimuth, elevation);
+    
+        drawnow;
+        frame = getframe(gcf);
+        writeVideo(v, frame);
+    end
+    
+    % ビデオの保存
+    close(v);
+    
+end
+
+
+function B = reorderMatrix2(A)
+    idx = find(mod(1:length(A), 6) == 1 | mod(1:length(A), 6) == 2 | mod(1:length(A), 6) == 3);
+    A = flip(A(idx));
+    B = [];
+    %A = 1:100;
+    n = 3;
+    for i = 1:n:length(A)
+        sub_vector = A(i:min(i+n-1, length(A)));
+        B = [B; flip(sub_vector)];
+    end
+end
+

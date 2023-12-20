@@ -43,7 +43,7 @@ m = 0.38; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 2500;
+N =250;
 
 % trust region 
 %delta = 0.1;
@@ -60,6 +60,8 @@ R = 1;
 I_max = sqrt(P_max/R);
 disp("最大電流")
 disp(I_max)
+
+u_max = 1e-5/scale; 
 
 % 最大電流と制御可能範囲から導出される最大推力
 func_cell = create_func_cell();
@@ -216,8 +218,8 @@ mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
 Aeq = Aeq1;
 beq = beq1;
 
-u2I_mat = 1;
-f = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6) * myu;-
+%u2I_mat = 1;
+%f = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6) * myu;
 %% 線形不等式制約線形計画問題 
 
 % 解はnum×N×3自由度
@@ -236,19 +238,25 @@ cvx_begin sdp quiet
         end
         
         % 制御可能範囲制約
+        %{
         for i = 1:N
             rel_pos = relative_mat(1:3,:) * pos(12*(i-1)+1:12*i);
             [d_max^2, rel_pos.';
              rel_pos, eye(3)] >= 0;
         end
+        %}
 
         % 太陽光パネルの発電量による最大電流拘束
         for i = 1:num*N
             u_mat(:,i) = x(3*(i-1)+1:3*i);   
         end
+        [u_max^2*eye(N*num), u_mat.';
+         u_mat, eye(3)] >= 0;
+        %{
         I_mat = u2I_mat * u_mat; % 片側固定のfar-field
         [I_max^2*eye(N*num), I_mat.';
          I_mat, eye(3)] >= 0;
+        %}
 
         % 等式制約
         Aeq * x == beq;
