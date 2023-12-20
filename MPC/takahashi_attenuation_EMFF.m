@@ -2,8 +2,8 @@
 %高橋座標系になっていることに注意。
 
 num = 1;
-dt = 1;
-N = 10000;
+dt = 10;
+N = 250;
 n = 0.0011; % 0.0011
 m = 1; % 1
 %u_max = 1e-9;
@@ -19,17 +19,15 @@ I_max = sqrt(P_max/R_rho);
 myu_max = I_max * coilN * radius^2 * pi;
 
 
-s0 = [0.8146;0.2238;0.0266;1.231027657282976e-04;-0.0018;2.132202447936586e-04];
-s0 = -[-0.210562229717077;
-       -0.328433083644332;
-       -0.364704480024204;
-       -1.806381961097709e-04;
-       4.632369054837642e-04;
-       -3.128745335214774e-04];
-s0 = [0.3;0.1;0.1;0;0;0];
+d_avoid = radius*6;
+% 初期衛星間距離
+d_initial = d_avoid/2;
+
+s0 = [d_initial; d_initial; -0.0000001; 0; 0; 0];
 
 u_list = zeros(3*N,1);
 myu_list = zeros(3*N,1);
+myu_list2 = zeros(3*N,1);
 
 A = [0, 0, 0, 1/2, 0, 0;
      0, 0, 0, 0, 1/2, 0;
@@ -79,8 +77,8 @@ rd = 0;
 for i = 1:N
     X = s(i,:).';
     C110 = coord2const(X, n);
-    kA = 2e-3;%Gains(1);
-    kB = 1e-3;
+    kA = 2;%2e-3;
+    kB = 1;%1e-3;
     C1 = C110(1); C4 = C110(4); C5 = C110(5);
     C2 = C110(2); C3 = C110(3);
     r_xy = C110(7); phi_xy = C110(8); %phi_xy = atan2(o_r_ji(1),o_r_ji(2)/2);
@@ -89,10 +87,8 @@ for i = 1:N
     C5d = C2/tan(thetaP);
     u_A = n*[1/2*dC4;-C1];  
     u = [kA*u_A;-kB*n*(C5-C5d)];
-    r = s(i,1:3).';
+    r = s(i,1:3).'*2; % 2衛星を考慮して2倍にする
     [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max);
-    disp(myu1)
-    disp(myu2)
     %u = [0;0;0];
     if norm(myu1) > myu_max
         u = myu_max* u/norm(myu1);
@@ -100,15 +96,27 @@ for i = 1:N
         disp("over myu1")
     end
     u_list(3*(i-1)+1:3*i,:) = u;
-    myu_list(3*(i-1)+1:3*i,:) = myu1;
-    
-    disp(u)
+    myu_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
+    myu_list2(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
     s(i+1,:) = (A_d * s(i,:).' + B_d * u).';
-    disp(s(i+1,:))
 end
 
 satellites{1} = s(:,1:3);
 plot_s(satellites, num, N, rr, d_target)
+disp("安定チェック")
+x_r = s(N+1,:).';
+kA = 2e-3; % 2e-3
+thetaP = pi/6;
+mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+       2,0,0,0,1/n,0;
+       0,0,0,-1/(n*tan(thetaP)),0,1/n;
+       -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+error = mat * x_r;
+disp(error)
+disp("最小化したい評価値")
+disp(sum(abs(error)))
+
+
 function C = coord2const(X, w)
     %% HCW constants calculated from the free motion equation
     C(1) = 2*X(1)+X(5)/w;

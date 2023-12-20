@@ -1,6 +1,6 @@
 %satteliteというcell 配列を入れてそこに位置を記録していこう。
 %高橋座標系になっていることに注意。
-
+d_avoid = 0.56;
 scale = 10^(-6);
 num = 1;
 dt = 10;
@@ -85,21 +85,27 @@ rd = 0;
 
 for i = 1:N
     X = s(i,:).';
-    C110 = coord2const(X, n);
-    kA = 2e-3;%Gains(1);
-    kB = 1e-3;
-    C1 = C110(1); C4 = C110(4); C5 = C110(5);
-    C2 = C110(2); C3 = C110(3);
-    r_xy = C110(7); phi_xy = C110(8); %phi_xy = atan2(o_r_ji(1),o_r_ji(2)/2);
-    C4d = 3*n*C1/kA; %目標値
-    dC4 = C4-C4d; %C4偏差
-    C5d = C2/tan(thetaP);
-    u_A = n*[1/2*dC4;-C1];  
-    u = [kA*u_A;-kB*n*(C5-C5d)];
-    %u = [0;0;0];
-    if norm(u) > u_max
-        u = u_max* u/norm(u);
-        disp("over u")
+    if norm(X(1:3)) > d_avoid/2
+        C110 = coord2const(X, n);
+        kA = 2e-3;%Gains(1);
+        kB = 1e-3;
+        C1 = C110(1); C4 = C110(4); C5 = C110(5);
+        C2 = C110(2); C3 = C110(3);
+        r_xy = C110(7); phi_xy = C110(8); %phi_xy = atan2(o_r_ji(1),o_r_ji(2)/2);
+        C4d = 3*n*C1/kA; %目標値
+        dC4 = C4-C4d; %C4偏差
+        C5d = C2/tan(thetaP);
+        u_A = n*[1/2*dC4;-C1];  
+        u = [kA*u_A;-kB*n*(C5-C5d)];
+        %u = [0;0;0];
+        if norm(u) > u_max
+            u = u_max* u/norm(u);
+            disp("over u")
+        end
+    else 
+        k_avoid = 1e-1
+        u = k_avoid * u_max * X(1:3)/norm(X(1:3));
+        disp("avoid")
     end
     u_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = -u/scale;
     u_list2(6*N-6*(i-1)-5:6*N-6*(i-1)-3) = -u/scale;

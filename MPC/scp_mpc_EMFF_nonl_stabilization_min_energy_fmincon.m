@@ -9,15 +9,12 @@
 
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
 %d_avoid = 0.18;
-d_avoid = 0.56*2;
+
 %d_avoid = -1;
 
 
+tic;
 
-% 初期衛星間距離
-d_initial = 0.4;
-s01 = [-d_initial; -d_initial; 0.0000001; 0; 0; 0];
-s02 = [d_initial; d_initial; -0.0000001; 0; 0; 0];
 
 
 % 最終衛星間距離
@@ -42,18 +39,26 @@ dt = 10;
 % 時間 シミュレーション時間はN×dt秒250
 N = 250;
 
-% trust region 
-%delta = 0.1;
+%u_max = 1e-9;
+coilN = 140;
+radius = 0.05;
+d_avoid = radius*6;
+% 初期衛星間距離
+d_initial = d_avoid/2;
+s01 = [-d_initial; -d_initial; 0; 0; 0; 0];
+s02 = [d_initial; d_initial; -0; 0; 0; 0];
 
-% 太陽光パネルの発電量
-P_max = 2.75; % W
-u_max = 1e-4;
-disp("最大推力設定")
-disp(u_max)
-P_max = (u_max/scale)^2;
-
-% 太陽光パネルの発電量から導出される最大電流
-I_max = 1;
+P_max = 10; % W
+rho = 1.68e-7; % Ω/m
+wire_length = 140*0.05*2*pi;
+wire_S = (0.2e-3)^2*pi;
+R_rho = rho * wire_length/wire_S; 
+I_max = sqrt(P_max/R_rho);
+myu_max = I_max * coilN * radius^2 * pi;
+disp("最大電流設定")
+disp(I_max)
+disp("最大磁気モーメント設定")
+disp(myu_max)
 
 
 
@@ -88,21 +93,23 @@ B = [0, 0, 0;
 %2衛星に関する状態方程式の係数行
 A_ = A;
 B_ = B;
-
+%{
 for i = 2:num
     A_ = blkdiag(A_, A); % BにAを対角に追加
     B_ = blkdiag(B_, B); % BにAを対角に追加
 end
-
+%}
 
 % 2衛星に関する離散時間状態方程式の係数行列
-A_d = eye(6*num) + dt*A_; % 6num×6num
+A_d = eye(6) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
 
 rr1 = d_target/4;
 rr2 = sqrt(2)*d_target/2;
 rr = [rr1,rr2];
-s0 = adjust_cog([s01, s02], num); % 6num×1
+%s0 = adjust_cog([s01, s02], num); % 6num×1
+s0 = s01;
+
 
 % 各時刻の状態←各時刻の入力プロファイル,初期状態
 % S = PU + Qs_0
@@ -113,8 +120,9 @@ Q = create_Q(A_d, N); %6N×6num
 %% 等式制約
 
 % 等式制約1 (運動量保存)
-Aeq1 = create_Aeq1(N, num);
-beq1 = zeros(3*N, 1);
+
+%Aeq1 = create_Aeq1(N, num);
+%beq1 = zeros(3*N, 1);
 
 % 等式制約2 (最終状態固定)
 %Aeq2 = P(1:6*num,:);
@@ -133,27 +141,28 @@ mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
 %beq2 = zeros(4,1) - mat * relative_mat * Q(1:6*num,:) * s0;
 
 
-Aeq = Aeq1;
-beq = beq1;
+%Aeq = Aeq1;
+%beq = beq1;
 d_max_list = d_max * ones(N, 1);
 %% 線形不等式制約線形計画問題 
-
-[x, fval, exitflag, output] = solveOptimizationProblem(n, num, u_list2, Aeq, beq, N, P_max, P, Q, s0, d_avoid);
-
+time = toc
+tic;;kl
+[x, fval, exitflag, output] = solveOptimizationProblem(n, myu_list, N, myu_max, P, Q, s0, d_avoid, A_d, B_d);
+time = toc
 % 衛星の状態
-s = P * x + Q * s0;
+u_list = myu_list2u_list(myu_list, N, s0, myu_max, A_d, B_d);
+s = P * u_list + Q * s0;
 s1 = s;
-u = x;
+myu = x;
 
-disp("最大入力 u_max")
+disp("最大磁気モーメント myu_max")
 disp(max(abs(x))*scale)
 
 %disp("最大電力")
 %disp((max(vecnorm(u_mat,2,1))*scale)^2)
 
 disp("安定チェック")
-x_r = s(1:6)-s(7:12);
-error = mat * x_r;
+error = mat * s(1:6);
 disp(error)
 
 disp("最小化したい評価値")
@@ -163,16 +172,71 @@ disp(sum(abs(error)))
 plot_s(s, num, N, rr, d_target)
 
 %% 関数リスト
-function [x, fval, exitflag, output] = solveOptimizationProblem(n, num, x0, Aeq, beq, N, P_max, P, Q, s0, d_avoid)
+
+function u_list = myu_list2u_list(myu_list, N, s0, myu_max, A_d, B_d)
+    u_list = zeros(3*N, 1);
+    func_cell = create_func_cell();
+    
+    s_minus = s0;
+
+    for i = 1:N
+        myu00 = myu_list(3*N - 3*(i-1) - 2:3*N - 3*(i-1));
+        F0 = F_func(s_minus, myu_max, func_cell)*myu00;
+        u_list(3*N - 3*(i-1) - 2:3*N - 3*(i-1)) = F0;
+        s_minus = A_d * s_minus + B_d * F0;
+    end
+end
+
+function func_cell = create_func_cell()
+    syms x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max
+     
+    r = [x1 - x2; y1 - y2; z1 - z2];
+    myu = [myu11; myu12; myu13];
+    myu0 = 4*pi*1e-7; % 真空の透磁率
+    
+    %f = 3*myu0/(4*pi)*(dot(myu1, myu2)/norm(r)^5 * r + dot(myu1, r)/norm(r)^5 * myu2 + dot(myu2, r)/norm(r)^5 * myu1 - 5*dot(myu1, r)*dot(myu2, r)/norm(r)^7*r);
+    f = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6) * myu;
+    F = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6);
+
+    df_dx1 = diff(f, x1);
+    df_dy1 = diff(f, y1);
+    df_dz1 = diff(f, z1);
+    df_dx2 = diff(f, x2);
+    df_dy2 = diff(f, y2);
+    df_dz2 = diff(f, z2);
+    df_dx1_func = matlabFunction(df_dx1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dy1_func = matlabFunction(df_dy1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dz1_func = matlabFunction(df_dz1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dx2_func = matlabFunction(df_dx2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dy2_func = matlabFunction(df_dy2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dz2_func = matlabFunction(df_dz2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    f_func0 = matlabFunction(f, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    F_func0 = matlabFunction(F, 'vars', [x1 y1 z1 x2 y2 z2 myu_max]);
+    func_cell = {df_dx1_func, df_dy1_func, df_dz1_func, df_dx2_func, df_dy2_func, df_dz2_func, f_func0, F_func0};
+end
+
+function F = F_func(s_val, myu_max_val, func_cell)
+    F_func0 = func_cell{8};
+    x1_val = s_val(1);
+    y1_val = s_val(2); 
+    z1_val = s_val(3); 
+    x2_val = -s_val(1);
+    y2_val = -s_val(2); 
+    z2_val = -s_val(3);
+    F = F_func0(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu_max_val);
+end
+function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_max, P, Q, s0, d_avoid, A_d, B_d)
     % 初期化
     A = [];  % 不等式制約 A*x <= b の A
     b = [];  % 不等式制約 A*x <= b の b
+    Aeq = [];
+    beq = []; 
     lb = []; % 変数の下限
     ub = []; % 変数の上限
 
     % オプションの設定
     options = optimoptions('fmincon', ...
-                       'Algorithm', 'sqp', ...
+                       'Algorithm', 'interior-point', ...
                        'TolFun', 1e-6, ...
                        'TolX', 1e-6, ...
                        'TolCon', 1e-6, ...
@@ -180,49 +244,59 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, num, x0, Aeq,
                        'MaxIterations', 400, ...
                        'StepTolerance', 1e-6);
 
+    options = optimoptions('fmincon', ...
+                       'Algorithm', 'interior-point', ...
+                       'TolFun', 1e-6, ...
+                       'TolX', 1e-6, ...
+                       'TolCon', 1e-6, ...
+                       'MaxIterations', 1, ...
+                       'Display', 'iter-detailed');
+    
+    fun =  @(x) objectiveFunction(n, x, P, Q, s0, N, myu_max, A_d, B_d);
 
-    fun =  @(x) objectiveFunction(n, num, x, P, Q, s0);
-
-    c_ceq = @(x) nonlinearConstraints(x, num, N, P_max, P, Q, s0, d_avoid);
-
+    c_ceq = @(x) nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid, A_d, B_d);
     % fminconの呼び出し
     [x, fval, exitflag, output] = fmincon(fun, x0, A, b, Aeq, beq, lb, ub, c_ceq, options);
 end
 
-function f = objectiveFunction(n, num, x, P, Q, s0)
+function f = objectiveFunction(n, x, P, Q, s0, N, myu_max, A_d, B_d)
     % 目的関数の計算
     kA = 2e-3;
     thetaP = pi/6;
-    relative_mat = [eye(6),-eye(6)];
+    %relative_mat = [eye(6),-eye(6)];
     mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    f = sum(abs(mat * relative_mat * (P(1:6*num,:) * x + Q(1:6*num,:) * s0))); % xを用いた計算
+    u_list = myu_list2u_list(x, N, s0, myu_max, A_d, B_d);
+    
+    f = sum(abs(mat * (P(1:6,:) * u_list + Q(1:6,:) * s0))); % xを用いた計算
 end
 
-function [c, ceq] = nonlinearConstraints(x, num, N, P_max, P, Q, s0, d_avoid)
+function [c, ceq] = nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid, A_d, B_d)
     
     % 非線形制約の計算
     % 発電量拘束
+    
     P_list = zeros(N,1);
-    for i = 1:num*N
-        P_list(i) = norm(x(3*(i-1)+1:3*i))^2 - P_max;   
+    for i = 1:N
+        P_list(i) = norm(x(3*(i-1)+1:3*i))^2 - myu_max^2;   
     end
+    
 
     % 進入禁止制約
     dist_margin_list = zeros(N,1);
-    relative_mat = [eye(6),-eye(6)];
-    s = P * x + Q * s0;
+    u_list = myu_list2u_list(x, N, s0, myu_max, A_d, B_d);
+    s = P * u_list + Q * s0;
     for i = 1:N
-        dist_margin_list(i) = d_avoid/2 - norm(s(12*(i-1)+1:12*(i-1)+3));   
+        dist_margin_list(i) = d_avoid/2 - norm(s(6*(i-1)+1:6*(i-1)+3));   
     end
 
     % 制御可能範囲制約
     %%%%%%%%%%%%%%%%%%%
     
-    c = [P_list;dist_margin_list];  % 不等式制約 c(x) <= 0 進入禁止制約、発電量拘束
-    %c = P_list;
+    c = [P_list; dist_margin_list];  % 不等式制約 c(x) <= 0 進入禁止制約、発電量拘束90-iop[k
+    c = P_list;
     ceq = [];% 等式制約 ceq(x) = 0
 end
 function P = create_P(A, B, N)
@@ -382,7 +456,7 @@ function plot_s(s, num, N, rr, d_target)
     % 2衛星の動画を表示。
     %3次元座標
     data = reorderMatrix2(s);
-    satellites = cell(1, num);
+    satellites = cell(1, 2);
 
     % 衛星インスタンス生成
     for i = 1:num
@@ -391,10 +465,12 @@ function plot_s(s, num, N, rr, d_target)
     
     % 衛星データ格納
     for i = 1:N
-        for j = 1:num
-            satellites{j}(i,:) = data(3*num*(i-1)+3*(j-1)+1:3*num*(i-1)+3*(j-1)+3).';
+        for j = 1:1 % for j = 1:num
+            satellites{j}(i,:) = data(3*(i-1)+3*(j-1)+1:3*(i-1)+3*(j-1)+3).';
         end
     end
+
+    satellites{2} = -satellites{1}; 
     assignin('base', 'satellites', satellites)
 
     % ビデオライターオブジェクトの作成
