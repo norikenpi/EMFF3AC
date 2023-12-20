@@ -6,25 +6,16 @@
 % Daniel Morgan, et. al., “Spacecraft Swarm Guidance Using a Sequence of Decentralized Convex Optimizations”
 
 %% パラメータ設定
-
 % 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-%d_avoid = 0.18;
-
-%d_avoid = -1;
 
 
-tic;
-
-
+%これを外すと以下のエラーが出る。
+%cvx から double に変換できません。
+clearvars myu_mat
+clearvars s_mat
 
 % 最終衛星間距離
 d_target = 0.925;
-
-scale = 10^(-6);
-
-% 制御可能範囲(m)
-d_max = 1.0122;
-d_max = 1.0122*5;
 
 % 衛星数　2基or5基or9基
 num = 2;
@@ -37,17 +28,11 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 250;
+N = 10;
 
 %u_max = 1e-9;
 coilN = 140;
 radius = 0.05;
-d_avoid = radius*6;
-% 初期衛星間距離
-d_initial = d_avoid/2;
-s01 = [-d_initial; -d_initial; 0; 0; 0; 0];
-s02 = [d_initial; d_initial; -0; 0; 0; 0];
-
 P_max = 10; % W
 rho = 1.68e-7; % Ω/m
 wire_length = 140*0.05*2*pi;
@@ -60,10 +45,15 @@ disp(I_max)
 disp("最大磁気モーメント設定")
 disp(myu_max)
 
+u_myu =  myu_list;
+d_avoid = radius*6;
+% 初期衛星間距離
+d_initial = d_avoid/2;
+s01 = [-d_initial; -d_initial; 0.00005; 0; 0; 0];
+s02 = [d_initial; d_initial; -0.00005; 0; 0; 0];
 
-% trust region 
-delta_r = 0.01;
-delta_myu = myu_max/10000000;
+delta_r = 300;
+delta_myu = myu_max*2000;
 
 %% Hill方程式 宇宙ステーション入門 P108
 
@@ -91,17 +81,16 @@ B = [0, 0, 0;
      0, 0, 0;
      1/m, 0, 0;
      0, 1/m, 0;
-     0, 0, 1/m]*scale; % 6×3
+     0, 0, 1/m]; % 6×3
 
 %2衛星に関する状態方程式の係数行
 A_ = A;
 B_ = B;
-%{
+
 for i = 2:num
     A_ = blkdiag(A_, A); % BにAを対角に追加
-    B_ = blkdiag(B_, B); % BにAを対角に追加
+    B_ = [B_; B]; % BにAを対角に追加
 end
-%}
 
 % 2衛星に関する離散時間状態方程式の係数行列
 A_d = eye(6*num) + dt*A_; % 6num×6num
@@ -110,15 +99,16 @@ B_d = dt*B_; % 6num×3num
 rr1 = d_target/4;
 rr2 = sqrt(2)*d_target/2;
 rr = [rr1,rr2];
-s0 = adjust_cog([s01, s02], num); % 6num×1
+s0 = adjust_cog([-s01, -s02], num); % 6num×1
 
 % 微分式のセル
 func_cell = create_func_cell();
+%u_myu = myu_list;
 
 % ノミナル軌道sによってPとQが変わる
-A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, u_myu_max, func_cell); % {A1, A2, ... ,AN}
-B_list = create_B_list(num, N, s, s0, u_myu, B_d, u_myu_max, func_cell); % {B1, B2, ... ,BN}
-C_list = create_C_list(num, N, s, s0, u_myu, B_d, u_myu_max, func_cell); % {C1, C2, ... ,CN}
+A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
+B_list = create_B_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
+C_list = create_C_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {C1, C2, ... ,CN}
 
 A_mat = create_A_mat(A_list, num, N);
 B_mat = create_B_mat(B_list, num, N);
@@ -128,16 +118,27 @@ C_mat = create_C_mat(C_list, num, N);
 P = A_mat*B_mat; %6Nnum×3Nnum
 Q = A_mat2; 
 R = A_mat*C_mat; 
-
+%{
+format long
 disp("1ステップ検証")
-F = F_func(s0, u_myu_max, func_cell);
-s11 = A_d * s0 + B_d*F*u_myu(7:9);
+F = F_func(s0, myu_max, func_cell);
+s11 = A_d * s0 + B_d*F*u_myu(3*N-2:3*N);
 disp(s11)
-
+F = F_func(s11, myu_max, func_cell);
+s12 = A_d * s11 + B_d*F*u_myu(3*N-5:3*N-3);
+disp(s12)
+F = F_func(s12, myu_max, func_cell);
+s13 = A_d * s12 + B_d*F*u_myu(3*N-8:3*N-6);
+disp(s13)
+F = F_func(s13, myu_max, func_cell);
+s14 = A_d * s13 + B_d*F*u_myu(3*N-11:3*N-9);
+disp(s14)
+%}
 disp("線形化したEMFFダイナミクスを用いて、軌道を再計算。ちゃんと目標値になっていたらok")
 l_s = P * u_myu + Q * s0 + R;
 disp(l_s(1:3))
 disp(l_s(7:9))
+
 
 %% 評価関数
 
@@ -148,51 +149,44 @@ disp(l_s(7:9))
 %A1 = [eye(3*N*num), -ones(3*N*num,1); -eye(3*N*num), -ones(3*N*num, 1)]; %6N×3Nnum+1
 %b1 = zeros(6*N*num, 1);%6Nnum×1
 
-if not(d_avoid == -1)
-    % 不等式制約2 (衛星間距離はd_avoid以上)
-    % ノミナルの状態プロファイルを設定
-    nominal_s = s;
-        
-    % 状態ベクトルから位置ベクトルのみを抽出
-    C01 = [eye(3),zeros(3)];
-    C1 = [];
-    for i = 1:num*N
-        C1 = blkdiag(C1, C01);
-    end
-    
-    % 相対位置ベクトルを計算する行列
-    C02 = [eye(3),-eye(3)];
-    C2 = [];
-    for i = 1:N
-        C2 = blkdiag(C2, C02);
-    end
-    
-    % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
-    % 不等式の大小を変えるために両辺マイナスをかけている。
-    A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
-    b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * Q * s0;
-    
-    A = A2;
-    b = b2;
 
-    % 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
-    % s - (PU + Qs0 + R) < δ
-    % -s + (PU + Qs0 + R) < δ
-    
-    A3 = [-P; P];
-    b3 = [delta_r * ones(6*N*num, 1) - s + Q * s0 + R; delta_r * ones(6*N*num, 1) + s - Q * s0 - R];
-    
-    % 不等式制約4 (磁気モーメントの変化量はδ2以下)
-    % U2 - U1 < δ
-    % U1 - U2 < δ
-    A4 = [-[eye(N*3), zeros(N*3,1)]; [eye(N*3), zeros(N*3,1)]];
-    b4 = [delta_myu * ones(3*N, 1) - u_myu(1:end-1); delta_myu * ones(3*N, 1) + u_myu(1:end-1)];
-    A = [A2; A3; A4];
-    b = [b2; b3; b4];
-
+% 不等式制約2 (衛星間距離はd_avoid以上)
+% ノミナルの状態プロファイルを設定
+nominal_s = s;
+% 状態ベクトルから位置ベクトルのみを抽出
+C01 = [eye(3),zeros(3)];
+C1 = [];
+for i = 1:num*N
+    C1 = blkdiag(C1, C01);
 end
 
+% 相対位置ベクトルを計算する行列
+C02 = [eye(3),-eye(3)];
+C2 = [];
+for i = 1:N
+    C2 = blkdiag(C2, C02);
+end
 
+% create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
+% 不等式の大小を変えるために両辺マイナスをかけている。
+A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
+b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
+% 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
+% s - (PU + Qs0 + R) < δ
+% -s + (PU + Qs0 + R) < δ
+
+A3 = [-P; P];
+b3 = [delta_r * ones(6*N*num, 1) - s + Q * s0 + R; delta_r * ones(6*N*num, 1) + s - Q * s0 - R];
+
+% 不等式制約4 (磁気モーメントの変化量はδ2以下)
+% U2 - U1 < δ
+% U1 - U2 < δ
+A4 = [-eye(N*3); eye(N*3)];
+b4 = [delta_myu * ones(3*N, 1) - u_myu; delta_myu * ones(3*N, 1) + u_myu];
+%A = [A2; A3; A4];
+%b = [b2; b3; b4];
+A = [A2; A4];
+b = [b2; b4];
 
 %% 等式制約
 
@@ -208,9 +202,9 @@ mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
        -1/(n*tan(thetaP)),0,1/n, 0,0,0];
 
 % 解はnum×N×3自由度
-cvx_begin sdp quiet
-    variable x(3*N*num)
-    minimize(sum(abs(mat * relative_mat * (P(1:6*num,:) * x + Q(1:6*num,:) * s0))))
+cvx_begin
+    variable x(3*N)
+    minimize(sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))))
 
     %pos = P * x + Q * s0;
 
@@ -222,32 +216,42 @@ cvx_begin sdp quiet
         A * x <= b;
 
         % 太陽光パネルの発電量拘束
-        for i = 1:num*N
-            myu_mat(:,i) = x(3*(i-1)+1:3*i);   
-        end
-        [myu_max^2*eye(N*num), myu_mat.';
-         myu_mat, eye(3)] >= 0;
+        for i = 1:N
+            myu_mat(:,i) = x(3*(i-1)+1:3*i);
+            
+            [myu_max^2, x(3*(i-1)+1:3*i).';
+            x(3*(i-1)+1:3*i), eye(3)] >= 0;
 
+        end
+        %{
+        [myu_max^2*eye(N), myu_mat.';
+         myu_mat, eye(3)] >= 0;
+            %}
+        
+       
         
 cvx_end
 cvx_status
 
 
 % 衛星の状態
-s = P * x + Q * s0;
+s = P * x + Q * s0 + R;
 s1 = s;
 u = x;
 
-disp("最大入力 u_max")
-disp(max(abs(x))*scale)
+disp("最大磁気モーメント myu_max")
+disp(max(vecnorm(myu_mat,2,1)))
 
 disp("最大電力")
-disp((max(vecnorm(myu_mat,2,1))*scale)^2)
+disp(R_rho*(max(vecnorm(myu_mat,2,1))/(coilN * radius^2 * pi))^2)
 
 disp("安定チェック")
 x_r = s(1:6)-s(7:12);
 error = mat * x_r;
 disp(error)
+
+disp("最小化したい評価値")
+disp(sum(abs(error)))
 %% 図示
 
 plot_s(s, num, N, rr, d_target)
@@ -494,14 +498,6 @@ function norms = calculate_norms(vec_3n)
         vec = vec_3n(3*(i-1)+1 : 3*i);
         % ノルムを計算して保存
         norms(i) = norm(vec);
-    end
-end
-
-function Aeq1 = create_Aeq1(N, num)
-    matrix1 = repmat(eye(3), 1, num);
-    Aeq1 = zeros(3*N, 3*num*N);
-    for i = 1:N
-        Aeq1(3*(i-1)+1:3*i, 3*num*(i-1)+1:3*num*i) = matrix1;
     end
 end
 

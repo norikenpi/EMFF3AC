@@ -52,6 +52,7 @@ N = 250;
 %u_max = 1e-9;
 coilN = 140;
 radius = 0.05;
+u_max = 1e-5/scale;
 P_max = 10/scale; % W
 rho = 1.68e-7; % Ω/m
 wire_length = 140*0.05*2*pi;
@@ -181,7 +182,7 @@ cvx_begin sdp quiet
         for i = 1:N
             u_mat(:,i) = x(3*(i-1)+1:3*i);   
         end
-        [P_max*eye(N), u_mat.';
+        [u_max^2*eye(N), u_mat.';
          u_mat, eye(3)] >= 0;
 
 

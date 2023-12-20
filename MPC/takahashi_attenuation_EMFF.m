@@ -3,7 +3,7 @@
 
 num = 1;
 dt = 10;
-N = 10;
+N = 250;
 n = 0.0011; % 0.0011
 m = 1; % 1
 %u_max = 1e-9;
@@ -20,9 +20,9 @@ myu_max = I_max * coilN * radius^2 * pi;
 
 d_avoid = radius*6;
 % 初期衛星間距離
-d_initial = d_avoid/1.5;
+d_initial = d_avoid/2;
 
-s0 = [d_initial; d_initial; -0.0000001; 0; 0; 0];
+s0 = [d_initial; d_initial; -0.00005; 0; 0; 0];
 
 u_list = zeros(3*N,1);
 myu_list = zeros(3*N,1);
@@ -67,14 +67,14 @@ rr1 = rr(1);
 %s0 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
 %s0 = [rr1*sin(0); 2*rr1*cos(0); sqrt(3)*rr1*sin(0); n*rr1*cos(0); -2*n*rr1*sin(0); sqrt(3)*n*rr1*cos(0)];
 
-s = zeros(N,6);
-s(1,:) = s0.';
-
+state = zeros(N,6);
+state(1,:) = s0.';
+s = zeros(6*N*2,1);
 thetaP = pi/6;
 rd = 0;
 
 for i = 1:N
-    X = s(i,:).';
+    X = state(i,:).';
     if norm(X(1:3)) > d_avoid/2
         C110 = coord2const(X, n);
         kA = 2;%2e-3;
@@ -87,29 +87,31 @@ for i = 1:N
         C5d = C2/tan(thetaP);
         u_A = n*[1/2*dC4;-C1];  
         u = [kA*u_A;-kB*n*(C5-C5d)];
-        r = s(i,1:3).'*2; % 2衛星を考慮して2倍にする
+        r = state(i,1:3).'*2; % 2衛星を考慮して2倍にする
         [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max);
         %u = [0;0;0];
         if norm(myu1) > myu_max
-            u = myu_max* u/norm(myu1);
-            myu1 = myu_max * myu1/norm(myu1);
+            u = myu_max/2* u/norm(myu1);
+            myu1 = myu_max/2 * myu1/norm(myu1);
             disp("over myu1")
         end
-        u_list(3*(i-1)+1:3*i,:) = u;
-        myu_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
-        myu_list2(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
-        s(i+1,:) = (A_d * s(i,:).' + B_d * u).';
+        
     else 
         k_avoid = 1e-1;
         u = k_avoid * u_max * X(1:3)/norm(X(1:3));
         disp("avoid")
     end
+    myu_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
+    state(i+1,:) = (A_d * state(i,:).' + B_d * u).';
+    s(6*N*2 - 6*2*(i-1)-11:6*N*2 - 6*2*(i-1)-6) = (A_d * state(i,:).' + B_d * u);
+    s(6*N*2 - 6*2*(i-1)-5:6*N*2 - 6*2*(i-1)) = -(A_d * state(i,:).' + B_d * u);
+
 end
 
-satellites{1} = s(:,1:3);
+satellites{1} = state(:,1:3);
 plot_s(satellites, num, N, rr, d_target)
 disp("安定チェック")
-x_r = s(N+1,:).';
+x_r = state(N+1,:).';
 kA = 2e-3; % 2e-3
 thetaP = pi/6;
 mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
@@ -248,6 +250,7 @@ function [u_myu1, u_myu2] = force2moment(s, s0, num, u, coilN, radius, I_max)
 end
 
 function [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max)
+    % 原点の2倍の距離で計算
     r_norm = norm(r); 
     myu01 = coilN * pi * radius^2 * I_max * r/r_norm;
     myu0 = 4*pi*1e-7; % 真空の透磁率
@@ -255,7 +258,6 @@ function [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max)
     D = calculateD(r, myu01);
     %myu02 = 4*pi*r_norm^5/(3*myu0)*inv(D)*u*mass;
     myu02 = 4*pi*r_norm^5/(3*myu0)*inv(D)*u;
-    myumyu = myu0*myu02;
     myu1 = myu02;
     myu2 = myu01;
 end

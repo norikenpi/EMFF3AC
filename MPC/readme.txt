@@ -56,7 +56,7 @@ F2myu2.m力を磁気ダイポールに変換する。
 ＜fnminconによる最適化＞諦め
 takahashi_attenuation2.mでスラスターを使ってエネルギー減衰制御ができる。入力の順番を修正したりとtakahashi_attenuationの修正版
 takahashi_attenuation3.mでtakahashi_attenuation2.mに衝突防止制御を追加したもの。
-takahashi_attenuation_EMFF.mで電磁力を使ってエネルギー減衰制御ができる。
+takahashi_attenuation_EMFF.mで電磁力を使ってエネルギー減衰制御ができる。衝突防止あり。
 scp_mpc_stabilization_min_energy_fmincon.mでスラスターの凸最適化をfminconで解く。scp_mpc_EMFF_stabilization_min_energy.mのfminconバージョン。takahashi_attenuation2.mを実行して最適化の初期値を作る必要がある。
 初期値は合わせる必要がある。takahashi_attenuation3を使っても大して変わらないですわ。
 scp_mpc_stabilization_min_energy_fmincon2.mは1衛星分の入力で2衛星分の最適化を行う。scp_mpc_stabilization_min_energy_fmincon2の方が変数も拘束条件も少ないからよさげ。
@@ -70,6 +70,6 @@ takahashi_attenuation3.mでtakahashi_attenuation2.mに衝突防止制御を追�
 takahashi_attenuation_EMFF.mで電磁力を使ってエネルギー減衰制御ができる。
 scp_mpc_EMFF_nonl_stabilization_min_energy.mは片方の電流入力のノミナル軌道からscp-mpc。ノミナル軌道はtakahashi_attenuation_EMFF.mを使いましょう。
 
-
+scp_mpc_EMFF_stabilization_min_energy2.mは片側衛星の入力と位置だけで色々やる。
 
 kdtree.mで100基の衛星の中から1つの衛星に注目して、その周囲の衛星を抽出する。ペア決めに使えそう。
