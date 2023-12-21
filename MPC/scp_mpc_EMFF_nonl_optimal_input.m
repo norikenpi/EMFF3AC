@@ -1,9 +1,9 @@
 %satteliteというcell 配列を入れてそこに位置を記録していこう。
 %高橋座標系になっていることに注意。
-
-num = 1;
+clear;
 dt = 10;
-N = 10;
+N = 100;
+num = 2;
 n = 0.0011; % 0.0011
 m = 1; % 1
 %u_max = 1e-9;
@@ -16,6 +16,13 @@ wire_S = (0.2e-3)^2*pi;
 R_rho = rho * wire_length/wire_S; 
 I_max = sqrt(P_max/R_rho);
 myu_max = I_max * coilN * radius^2 * pi;
+
+disp("最大電力設定")
+disp(P_max)
+disp("最大電流設定")
+disp(I_max)
+disp("最大磁気モーメント設定")
+disp(myu_max)
 
 d_avoid = radius*6;
 % 初期衛星間距離
@@ -84,8 +91,8 @@ for i = 1:N
         [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max);
         %u = [0;0;0];
         if norm(myu1) > myu_max
-            u = myu_max/2* u/norm(myu1);
-            myu1 = myu_max/2 * myu1/norm(myu1);
+            u = myu_max* u/norm(myu1);
+            myu1 = myu_max * myu1/norm(myu1);
             %disp("over myu1")
         end
         
@@ -106,7 +113,7 @@ satellites{1} = state(:,1:3);
 
 u_myu =  myu_list;
 %plot_s(satellites, num, N, rr, d_target)
-disp("各エネルギー")
+
 x_r = state(N+1,:).';
 kA = 2e-3; % 2e-3
 thetaP = pi/6;
@@ -115,7 +122,6 @@ mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
        0,0,0,-1/(n*tan(thetaP)),0,1/n;
        -1/(n*tan(thetaP)),0,1/n, 0,0,0];
 error = mat * x_r;
-disp(error)
 disp("エネルギー総和")
 disp(sum(abs(error)))
 
@@ -125,42 +131,7 @@ disp(sum(abs(error)))
 clearvars myu_mat
 clearvars s_mat
 tic;
-% 最終衛星間距離
-d_target = 0.925;
 
-% 衛星数　2基or5基or9基
-num = 2;
-
-% 衛星質量
-m = 1; % 1
-%m = 0.38; % 1
- 
-% タイムステップ(s)
-dt = 10;
-
-% 時間 シミュレーション時間はN×dt秒250
-N = 10;
-
-%u_max = 1e-9;
-coilN = 140;
-radius = 0.05;
-P_max = 10; % W
-rho = 1.68e-7; % Ω/m
-wire_length = 140*0.05*2*pi;
-wire_S = (0.2e-3)^2*pi;
-R_rho = rho * wire_length/wire_S; 
-I_max = sqrt(P_max/R_rho);
-myu_max = I_max * coilN * radius^2 * pi;
-disp("最大電力設定")
-disp(P_max)
-disp("最大電流設定")
-disp(I_max)
-disp("最大磁気モーメント設定")
-disp(myu_max)
-
-d_avoid = radius*6;
-% 初期衛星間距離
-d_initial = d_avoid/2;
 s01 = [d_initial; d_initial; -0.00005; 0; 0; 0];
 s02 = [-d_initial; -d_initial; 0.00005; 0; 0; 0];
 s0 = adjust_cog([s01, s02], num); % 6num×1
@@ -220,34 +191,8 @@ C_mat = create_C_mat(C_list, num, N);
 P = A_mat*B_mat; %6Nnum×3Nnum
 Q = A_mat2; 
 R = A_mat*C_mat; 
-%{
-format long
-disp("1ステップ検証")
-F = F_func(s0, myu_max, func_cell);
-s11 = A_d * s0 + B_d*F*u_myu(3*N-2:3*N);
-disp(s11)
-F = F_func(s11, myu_max, func_cell);
-s12 = A_d * s11 + B_d*F*u_myu(3*N-5:3*N-3);
-disp(s12)
-F = F_func(s12, myu_max, func_cell);
-s13 = A_d * s12 + B_d*F*u_myu(3*N-8:3*N-6);
-disp(s13)
-F = F_func(s13, myu_max, func_cell);
-s14 = A_d * s13 + B_d*F*u_myu(3*N-11:3*N-9);
-disp(s14)
-%}
-disp("線形化したEMFFダイナミクスを用いて、線形誤差を計算。小さかったら問題なし")
-l_s = P * u_myu + Q * s0 + R;
-disp(l_s(1:6) - s(1:6))
-
-% 不等式制約1(全ての入力は最大入力以下)
-% 最大入力との差が0より大きくなければならない。
-%A1 = [eye(3*N*num), -ones(3*N*num,1); -eye(3*N*num), -ones(3*N*num, 1)]; %6N×3Nnum+1
-%b1 = zeros(6*N*num, 1);%6Nnum×1
 
 
-% 不等式制約2 (衛星間距離はd_avoid以上)
-% ノミナルの状態プロファイルを設定
 nominal_s = s;
 % 状態ベクトルから位置ベクトルのみを抽出
 C01 = [eye(3),zeros(3)];
@@ -292,25 +237,53 @@ mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
        -1/(n*tan(thetaP)),0,1/n, 0,0,0];
 
 [x, fval, exitflag, output] = solveOptimizationProblem(n, u_myu, N, myu_max, P, Q, R, s0, d_avoid, A, b);
+% 解はnum×N×3自由度
+%{
+cvx_begin
+    variable x(3*N)
+    minimize(sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))))
 
+    %pos = P * x + Q * s0;
+
+    subject to
+        % 不等式制約
+        % 進入禁止制約
+        % 位置trust region
+        % 磁気モーメントtrust region
+        A * x <= b;
+
+        % 太陽光パネルの発電量拘束
+        for i = 1:N
+            norm(x(3*(i-1)+1:3*i)) <= myu_max;
+
+
+        end
+cvx_end
+cvx_status
+%}
 
 % 衛星の状態
 s = P * x + Q * s0 + R;
 s1 = s;
 u_myu = x;
 myu_mat = reshape(x, 3, N).'; 
-disp("最大磁気モーメント myu_max")
-disp(max(vecnorm(myu_mat,2,2)))
+
 
 disp("最大電力")
 disp(R_rho*(max(vecnorm(myu_mat,2,2))/(coilN * radius^2 * pi))^2)
 
-disp("安定チェック")
+disp("最大電流")
+disp(max(vecnorm(myu_mat,2,2))/(coilN * radius^2 * pi))
+
+disp("最大磁気モーメント myu_max")
+disp(max(vecnorm(myu_mat,2,2)))
+
 error = mat * s(1:6);
 disp(error)
 
-disp("最小化したい評価値")
+disp("エネルギー総和")
 disp(sum(abs(error)))
+
 
 time = toc
 %% 図示
@@ -333,7 +306,6 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
                        'TolFun', 1e-6, ...
                        'TolX', 1e-6, ...
                        'TolCon', 1e-6, ...
-                       'Display', 'iter', ...
                        'MaxIterations', 400, ...
                        'StepTolerance', 1e-6);
 
@@ -371,17 +343,19 @@ function [c, ceq] = nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid)
     
 
     % 進入禁止制約
+    %{
     dist_margin_list = zeros(N,1);
     relative_mat = [eye(6),-eye(6)];
     s = P * x + Q * s0;
     for i = 1:N
         dist_margin_list(i) = d_avoid/2 - norm(s(6*(i-1)+1:6*(i-1)+3));   
     end
+    %}
 
     % 制御可能範囲制約
     %%%%%%%%%%%%%%%%%%%
     
-    c = [P_list; dist_margin_list];  % 不等式制約 c(x) <= 0 進入禁止制約、発電量拘束90-iop[k
+    c = P_list;  % 不等式制約 c(x) <= 0 進入禁止制約、発電量拘束90-iop[k
     ceq = [];% 等式制約 ceq(x) = 0
 end
 

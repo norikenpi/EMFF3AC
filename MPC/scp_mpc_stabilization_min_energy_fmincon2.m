@@ -40,7 +40,7 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 250;
+N = 10;
 
 %u_max = 1e-9;
 coilN = 140;
@@ -141,6 +141,30 @@ d_max_list = d_max * ones(N, 1);
 %% 線形不等式制約線形計画問題 
 
 [x, fval, exitflag, output] = solveOptimizationProblem(n, u_list, N, P_max, P, Q, s0, d_avoid);
+
+%{
+cvx_begin
+    variable x(3*N)
+    minimize(sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))))
+
+    %pos = P * x + Q * s0;
+
+    subject to
+        % 不等式制約
+        % 進入禁止制約
+        % 位置trust region
+        % 磁気モーメントtrust region
+        A * x <= b;
+
+        % 太陽光パネルの発電量拘束
+        for i = 1:N
+            norm(x(3*(i-1)+1:3*i)) <= myu_max;
+
+
+        end
+cvx_end
+cvx_status
+%}
 
 % 衛星の状態
 s = P * x + Q * s0;
