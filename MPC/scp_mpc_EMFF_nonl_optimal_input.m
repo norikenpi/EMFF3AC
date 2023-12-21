@@ -1,19 +1,130 @@
-%% num基の衛星のSCP-MPC（線形不等式制約線形計画問題 linprog）
-% 最大入力を最小化
-% 進入禁止範囲を設定可能
-% 初めて実行する場合はR = -1にして進入禁止範囲制約を外してください。
-% 2回目以降の実行は、既にある軌道をノミナル軌道としてSCP-MPCを行います。
-% Daniel Morgan, et. al., “Spacecraft Swarm Guidance Using a Sequence of Decentralized Convex Optimizations”
+%satteliteというcell 配列を入れてそこに位置を記録していこう。
+%高橋座標系になっていることに注意。
 
-%% パラメータ設定
-% 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-tic;
+num = 1;
+dt = 10;
+N = 10;
+n = 0.0011; % 0.0011
+m = 1; % 1
+%u_max = 1e-9;
+coilN = 140;
+radius = 0.05;
+P_max = 10; % W
+rho = 1.68e-7; % Ω/m
+wire_length = 140*0.05*2*pi;
+wire_S = (0.2e-3)^2*pi;
+R_rho = rho * wire_length/wire_S; 
+I_max = sqrt(P_max/R_rho);
+myu_max = I_max * coilN * radius^2 * pi;
 
-%これを外すと以下のエラーが出る。
-%cvx から double に変換できません。
+d_avoid = radius*6;
+% 初期衛星間距離
+d_initial = d_avoid/2;
+
+s0 = [d_initial; d_initial; -0.00005; 0; 0; 0];
+
+u_list = zeros(3*N,1);
+myu_list = zeros(3*N,1);
+myu_list2 = zeros(3*N,1);
+
+A = [0, 0, 0, 1/2, 0, 0;
+     0, 0, 0, 0, 1/2, 0;
+     0, 0, 0, 0, 0, 1/2;
+     3*n^2, 0, 0, 0, 2*n, 0;
+     0, 0, 0, -2*n, 0, 0;
+     0, 0, -n^2, 0, 0, 0]+...
+    [3*n^2, 0, 0, 1, 2*n, 0;
+     0, 0, 0, -2*n, 1, 0;
+     0, 0, -n^2, 0, 0, 1;
+     0, 0, 0, 0, 0, 0;
+     0, 0, 0, 0, 0, 0;
+     0, 0, 0, 0, 0, 0]/2; 
+
+B = [0, 0, 0;
+     0, 0, 0;
+     0, 0, 0;
+     1/m, 0, 0;
+     0, 1/m, 0;
+     0, 0, 1/m]; % 6×3
+
+% 2衛星に関する離散時間状態方程式の係数行列
+A_d = eye(6)+ dt*A; % 6num×6num
+B_d = dt*B; % 6num×3num
+
+
+
+d_target = 0.925;
+
+rr1 = d_target/(2*sqrt(3));
+rr2 = sqrt(2)*d_target/2;
+
+rr = [rr1,rr2];
+
+state = zeros(N,6);
+state(1,:) = s0.';
+s = zeros(6*N*2,1);
+thetaP = pi/6;
+rd = 0;
+
+for i = 1:N
+    X = state(i,:).';
+    if norm(X(1:3)) > d_avoid/2
+        C110 = coord2const(X, n);
+        kA = 2;%2e-3;
+        kB = 1;%1e-3;
+        C1 = C110(1); C4 = C110(4); C5 = C110(5);
+        C2 = C110(2); C3 = C110(3);
+        r_xy = C110(7); phi_xy = C110(8); %phi_xy = atan2(o_r_ji(1),o_r_ji(2)/2);
+        C4d = 3*n*C1/kA; %目標値
+        dC4 = C4-C4d; %C4偏差
+        C5d = C2/tan(thetaP);
+        u_A = n*[1/2*dC4;-C1];  
+        u = [kA*u_A;-kB*n*(C5-C5d)];
+        r = state(i,1:3).'*2; % 2衛星を考慮して2倍にする
+        [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max);
+        %u = [0;0;0];
+        if norm(myu1) > myu_max
+            u = myu_max/2* u/norm(myu1);
+            myu1 = myu_max/2 * myu1/norm(myu1);
+            %disp("over myu1")
+        end
+        
+    else 
+        k_avoid = 1e-1;
+        u = k_avoid * u_max * X(1:3)/norm(X(1:3));
+        disp("avoid")
+    end
+    %u = [0;0;0];
+    myu_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
+    state(i+1,:) = (A_d * state(i,:).' + B_d * u).';
+    s(6*N*2 - 6*2*(i-1)-11:6*N*2 - 6*2*(i-1)-6) = (A_d * state(i,:).' + B_d * u);
+    s(6*N*2 - 6*2*(i-1)-5:6*N*2 - 6*2*(i-1)) = -(A_d * state(i,:).' + B_d * u);
+
+end
+
+satellites{1} = state(:,1:3);
+
+u_myu =  myu_list;
+%plot_s(satellites, num, N, rr, d_target)
+disp("各エネルギー")
+x_r = state(N+1,:).';
+kA = 2e-3; % 2e-3
+thetaP = pi/6;
+mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+       2,0,0,0,1/n,0;
+       0,0,0,-1/(n*tan(thetaP)),0,1/n;
+       -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+error = mat * x_r;
+disp(error)
+disp("エネルギー総和")
+disp(sum(abs(error)))
+
+
+%% 最適化2
+
 clearvars myu_mat
 clearvars s_mat
-
+tic;
 % 最終衛星間距離
 d_target = 0.925;
 
@@ -60,14 +171,7 @@ s0 = adjust_cog([s01, s02], num); % 6num×1
 
 delta_r = d_avoid/10;
 delta_myu = myu_max/10;
-%% Hill方程式 宇宙ステーション入門 P108
 
-% 地球を周回する衛星の角速度
-% n = sqrt(myu/r_star^3); % 地球を周回する衛星の角速度 宇宙ステーション入門 p107
-n = 0.0011; % 0.0011
-
-% 1衛星に関する状態方程式の係数行列
-% x_dot = A_ x + B_ u
 A = [0, 0, 0, 1/2, 0, 0;
      0, 0, 0, 0, 1/2, 0;
      0, 0, 0, 0, 0, 1/2;
@@ -88,7 +192,6 @@ B = [0, 0, 0;
      0, 1/m, 0;
      0, 0, 1/m]; % 6×3
 
-%2衛星に関する状態方程式の係数行
 A_ = A;
 B_ = B;
 
@@ -100,11 +203,6 @@ end
 % 2衛星に関する離散時間状態方程式の係数行列
 A_d = eye(6*num) + dt*A_; % 6num×6num
 B_d = dt*B_; % 6num×3num
-
-rr1 = d_target/4;
-rr2 = sqrt(2)*d_target/2;
-rr = [rr1,rr2];
-
 % 微分式のセル
 func_cell = create_func_cell();
 %u_myu = myu_list;
@@ -141,14 +239,6 @@ disp(s14)
 disp("線形化したEMFFダイナミクスを用いて、線形誤差を計算。小さかったら問題なし")
 l_s = P * u_myu + Q * s0 + R;
 disp(l_s(1:6) - s(1:6))
-
-
-
-%% 評価関数
-
-%% 不等式制約
-
-
 
 % 不等式制約1(全ての入力は最大入力以下)
 % 最大入力との差が0より大きくなければならない。
@@ -189,15 +279,9 @@ b3 = [delta_r * ones(6*N*num, 1) - s + Q * s0 + R; delta_r * ones(6*N*num, 1) + 
 % U1 - U2 < δ
 A4 = [-eye(N*3); eye(N*3)];
 b4 = [delta_myu * ones(3*N, 1) - u_myu; delta_myu * ones(3*N, 1) + u_myu];
-%A = [A2; A3; A4];
-%b = [b2; b3; b4];
-A = [A2; A3; A4];
-b = [b2; b3; b4];
-
-%% 等式制約
-
-
-%% 線形不等式制約線形計画問題 
+A = [A2;A3;A4];
+b = [b2;b3;b4];
+ 
 
 kA = 2e-3;
 thetaP = pi/6;
@@ -209,39 +293,6 @@ mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
 
 [x, fval, exitflag, output] = solveOptimizationProblem(n, u_myu, N, myu_max, P, Q, R, s0, d_avoid, A, b);
 
-%{
-% 解はnum×N×3自由度
-cvx_begin quiet
-    variable x(3*N)
-    minimize(sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))))
-
-    %pos = P * x + Q * s0;
-
-    subject to
-        % 不等式制約
-        % 進入禁止制約
-        % 位置trust region
-        % 磁気モーメントtrust region
-        A * x <= b;
-
-        % 太陽光パネルの発電量拘束
-        for i = 1:N
-            norm(x(3*(i-1)+1:3*i)) <= myu_max ;
-            
-            %[myu_max^2, x(3*(i-1)+1:3*i).';
-            %x(3*(i-1)+1:3*i), eye(3)] >= 0;
-
-        end
-        %{
-        [myu_max^2*eye(N), myu_mat.';
-         myu_mat, eye(3)] >= 0;
-            %}
-        
-       
-        
-cvx_end
-cvx_status
-%}
 
 % 衛星の状態
 s = P * x + Q * s0 + R;
@@ -260,12 +311,13 @@ disp(error)
 
 disp("最小化したい評価値")
 disp(sum(abs(error)))
+
 time = toc
 %% 図示
 
 plot_s(s, num, N, rr, d_target)
 
-%% 関数リスト
+%% 関数リスト1
 function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_max, P, Q, R, s0, d_avoid, A, b)
     % 初期化
     %A = [];  % 不等式制約 A*x <= b の A
@@ -329,7 +381,7 @@ function [c, ceq] = nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid)
     % 制御可能範囲制約
     %%%%%%%%%%%%%%%%%%%
     
-    c = [P_list];  % 不等式制約 c(x) <= 0 進入禁止制約、発電量拘束90-iop[k
+    c = [P_list; dist_margin_list];  % 不等式制約 c(x) <= 0 進入禁止制約、発電量拘束90-iop[k
     ceq = [];% 等式制約 ceq(x) = 0
 end
 
@@ -681,4 +733,71 @@ function B = reorderMatrix2(A)
         B = [B; flip(sub_vector)];
     end
 end
+
+
+
+%% 関数リスト2
+function C = coord2const(X, w)
+    %% HCW constants calculated from the free motion equation
+    C(1) = 2*X(1)+X(5)/w;
+    C(2) = X(4)/w;
+    C(3) = -3*X(1)-2*X(5)/w;
+    C(4) = X(2)-2*X(4)/w;
+    C(5) = X(6)/w;
+    C(6) = X(3);
+    %%
+    r_xy = sqrt(C(2)^2+C(3)^2);
+    theta_xy = atan2(C(3),C(2));
+    r_z = sqrt(C(5)^2+C(6)^2);
+    theta_z = atan2(C(6),C(5));
+    C(7) = r_xy;
+    C(8) = theta_xy;
+    C(9) = r_z;
+    C(10) = theta_z;
+end
+
+
+
+
+
+
+
+
+function [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max)
+    % 原点の2倍の距離で計算
+    r_norm = norm(r); 
+    myu01 = coilN * pi * radius^2 * I_max * r/r_norm;
+    myu0 = 4*pi*1e-7; % 真空の透磁率
+    
+    D = calculateD(r, myu01);
+    %myu02 = 4*pi*r_norm^5/(3*myu0)*inv(D)*u*mass;
+    myu02 = 4*pi*r_norm^5/(3*myu0)*inv(D)*u;
+    myu1 = myu02;
+    myu2 = myu01;
+end
+
+
+function D = calculateD(r, m1)
+    x = r(1);
+    y = r(2);
+    z = r(3);
+    r_norm = norm(r);
+    D11 = 2*m1(1)*x + dot(m1, r) - 5*dot(m1, r)*x^2/r_norm^2;
+    D12 = m1(2)*x + m1(1)*y - 5*dot(m1, r)*y*x/r_norm^2;
+    D13 = m1(3)*x + m1(1)*z - 5*dot(m1, r)*z*x/r_norm^2;
+    D21 = D12;
+    D22 = 2*m1(2)*y + dot(m1, r) - 5*dot(m1, r)*y^2/r_norm^2;
+    D23 = m1(3)*y + m1(2)*z - 5*dot(m1, r)*z*y/r_norm^2;
+    D31 = D13;
+    D32 = D23;
+    D33 = 2*m1(3)*z + dot(m1, r) - 5*dot(m1, r)*z^2/r_norm^2;
+
+
+    D = [D11,D21,D31;
+         D12,D22,D32;
+         D13,D23,D33;];
+
+end
+
+
 

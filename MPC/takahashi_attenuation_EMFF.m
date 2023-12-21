@@ -3,7 +3,7 @@
 
 num = 1;
 dt = 10;
-N = 360;
+N = 10;
 n = 0.0011; % 0.0011
 m = 1; % 1
 %u_max = 1e-9;
@@ -194,7 +194,7 @@ function plot_s(satellites, num, N, rr, d_target)
             % 軌道をプロット
             plot3(satellites{j}(1:N,1), satellites{j}(1:N,2), satellites{j}(1:N,3), '-', 'Color', colors(j,:));
             % 衛星をプロット
-            %plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 60, 'Color', colors(j,:));
+            plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 60, 'Color', colors(j,:));
             % 衛星の初期値をプロット
             plot3(satellites{j}(1,1), satellites{j}(1,2), satellites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
         end

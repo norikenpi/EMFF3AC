@@ -72,17 +72,10 @@ scp_mpc_EMFF_nonl_stabilization_min_energy_fmincon2.mでごりおす。
 
 ＜エネルギーベース最適化の手順＞
 takahashi_attenuation_EMFF.mでリアプノフ制御を用いて磁気モーメント入力のノミナル軌道を作成する。
-scp_mpc_EMFF_nonl_stabilization_min_energy_fmincon2.mでノミナル軌道を変数の初期値としてfminconで最適化する。
-
+scp_mpc_EMFF_nonl_stabilization_min_energy_fmincon2.mでノミナル軌道を変数の初期値としてfminconで最適化する。cvxよりもfminconの方が速い。
+scp_mpc_EMFF_nonl_optimal_input.mである状態が与えられたときに、最適な入力を計算する。
 
 kdtree.mで100基の衛星の中から1つの衛星に注目して、その周囲の衛星を抽出する。ペア決めに使えそう。
 
 ＜4基にエナジーベースFB制御シミュレーション＞
-energy_base_4sat.m
-4基の衛星の初期状態決定
-
-while ペア間エネルギー0.1以上
-・ペア組み
-・最大電力割り当て
-・各ペア制御入力計算（for ペアlist　座標平行移動）
-・更新
+energy_base_4sat.mでエナジーベースの4衛星の展開を実装。動的なペア決めも実装
