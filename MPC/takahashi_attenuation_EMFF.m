@@ -3,7 +3,7 @@
 
 num = 1;
 dt = 10;
-N = 250;
+N = 360;
 n = 0.0011; % 0.0011
 m = 1; % 1
 %u_max = 1e-9;
@@ -96,6 +96,7 @@ for i = 1:N
         u = k_avoid * u_max * X(1:3)/norm(X(1:3));
         disp("avoid")
     end
+    %u = [0;0;0];
     myu_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
     state(i+1,:) = (A_d * state(i,:).' + B_d * u).';
     s(6*N*2 - 6*2*(i-1)-11:6*N*2 - 6*2*(i-1)-6) = (A_d * state(i,:).' + B_d * u);
@@ -193,7 +194,7 @@ function plot_s(satellites, num, N, rr, d_target)
             % 軌道をプロット
             plot3(satellites{j}(1:N,1), satellites{j}(1:N,2), satellites{j}(1:N,3), '-', 'Color', colors(j,:));
             % 衛星をプロット
-            plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 60, 'Color', colors(j,:));
+            %plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 60, 'Color', colors(j,:));
             % 衛星の初期値をプロット
             plot3(satellites{j}(1,1), satellites{j}(1,2), satellites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
         end

@@ -226,10 +226,7 @@ cvx_begin
         %{
         [myu_max^2*eye(N), myu_mat.';
          myu_mat, eye(3)] >= 0;
-            %}
-        
-       
-        
+        %}   
 cvx_end
 cvx_status
 

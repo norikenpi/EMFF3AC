@@ -78,6 +78,7 @@ scp_mpc_EMFF_nonl_stabilization_min_energy_fmincon2.mでノミナル軌道を変
 kdtree.mで100基の衛星の中から1つの衛星に注目して、その周囲の衛星を抽出する。ペア決めに使えそう。
 
 ＜4基にエナジーベースFB制御シミュレーション＞
+energy_base_4sat.m
 4基の衛星の初期状態決定
 
 while ペア間エネルギー0.1以上
