@@ -3,7 +3,7 @@
 
 num = 1;
 dt = 10;
-N = 10;
+N = 250;
 n = 0.0011; % 0.0011
 m = 1; % 1
 %u_max = 1e-9;
@@ -15,7 +15,6 @@ wire_length = 140*0.05*2*pi;
 wire_S = (0.2e-3)^2*pi;
 R_rho = rho * wire_length/wire_S; 
 I_max = sqrt(P_max/R_rho);
-
 myu_max = I_max * coilN * radius^2 * pi;
 
 d_avoid = radius*6;
@@ -57,13 +56,9 @@ B_d = dt*B; % 6num×3num
 d_target = 0.925;
 
 rr1 = d_target/(2*sqrt(3));
-if num == 2
-    rr1 = d_target/4;
-end
 rr2 = sqrt(2)*d_target/2;
 
 rr = [rr1,rr2];
-rr1 = rr(1);
 %s0 = [-2*rr1*cos(n*N*dt); sqrt(3)*rr1*sin(n*N*dt); rr1*sin(n*N*dt); 2*n*rr1*sin(n*N*dt); sqrt(3)*n*rr1*cos(n*N*dt); n*rr1*cos(n*N*dt)];
 %s0 = [rr1*sin(0); 2*rr1*cos(0); sqrt(3)*rr1*sin(0); n*rr1*cos(0); -2*n*rr1*sin(0); sqrt(3)*n*rr1*cos(0)];
 

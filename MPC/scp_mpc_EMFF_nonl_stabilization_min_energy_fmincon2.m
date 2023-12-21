@@ -50,8 +50,9 @@ disp(myu_max)
 d_avoid = radius*6;
 % 初期衛星間距離
 d_initial = d_avoid/2;
-s01 = [-d_initial; -d_initial; 0.00005; 0; 0; 0];
-s02 = [d_initial; d_initial; -0.00005; 0; 0; 0];
+s01 = [d_initial; d_initial; -0.00005; 0; 0; 0];
+s02 = [-d_initial; -d_initial; 0.00005; 0; 0; 0];
+s0 = adjust_cog([s01, s02], num); % 6num×1
 
 %dt=10の10ステップぐらいの最適化だったらこれくらいのtrust regionでいい。
 %delta_r = d_avoid/10;
@@ -103,7 +104,6 @@ B_d = dt*B_; % 6num×3num
 rr1 = d_target/4;
 rr2 = sqrt(2)*d_target/2;
 rr = [rr1,rr2];
-s0 = adjust_cog([-s01, -s02], num); % 6num×1
 
 % 微分式のセル
 func_cell = create_func_cell();
@@ -260,7 +260,7 @@ disp("最小化したい評価値")
 disp(sum(abs(error)))
 %% 図示
 
-%plot_s(s, num, N, rr, d_target)
+plot_s(s, num, N, rr, d_target)
 
 %% 関数リスト
 function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_max, P, Q, R, s0, d_avoid, A, b)
