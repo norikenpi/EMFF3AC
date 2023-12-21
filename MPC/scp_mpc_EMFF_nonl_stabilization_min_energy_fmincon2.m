@@ -28,7 +28,7 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 250;
+N = 10;
 
 %u_max = 1e-9;
 coilN = 140;
@@ -40,21 +40,25 @@ wire_S = (0.2e-3)^2*pi;
 R_rho = rho * wire_length/wire_S; 
 I_max = sqrt(P_max/R_rho);
 myu_max = I_max * coilN * radius^2 * pi;
+disp("最大電力設定")
+disp(P_max)
 disp("最大電流設定")
 disp(I_max)
 disp("最大磁気モーメント設定")
 disp(myu_max)
 
-u_myu =  myu_list;
 d_avoid = radius*6;
 % 初期衛星間距離
 d_initial = d_avoid/2;
 s01 = [-d_initial; -d_initial; 0.00005; 0; 0; 0];
 s02 = [d_initial; d_initial; -0.00005; 0; 0; 0];
 
-delta_r = 0.03;
-delta_myu = myu_max*2;
+%dt=10の10ステップぐらいの最適化だったらこれくらいのtrust regionでいい。
+%delta_r = d_avoid/10;
+%delta_myu = myu_max/10;
 
+delta_r = d_avoid/10;
+delta_myu = myu_max/10;
 %% Hill方程式 宇宙ステーション入門 P108
 
 % 地球を周回する衛星の角速度
@@ -134,10 +138,10 @@ F = F_func(s13, myu_max, func_cell);
 s14 = A_d * s13 + B_d*F*u_myu(3*N-11:3*N-9);
 disp(s14)
 %}
-disp("線形化したEMFFダイナミクスを用いて、軌道を再計算。ちゃんと目標値になっていたらok")
+disp("線形化したEMFFダイナミクスを用いて、線形誤差を計算。小さかったら問題なし")
 l_s = P * u_myu + Q * s0 + R;
-disp(l_s(1:3))
-disp(l_s(7:9))
+disp(l_s(1:6) - s(1:6))
+
 
 
 %% 評価関数
@@ -256,7 +260,7 @@ disp("最小化したい評価値")
 disp(sum(abs(error)))
 %% 図示
 
-plot_s(s, num, N, rr, d_target)
+%plot_s(s, num, N, rr, d_target)
 
 %% 関数リスト
 function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_max, P, Q, R, s0, d_avoid, A, b)

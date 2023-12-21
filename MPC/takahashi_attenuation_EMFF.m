@@ -3,7 +3,7 @@
 
 num = 1;
 dt = 10;
-N = 250;
+N = 10;
 n = 0.0011; % 0.0011
 m = 1; % 1
 %u_max = 1e-9;
@@ -93,7 +93,7 @@ for i = 1:N
         if norm(myu1) > myu_max
             u = myu_max/2* u/norm(myu1);
             myu1 = myu_max/2 * myu1/norm(myu1);
-            disp("over myu1")
+            %disp("over myu1")
         end
         
     else 
@@ -109,8 +109,10 @@ for i = 1:N
 end
 
 satellites{1} = state(:,1:3);
+
+u_myu =  myu_list;
 plot_s(satellites, num, N, rr, d_target)
-disp("安定チェック")
+disp("各エネルギー")
 x_r = state(N+1,:).';
 kA = 2e-3; % 2e-3
 thetaP = pi/6;
@@ -120,7 +122,7 @@ mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
        -1/(n*tan(thetaP)),0,1/n, 0,0,0];
 error = mat * x_r;
 disp(error)
-disp("最小化したい評価値")
+disp("エネルギー総和")
 disp(sum(abs(error)))
 
 
