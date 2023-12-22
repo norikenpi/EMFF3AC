@@ -1,11 +1,10 @@
-
 %% パラメータ設定
+clear
 % 最終衛星間距離
 d_target = 0.925;
-rng(1)
 
-% 衛星数　2基or5基or9基
-num = 4;
+% 衛星数　2基or5基or9基 ここは2にしないとうまくいかない。
+num = 2;
 
 % 衛星質量
 m = 1; % 1
@@ -15,7 +14,7 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 10; %入力最適化の最適化ステップ
+N = 1;
 n = 0.0011; % 0.0011
 %u_max = 1e-9;
 coilN = 140;
@@ -63,117 +62,17 @@ param.d_avoid = d_avoid;
 param.d_initial = d_initial;
 param.rr = rr;
 
-satellites = cell(1, num);
-pair_set = zeros(4, 2, N);  % 4x2xTのゼロ配列の初期化
-
-
-s01 = [-d_initial+(2*rand-1)*1e-4; -d_initial+(2*rand-1)*1e-4;  0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s02 = [-d_initial+(2*rand-1)*1e-4;  d_initial+(2*rand-1)*1e-4; -0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s03 = [ d_initial+(2*rand-1)*1e-4;  d_initial+(2*rand-1)*1e-4;  0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s04 = [ d_initial+(2*rand-1)*1e-4; -d_initial+(2*rand-1)*1e-4; -0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s0 = adjust_cog([s01, s02, s03, s04], num); % 6num×1
-
-%各衛星初期状態決定
-s01 = s0(1:6);
-s02 = s0(7:12);
-s03 = s0(13:18);
-s04 = s0(19:24);
-
-E_border = 20;
-E_all = 1000;
-
-state1 = zeros(N,6);
-state2 = zeros(N,6);
-state3 = zeros(N,6);
-state4 = zeros(N,6);
-
-state1(1,:) = s01.';
-state2(1,:) = s02.';
-state3(1,:) = s03.';
-state4(1,:) = s04.';
-state_mat  = [s01.';s02.';s03.';s04.'];
-state_mat0 = state_mat;
-%% シミュレーション
-%エネルギーの総和がE_border以下だったら問題ない。
-i = 0;
-
-E_all_list = [];
-
-while E_all > E_border
-    i = i + 1;
-    N_step = i; 
-    % ペア組み
-    
-    pair_mat = make_pair(state_mat, param);
-    pair_set(:,:,i) = pair_mat;
-
-    % 最大電力割り当て
-    % ペアごとに割り振る感じがいいのかな。
-    counts = count_pair_num(pair_mat);
-
-    % 各ペア制御入力計算（for ペアlist　座標平行移動）
-    % ペアでforを回して、一発で現在の状態と最大磁気モーメントから制御入力とペア間に働く力が出る関数がほしい。
-    % 最適化ベースになるとここが変わるだけ。
-
-
-    %pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param);
-
-
-    pair_mat_thrust = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
-
-    %disp(pair_mat_thrust1)
-    %disp(pair_mat_thrust)
-
-    % 推力計算
-    % ペアでforを回して、各衛星に働く力を計算。
-    thrust_mat = calc_thrust(pair_mat, pair_mat_thrust);
-    %
-
-    % 状態量更新
-    % 現在の状態量と推力を入れたら次の時刻の状態量が出てくる関数
-    state_mat = update_state(state_mat, thrust_mat, param);
-    
-    state1(i+1,:) = state_mat(1,:);
-    state2(i+1,:) = state_mat(2,:);
-    state3(i+1,:) = state_mat(3,:);
-    state4(i+1,:) = state_mat(4,:);
-
-    %総エネルギー計算
-    %次の時刻の状態から総エネルギーを計算
-
-    E_all = calc_E_all(state_mat, param);
-    E_all_list = [E_all_list;E_all ];
-    disp("エネルギー総和")
-    disp(N_step)
-    disp(E_all)
-    
-    if N_step == 260
-        %ペアを組んでいる衛星が
-        break
-    end
-
-end
-disp("シミュレーション終了")
-disp("シミュレーション時間")
-total_seconds = N_step*dt;
-
-% 時間、分、秒への変換
-hours = floor(total_seconds / 3600);
-minutes = floor(mod(total_seconds, 3600) / 60);
-seconds = mod(total_seconds, 60);
-
-% 結果の表示
-disp(['時間: ' num2str(hours) ' 時間 ' num2str(minutes) ' 分 ' num2str(seconds) ' 秒']);
-
+s0 = [d_initial; d_initial; -0.00005; 0; 0; 0];
+[u, u_myu, s] = calc_nominal_input(s0, param);
+u_myu111 = u_myu;
+%% 最適化2
+[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
+%[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
+%[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
 %% 図示
-satellites{1} = state1(:,1:3);
-satellites{2} = state2(:,1:3);
-satellites{3} = state3(:,1:3);
-satellites{4} = state4(:,1:3);
+plot_s(s, num, N, rr, d_target)
 
-plot_s(satellites, num, N_step, rr, d_target, pair_set)
-
-%% 関数リスト
+%% 関数リスト1
 
 function [u, u_myu, s] = calc_nominal_input(s0, param)
     d_target = param.d_target;
@@ -259,14 +158,11 @@ function [u, u_myu, s] = calc_nominal_input(s0, param)
                 myu1 = myu_max * myu1/norm(myu1);
                 %disp("over myu1")
             end
+            
         else 
             k_avoid = 1e-1;
-            func_cell = create_func_cell();
-            s_val = [X;-X];
-            F = F_func(s_val, myu_max, func_cell);
-            myu1 = -myu_max * X(1:3)/norm(X(1:3));
-            u = F * myu1;
-            disp("nominal_avoid")
+            u = k_avoid * u_max * X(1:3)/norm(X(1:3));
+            disp("avoid")
         end
         %u = [0;0;0];
         myu_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
@@ -291,10 +187,13 @@ function [u, u_myu, s] = calc_nominal_input(s0, param)
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
     error = mat * x_r;
+    disp("エネルギー総和")
+    disp(sum(abs(error)))
 end
 
 
 function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
+    tic;
     d_target = param.d_target;
     num = 2;
     m = param.m; 
@@ -357,6 +256,7 @@ function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
     % 微分式のセル
     func_cell = create_func_cell();
     %u_myu = myu_list;
+    
     % ノミナル軌道sによってPとQが変わる
     A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
     B_list = create_B_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
@@ -414,6 +314,7 @@ function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+    
     [x, fval, exitflag, output] = solveOptimizationProblem(n, u_myu, N, myu_max, P, Q, R, s0, d_avoid, A, b);
     % 解はnum×N×3自由度
     %{
@@ -445,7 +346,7 @@ function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
     u_myu = x;
     myu_mat = reshape(x, 3, N).'; 
     
-    %{
+    
     disp("最大電力")
     disp(R_rho*(max(vecnorm(myu_mat,2,2))/(coilN * radius^2 * pi))^2)
     
@@ -454,15 +355,15 @@ function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
     
     disp("最大磁気モーメント myu_max")
     disp(max(vecnorm(myu_mat,2,2)))
-    %}
-    %error = mat * s(1:6);
-    %disp(error)
     
-    %disp("エネルギー総和")
-    %disp(sum(abs(error)))
+    error = mat * s(1:6);
+    disp(error)
+    
+    disp("エネルギー総和")
+    disp(sum(abs(error)))
     
     
-
+    time = toc
 end
 
 
@@ -480,7 +381,6 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
                        'Algorithm', 'sqp', ...
                        'TolFun', 1e-6, ...
                        'TolX', 1e-6, ...
-                       'Display', 'off',...
                        'TolCon', 1e-6, ...
                        'MaxIterations', 400, ...
                        'StepTolerance', 1e-6);
@@ -499,16 +399,11 @@ function f = objectiveFunction(n, x, P, Q, R, s0)
     kA = 2e-3;
     thetaP = pi/6;
     %relative_mat = [eye(6),-eye(6)];
-    
     mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    %{
-    mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
-           2,0,0,0,1/n,0;
-           0,0,0,-1/(n*tan(thetaP)),0,1/n];
-%}
+    
     f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))); % xを用いた計算
 end
 
@@ -790,6 +685,92 @@ function s = adjust_cog(s_mat, num)
     end
 end
 
+function plot_s(s, num, N, rr, d_target)
+    % 2衛星の動画を表示。
+    %3次元座標
+    data = reorderMatrix2(s);
+    satellites = cell(1, num);
+
+    % 衛星インスタンス生成
+    for i = 1:num
+        satellites{i} = zeros(N, 3);
+    end
+    
+    % 衛星データ格納
+    for i = 1:N
+        for j = 1:num
+            satellites{j}(i,:) = data(3*num*(i-1)+3*(j-1)+1:3*num*(i-1)+3*(j-1)+3).';
+        end
+    end
+    assignin('base', 'satellites', satellites)
+
+    % ビデオライターオブジェクトの作成
+    v = VideoWriter('points_motion_3D.avi'); % AVIファイル形式で動画を保存
+    % 画質の設定（例：品質を最大に）
+    v.Quality = 100;
+    open(v);
+    
+    % フィギュアの作成
+    figure;
+    axis equal;
+    xlim([-d_target*1.5, d_target*1.5]/3); % x軸の範囲を調整
+    ylim([-d_target*1.5, d_target*1.5]/3); % y軸の範囲を調整
+    zlim([-d_target*1.5, d_target*1.5]/3); % z軸の範囲を調整
+    hold on;
+    grid on; % グリッドを表示
+    
+    set(gca, 'ZDir', 'reverse')
+    
+    % 軸のラベルを設定
+    xlabel('X[m](地心方向)');
+    ylabel('Y[m](軌道進行方向)');
+    zlabel('Z[m](軌道面垂直方向)');
+    
+    theta = linspace(0, 2 * pi, 100); % 0から2πまでの角度を生
+    colors = hsv(num); % HSVカラースペースを使用してN個の異なる色を生成
+    
+    % 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
+    for i = 1:1:N
+        cla;
+        
+        for j = 1:length(rr)
+            % レコード盤軌道をプロット
+            %x1 = -2*rr(j)*cos(theta); % x座標を計算
+            %y1 = sqrt(3)*rr(j)*sin(theta); % y座標を計算
+            %z1 = rr(j)*sin(theta);
+            x1 = rr(j)*sin(theta);% x座標を計算
+            y1 = 2*rr(j)*cos(theta); % y座標を計算2*rr(j)*cos(theta);
+            z1 = sqrt(3)*rr(j)*sin(theta);
+            plot3(x1, y1, z1, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 1); % 円を灰色で描画
+        end
+
+        % x軸方向の点線を描画
+        y_position = -1:0.1:1; % x軸方向の点線のx座標を指定
+        x_position = zeros(size(y_position)); % y座標はすべて0に設定
+        plot(x_position, y_position, 'k--', 'LineWidth', 1.5); % 点線を描画
+       
+        for j = 1:num
+            % 軌道をプロット
+            plot3(satellites{j}(1:N,1), satellites{j}(1:N,2), satellites{j}(1:N,3), '-', 'Color', colors(j,:));
+            % 衛星をプロット
+            plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 60, 'Color', colors(j,:));
+            % 衛星の初期値をプロット
+            plot3(satellites{j}(1,1), satellites{j}(1,2), satellites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
+        end
+        % 視点を変更
+        azimuth = 225; % 方位角
+        elevation = 30; % 仰角
+        view(azimuth, elevation);
+    
+        drawnow;
+        frame = getframe(gcf);
+        writeVideo(v, frame);
+    end
+    
+    % ビデオの保存
+    close(v);
+    
+end
 
 function B = reorderMatrix2(A)
     idx = find(mod(1:length(A), 6) == 1 | mod(1:length(A), 6) == 2 | mod(1:length(A), 6) == 3);
@@ -827,216 +808,10 @@ end
 
 
 
-function pair_mat = make_pair(state_mat, param)
-    pair_mat = [1,1;
-                2,2;
-                3,3;
-                4,4];
-
-    pair_candidate = calc_pair_candidate(state_mat, param);
-    for i = 1:4
-        delta_E_max = 0;
-        pair = 0;
-        for j = pair_candidate{i}
-            state = state_mat(j,:) - state_mat(i,:);
-            delta_E = calc_E(state, param);
-            %disp(delta_v)
-            if delta_E > delta_E_max
-                delta_E_max = delta_E;
-                pair = j;
-            end
-            
-        end
-        pair_mat(i,2) = pair;
-    end
-    
-
-    pair_mat = [1,2;
-                2,3;
-                3,4;
-                4,1];
 
 
-end
-
-function pair_candidate = calc_pair_candidate(state_mat, param)
-    radius = param.radius;
-    X = state_mat(:,1:3);
-    % KDツリーを構築
-    tree = KDTreeSearcher(X);
-    pair_candidate = cell(1, 4);
-    for i = 1:4
-        queryIndex = i;
-        queryPoint = X(queryIndex, :);
-        % 検索範囲を設定（例：0.2）
-        range = 1;
-    
-        % 最小距離を設定（例：0.05）
-        minDistance = radius*6;
-        % 検索範囲内の点のインデックスを取得
-        idx = rangesearch(tree, queryPoint, range);
-        
-        % 最小距離よりも遠い点をフィルタリング
-        pair_candidate{i} = idx{1}(vecnorm(X(idx{1}, :) - queryPoint, 2, 2) > minDistance);
-        
-    end
-end
 
 
-function counts = count_pair_num(pair_mat)
-    counts = histcounts(pair_mat, 1:5); 
-end
-
-function pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param)
-    pair_mat_thrust = zeros(3, 2, 4);
-    for i = 1:4
-        sat1 = pair_mat(i,1);
-        sat2 = pair_mat(i,2);
-        X = state_mat(sat1,:).' - state_mat(sat2,:).';
-        u = calc_u(X, param);
-        pair_mat_thrust(:,1,i) = u/(counts(sat1)*counts(sat2));
-        pair_mat_thrust(:,2,i) = -u/(counts(sat1)*counts(sat2));
-    end
-end
-
-function thrust_mat = calc_thrust(pair_mat, pair_mat_thrust)
-    thrust_mat = zeros(3,4);
-    for i = 1:4 
-        [row, col] = find(pair_mat == i);
-        thrust_sum = zeros(3,1);
-        for j = 1:length(row)
-            thrust_sum = thrust_sum + pair_mat_thrust(:,col(j),row(j));
-        end
-        thrust_mat(:,i) = thrust_sum;
-    end
-end
-
-function pair_mat_thrust = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
-    pair_mat_thrust = zeros(3, 2, 4);
-    for i = 1:4
-        sat1 = pair_mat(i,1);
-        sat2 = pair_mat(i,2);
-        X = state_mat(sat1,:).' - state_mat(sat2,:).';
-        u = calc_optimal_u(X, param);
-        pair_mat_thrust(:,1,i) = u/(counts(sat1)*counts(sat2));
-        pair_mat_thrust(:,2,i) = -u/(counts(sat1)*counts(sat2));
-    end
-end
-
-function state_mat = update_state(state_mat, thrust_mat, param)
-    n = param.n;
-    m = param.m;
-    dt = param.dt;
-    A = [0, 0, 0, 1/2, 0, 0;
-         0, 0, 0, 0, 1/2, 0;
-         0, 0, 0, 0, 0, 1/2;
-         3*n^2, 0, 0, 0, 2*n, 0;
-         0, 0, 0, -2*n, 0, 0;
-         0, 0, -n^2, 0, 0, 0]+...
-        [3*n^2, 0, 0, 1, 2*n, 0;
-         0, 0, 0, -2*n, 1, 0;
-         0, 0, -n^2, 0, 0, 1;
-         0, 0, 0, 0, 0, 0;
-         0, 0, 0, 0, 0, 0;
-         0, 0, 0, 0, 0, 0]/2; 
-    
-    B = [0, 0, 0;
-         0, 0, 0;
-         0, 0, 0;
-         1/m, 0, 0;
-         0, 1/m, 0;
-         0, 0, 1/m]; % 6×3
-    
-    % 2衛星に関する離散時間状態方程式の係数行列
-    A_d = eye(6)+ dt*A; % 6num×6num
-    B_d = dt*B; % 6num×3num
-    for i = 1:4
-        u = thrust_mat(:,i);
-        state_mat(i,:) = (A_d *  state_mat(i,:).' + B_d * u).';
-    end
-end
-
-function E_all = calc_E_all(state_mat, param)
-    E_all = 0;
-    for i = 1:4
-        state = state_mat(i,:);
-        E_all = E_all + calc_E(state, param); 
-    end
-end
-
-function E = calc_E(state, param)
-    n = param.n;
-    kA = 2e-3;
-    thetaP = pi/6;
-    %relative_mat = [eye(6),-eye(6)];
-    
-    mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
-           2,0,0,0,1/n,0;
-           0,0,0,-1/(n*tan(thetaP)),0,1/n;
-           -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    E = sum(abs(mat * state.'));
-end
-
-function u = calc_u(X, param)
-    d_avoid = param.d_avoid;
-    n = param.n;
-    coilN = param.coilN;
-    radius = param.radius;
-    I_max = param.I_max;
-    myu_max = param.myu_max;
-    X = X/2;
-    if norm(X(1:3)) > d_avoid/2
-        C110 = coord2const(X, n);
-        kA = 2;%2e-3;
-        kB = 1;%1e-3;
-        C1 = C110(1); C4 = C110(4); C5 = C110(5);
-        C2 = C110(2); C3 = C110(3);
-        r_xy = C110(7); phi_xy = C110(8); %phi_xy = atan2(o_r_ji(1),o_r_ji(2)/2);
-        C4d = 3*n*C1/kA; %目標値
-        dC4 = C4-C4d; %C4偏差
-        thetaP = pi/6;
-        C5d = C2/tan(thetaP);
-        u_A = n*[1/2*dC4;-C1];  
-        u = [kA*u_A;-kB*n*(C5-C5d)];
-        r = X(1:3).'*2; % 2衛星を考慮して2倍にする
-        [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max);
-        %u = [0;0;0];
-        if norm(myu1) > myu_max
-            u = myu_max* u/norm(myu1);
-            myu1 = myu_max * myu1/norm(myu1);
-            %disp("over myu1")
-        end
-        disp(norm(X(1:3)))
-        
-    else 
-        k_avoid = 1e-1;
-        func_cell = create_func_cell();
-        s_val = [X;-X];
-        F = F_func(s_val, myu_max, func_cell);
-        myu1 = myu_max * X(1:3)/norm(X(1:3));
-        u = -F * myu1;
-        disp("avoid")
-        disp(norm(X(1:3)))
-
-        
-    end
-end
-
-
-function u = calc_optimal_u(X, param)
-    % Xは相対位置ベクトル
-    myu_max = param.myu_max;
-    s0 = X/2;
-    [u, u_myu, s] = calc_nominal_input(s0, param);
-    [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
-    [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
-    [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
-    myu1 = u_myu(end-2:end);
-    func_cell = create_func_cell();
-    s0 = [X/2;-X/2];
-    F = F_func(s0, myu_max, func_cell);
-    u = F*myu1;
-end
 
 function [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max)
     % 原点の2倍の距離で計算
@@ -1050,6 +825,7 @@ function [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max)
     myu1 = myu02;
     myu2 = myu01;
 end
+
 
 function D = calculateD(r, m1)
     x = r(1);
@@ -1075,83 +851,3 @@ end
 
 
 
-
-function plot_s(satellites, num, N, rr, d_target, pair_set)
-    % 2衛星の動画を表示。
-    %3次元座標
-
-    % ビデオライターオブジェクトの作成
-    v = VideoWriter('points_motion_3D.avi'); % AVIファイル形式で動画を保存
-    % 画質の設定（例：品質を最大に）
-    v.Quality = 100;
-    open(v);
-    
-    % フィギュアの作成
-    figure;
-    axis equal;
-    xlim([-d_target*1.5, d_target*1.5]/3); % x軸の範囲を調整
-    ylim([-d_target*1.5, d_target*1.5]/3); % y軸の範囲を調整
-    zlim([-d_target*1.5, d_target*1.5]/3); % z軸の範囲を調整
-    hold on;
-    grid on; % グリッドを表示
-    
-    set(gca, 'ZDir', 'reverse')
-    
-    % 軸のラベルを設定
-    xlabel('X[m](地心方向)');
-    ylabel('Y[m](軌道進行方向)');
-    zlabel('Z[m](軌道面垂直方向)');
-    
-    theta = linspace(0, 2 * pi, 100); % 0から2πまでの角度を生
-    colors = hsv(num); % HSVカラースペースを使用してN個の異なる色を生成
-    
-    % 各フレームでの点の位置をプロットし、そのフレームを動画に書き込む
-    for i = 1:10:N
-        cla;
-        
-        for j = 1:length(rr)
-            % レコード盤軌道をプロット
-            %x1 = -2*rr(j)*cos(theta); % x座標を計算
-            %y1 = sqrt(3)*rr(j)*sin(theta); % y座標を計算
-            %z1 = rr(j)*sin(theta);
-            x1 = rr(j)*sin(theta);% x座標を計算
-            y1 = 2*rr(j)*cos(theta); % y座標を計算2*rr(j)*cos(theta);
-            z1 = sqrt(3)*rr(j)*sin(theta);
-            plot3(x1, y1, z1, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 1); % 円を灰色で描画
-        end
-
-        % x軸方向の点線を描画
-        y_position = -1:0.1:1; % x軸方向の点線のx座標を指定
-        x_position = zeros(size(y_position)); % y座標はすべて0に設定
-        plot(x_position, y_position, 'k--', 'LineWidth', 1.5); % 点線を描画
-       
-        for j = 1:num
-            % 軌道をプロット
-            plot3(satellites{j}(1:N,1), satellites{j}(1:N,2), satellites{j}(1:N,3), '-', 'Color', colors(j,:));
-            % 衛星をプロット
-            plot3(satellites{j}(i,1), satellites{j}(i,2), satellites{j}(i,3), '.', 'MarkerSize', 60, 'Color', colors(j,:));
-            % 衛星の初期値をプロット
-            plot3(satellites{j}(1,1), satellites{j}(1,2), satellites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
-        end
-
-        for j = 1:4
-            % ペアリングを表示
-            sat1 = pair_set(j,1,i);
-            sat2 = pair_set(j,2,i);
-            plot3([satellites{sat1}(i,1), satellites{sat2}(i,1)], [satellites{sat1}(i,2), satellites{sat2}(i,2)], [satellites{sat1}(i,3), satellites{sat2}(i,3)],  '-', 'Color', 'k', 'LineWidth', 2);
-        end
-
-        % 視点を変更
-        azimuth = 135; % 方位角
-        elevation = 30; % 仰角
-        view(azimuth, elevation);
-    
-        drawnow;
-        frame = getframe(gcf);
-        writeVideo(v, frame);
-    end
-    
-    % ビデオの保存
-    close(v);
-    
-end
