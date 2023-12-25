@@ -928,8 +928,10 @@ function pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param)
         sat2 = pair_mat(i,2);
         X = state_mat(sat1,:).' - state_mat(sat2,:).';
         u = calc_u(X, param);
-        pair_mat_thrust(:,1,i) = u/(counts(sat1)*counts(sat2));
-        pair_mat_thrust(:,2,i) = -u/(counts(sat1)*counts(sat2));
+        thrust = u/(counts(sat1)*counts(sat2));
+        % pair_mat_thrust(:,:,i) = [thrust,-thrust];
+        pair_mat_thrust(:,1,i) = thrust;
+        pair_mat_thrust(:,2,i) = -thrust;
     end
 end
 
@@ -947,13 +949,15 @@ end
 
 function pair_mat_thrust = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, 4);
-    for i = 1:4
+    parfor i = 1:4
         sat1 = pair_mat(i,1);
         sat2 = pair_mat(i,2);
         X = state_mat(sat1,:).' - state_mat(sat2,:).';
         u = calc_optimal_u(X, param);
-        pair_mat_thrust(:,1,i) = u/(counts(sat1)*counts(sat2));
-        pair_mat_thrust(:,2,i) = -u/(counts(sat1)*counts(sat2));
+        thrust = u/(counts(sat1)*counts(sat2));
+        pair_mat_thrust(:,:,i) = [thrust,-thrust];
+        % pair_mat_thrust(:,1,i) = u/(counts(sat1)*counts(sat2));
+        % pair_mat_thrust(:,2,i) = -u/(counts(sat1)*counts(sat2));
     end
 end
 
