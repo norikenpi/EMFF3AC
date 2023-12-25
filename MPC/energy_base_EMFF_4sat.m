@@ -1,6 +1,7 @@
 
 %% パラメータ設定
 % 最終衛星間距離
+tic;
 d_target = 0.925;
 rng(1)
 
@@ -98,6 +99,10 @@ state_mat0 = state_mat;
 i = 0;
 
 E_all_list = [];
+C4_list = [];
+C1_list = [];
+C5_list = [];
+C6_list = [];
 
 while E_all > E_border
     i = i + 1;
@@ -115,11 +120,11 @@ while E_all > E_border
     % ペアでforを回して、一発で現在の状態と最大磁気モーメントから制御入力とペア間に働く力が出る関数がほしい。
     % 最適化ベースになるとここが変わるだけ。
 
+    % エナジーベースのFB制御
+    pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param);
 
-    %pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param);
-
-
-    pair_mat_thrust = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
+    % 最適化を行った入力を計算
+    % pair_mat_thrust = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
 
     %disp(pair_mat_thrust1)
     %disp(pair_mat_thrust)
@@ -141,8 +146,17 @@ while E_all > E_border
     %総エネルギー計算
     %次の時刻の状態から総エネルギーを計算
 
-    E_all = calc_E_all(state_mat, param);
-    E_all_list = [E_all_list;E_all ];
+    EandCs= calc_E_all(state_mat, param);
+    E_all = EandCs(1);
+    C4 = EandCs(2);
+    C1 = EandCs(3);
+    C5 = EandCs(4);
+    C6 = EandCs(5);
+    E_all_list = [E_all_list;E_all];
+    C4_list = [C4_list;C4];
+    C1_list = [C1_list;C1];
+    C5_list = [C5_list;C5];
+    C6_list = [C6_list;C6];
     disp("エネルギー総和")
     disp(N_step)
     disp(E_all)
@@ -165,6 +179,14 @@ seconds = mod(total_seconds, 60);
 % 結果の表示
 disp(['時間: ' num2str(hours) ' 時間 ' num2str(minutes) ' 分 ' num2str(seconds) ' 秒']);
 
+%　エネルギー推移
+figure_E_all(E_all_list)
+figure_E_all(C4_list)
+figure_E_all(C1_list)
+figure_E_all(C5_list)
+figure_E_all(C6_list)
+
+time = toc
 %% 図示
 satellites{1} = state1(:,1:3);
 satellites{2} = state2(:,1:3);
@@ -174,6 +196,18 @@ satellites{4} = state4(:,1:3);
 plot_s(satellites, num, N_step, rr, d_target, pair_set)
 
 %% 関数リスト
+
+function figure_E_all(E_all_list)
+    figure
+    % 時間軸を生成（ここでは1から250までの整数を使用）
+    time = 1:length(E_all_list);
+    
+    % データをプロット
+    plot(time, E_all_list);
+    xlabel('Time');
+    ylabel('Value');
+    title('Time Series Plot');
+end
 
 function [u, u_myu, s] = calc_nominal_input(s0, param)
     d_target = param.d_target;
@@ -957,14 +991,14 @@ function state_mat = update_state(state_mat, thrust_mat, param)
 end
 
 function E_all = calc_E_all(state_mat, param)
-    E_all = 0;
+    E_all = [0;0;0;0;0];
     for i = 1:4
         state = state_mat(i,:);
         E_all = E_all + calc_E(state, param); 
     end
 end
 
-function E = calc_E(state, param)
+function E_data = calc_E(state, param)
     n = param.n;
     kA = 2e-3;
     thetaP = pi/6;
@@ -975,6 +1009,8 @@ function E = calc_E(state, param)
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
     E = sum(abs(mat * state.'));
+    Cs = abs(mat * state.');
+    E_data = [E; Cs];
 end
 
 function u = calc_u(X, param)
