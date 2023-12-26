@@ -1,8 +1,8 @@
 %satteliteというcell 配列を入れてそこに位置を記録していこう。
 %高橋座標系になっていることに注意。
 clear;
-dt = 10;
-N = 100;
+dt = 30;
+N = 40;
 num = 2;
 n = 0.0011; % 0.0011
 m = 1; % 1
@@ -143,8 +143,8 @@ s0 = adjust_cog([s01, s02], num); % 6num×1
 %delta_myu = myu_mx/10;
 
 % trust region
-delta_r = d_avoid/10;
-delta_myu = myu_max/10;
+delta_r = 2;
+delta_myu = myu_max*2;
 
 % 成功時の拡大係数
 beta_succ = 1.1;  
@@ -192,9 +192,9 @@ func_cell = create_func_cell();
 
 
 %% 検証
-disp("scpの精度検証")
-for k = 1:10
 
+for k = 1:5
+    disp("scpの精度検証")
     % ノミナル軌道sによってPとQが変わる
     A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
     B_list = create_B_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
@@ -267,38 +267,58 @@ for k = 1:10
     Q_real = A_mat2; 
     R_real = A_mat*C_mat; 
     
-    l_s = P * u_myu_new + Q * s0 + R;
+    %l_s = P * u_myu_new + Q * s0 + R;
     
     
     % far-fieldで時系列状態を計算しなおしたもの評価関数を計算。
     f_real = objectiveFunction(n, x_new, P_real, Q_real, R_real, s0);
-
-    disp("予想減少")
+    disp("最適化前評価関数")
+    disp(f_old)
+    disp("最適化後予想評価関数")
+    disp(f_approx)
+    disp("最適化後実際評価関数")
+    disp(f_real)
+    disp("予想評価関数減少")
     delta_tilde = f_old - f_approx;
     disp(delta_tilde)
 
-    disp("実際の減少")
+    disp("実際評価関数減少")
     delta = f_old - f_real;
     disp(delta)
     % 減少比の計算
     rho_k = delta / delta_tilde;
 
     % 信頼領域の更新
+    % 線形化誤差が大きかったらtrust regionを狭めてやり直し。
     if delta > alpha * delta_tilde
         disp("最適化成功")
         delta_r = delta_r * beta_succ; % 成功時、信頼領域を拡大
         delta_myu = delta_myu * beta_succ; % 成功時、信頼領域を拡大
+        disp("更新された trust region")
+        disp("位置trust region")
+        disp(delta_r)
+        disp("磁気モーメント　trust region")
+        disp(delta_myu)
         s = s_new; % 新しい点を更新
         u_myu = u_myu_new; % 新しい点を更新
-        if f_old > f_best
+        f_old = f_real;
+        if f_real < f_best
             disp("解更新")
             s_best = s; % より良い解が見つかった場合、更新
             u_myu_best = u_myu; % より良い解が見つかった場合、更新
+            f_best = f_real;
+            disp("ベスト評価関数")
+            disp(f_best)
         end
     else
         disp("最適化失敗")
         delta_r = delta_r * beta_fail; % 成功時、信頼領域を拡大
         delta_myu = delta_myu * beta_fail; % 成功時、信頼領域を拡大
+        disp("更新された trust region")
+        disp("位置trust region")
+        disp(delta_r)
+        disp("磁気モーメント　trust region")
+        disp(delta_myu)
     end
     
     % 収束判定（任意の閾値に基づく）
