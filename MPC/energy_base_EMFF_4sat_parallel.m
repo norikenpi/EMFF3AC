@@ -13,7 +13,7 @@ m = 1; % 1
 %m = 0.38; % 1
  
 % タイムステップ(s)
-dt = 10;
+dt = 30;
 
 % 時間 シミュレーション時間はN×dt秒250
 N = 10; %入力最適化の最適化ステップ
@@ -80,7 +80,7 @@ s02 = s0(7:12);
 s03 = s0(13:18);
 s04 = s0(19:24);
 
-E_border = 20;
+E_border = 25*num;
 E_all = 1000;
 
 state1 = zeros(N,6);
@@ -161,7 +161,7 @@ while E_all > E_border
     disp(N_step)
     disp(E_all)
     
-    if N_step == 260
+    if N_step == 500
         %ペアを組んでいる衛星が
         break
     end
@@ -180,11 +180,11 @@ seconds = mod(total_seconds, 60);
 disp(['時間: ' num2str(hours) ' 時間 ' num2str(minutes) ' 分 ' num2str(seconds) ' 秒']);
 
 %　エネルギー推移
-figure_E_all(E_all_list)
-figure_E_all(C4_list)
-figure_E_all(C1_list)
-figure_E_all(C5_list)
-figure_E_all(C6_list)
+figure_E_all(E_all_list, param)
+figure_E_all(C4_list, param)
+figure_E_all(C1_list, param)
+figure_E_all(C5_list, param)
+figure_E_all(C6_list, param)
 
 time = toc
 %% 図示
@@ -197,10 +197,10 @@ plot_s(satellites, num, N_step, rr, d_target, pair_set)
 
 %% 関数リスト
 
-function figure_E_all(E_all_list)
+function figure_E_all(E_all_list, param)
     figure
     % 時間軸を生成（ここでは1から250までの整数を使用）
-    time = 1:length(E_all_list);
+    time = (1:length(E_all_list))*param.dt;
     
     % データをプロット
     plot(time, E_all_list);
@@ -883,13 +883,13 @@ function pair_mat = make_pair(state_mat, param)
         end
         pair_mat(i,2) = pair;
     end
-    
-
     pair_mat = [1,2;
                 2,3;
                 3,4;
                 4,1];
 
+    
+    
 
 end
 
