@@ -28,7 +28,7 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 100;
+N = 30;
 
 %u_max = 1e-9;
 coilN = 140;
@@ -48,9 +48,9 @@ disp("最大磁気モーメント設定")
 disp(myu_max)
 
 d_avoid = radius*6;
-d_avoid2 = radius*9;
+%d_avoid2 = radius*9;
 % 初期衛星間距離
-d_initial = d_avoid/2;
+d_initial = d_avoid/2 *0.5;
 s01 = [d_initial; d_initial; -0.00005; 0; 0; 0];
 s02 = [-d_initial; -d_initial; 0.00005; 0; 0; 0];
 s0 = adjust_cog([s01, s02], num); % 6num×1
@@ -178,7 +178,7 @@ end
 % 不等式の大小を変えるために両辺マイナスをかけている。
 A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
 A2(:,end-N+1:end) = diag(calculate_norms(C2 * C1 * nominal_s));
-b2 = -d_avoid2 * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
+b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
 % 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
 % s - (PU + Qs0 + R) < δ
 % -s + (PU + Qs0 + R) < δ
@@ -305,7 +305,7 @@ function f = objectiveFunction(n, x, P, Q, R, s0, N)
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    w1 = 1000;
+    w1 = 100000/N;
     
     f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(x(end-N+1:end))); % xを用いた計算
 end

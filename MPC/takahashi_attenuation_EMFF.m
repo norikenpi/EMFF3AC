@@ -3,7 +3,7 @@
 clear
 num = 1;
 dt = 10;
-N = 100;
+N = 30;
 n = 0.0011; % 0.0011
 m = 1; % 1
 %u_max = 1e-9;
@@ -18,9 +18,9 @@ I_max = sqrt(P_max/R_rho);
 myu_max = I_max * coilN * radius^2 * pi;
 
 d_avoid = radius*6;
-d_avoid2 = radius*9;
+%d_avoid2 = radius*9;
 % 初期衛星間距離
-d_initial = d_avoid/2;
+d_initial = d_avoid/2 *0.5;
 
 s0 = [d_initial; d_initial; -0.00005; 0; 0; 0];
 
@@ -73,7 +73,7 @@ dist_list = zeros(N,1);
 for i = 1:N
     disp(i)
     X = state(i,:).';
-    dist_list(end-i+1) = d_avoid2/2 - norm(X(1:3));
+    dist_list(end-i+1) = d_avoid/2 - norm(X(1:3));
     if norm(X(1:3)) > 0%d_avoid2/2 %進入禁止範囲を設定しない場合は0
         C110 = coord2const(X, n);
         kA = 2;%2e-3;
