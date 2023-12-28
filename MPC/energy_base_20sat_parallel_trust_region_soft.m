@@ -269,7 +269,7 @@ while E_all > E_border
 
 
     
-    if N_step == 1
+    if N_step == 10
         %ペアを組んでいる衛星が
         break
     end
@@ -1099,22 +1099,22 @@ function pair_mat = make_pair(state_mat, param, N_step)
                     2,3;
                     3,4;
                     4,5;
-                    5,6;
-                    6,7;
-                    7,8;
-                    8,9;
-                    9,9;
-                    10,10;
-                    11,11;
-                    12,12;
-                    13,13;
-                    14,14;
-                    15,15;
-                    16,16;
-                    17,17;
-                    18,18;
-                    19,19;
-                    20,20];
+                    5,10;
+                    6,11;
+                    7,6;
+                    8,7;
+                    9,8;
+                    10,9;
+                    11,12;
+                    12,13;
+                    13,14;
+                    14,15;
+                    15,20;
+                    16,11;
+                    17,16;
+                    18,17;
+                    19,18;
+                    20,19];
     
     
     
@@ -1224,8 +1224,8 @@ end
 
 function pair_mat_thrust = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, param.num);
-    parfor i = 1:param.num
-    %for i = 1:param.num
+    %parfor i = 1:param.num
+    for i = 1:param.num
         
         sat1 = pair_mat(i,1);
         
