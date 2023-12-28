@@ -28,7 +28,7 @@ m = 1; % 1
 dt = 10;
 
 % 時間 シミュレーション時間はN×dt秒250
-N = 50;
+N = 100;
 
 %u_max = 1e-9;
 coilN = 140;
@@ -120,7 +120,7 @@ B_mat = create_B_mat(B_list, num, N);
 A_mat2 = create_A_mat2(A_list, num, N);
 C_mat = create_C_mat(C_list, num, N);
 
-P = A_mat*B_mat; %6Nnum×3Nnum
+P = [A_mat*B_mat, zeros(2*6*N,N)]; %6Nnum×3Nnum
 Q = A_mat2; 
 R = A_mat*C_mat; 
 %{
@@ -140,7 +140,7 @@ s14 = A_d * s13 + B_d*F*u_myu(3*N-11:3*N-9);
 disp(s14)
 %}
 disp("線形化したEMFFダイナミクスを用いて、線形誤差を計算。小さかったら問題なし")
-l_s = P * u_myu + Q * s0 + R;
+l_s = P * [u_myu;dist_list] + Q * s0 + R;
 disp(l_s(1:6) - s(1:6))
 
 
@@ -177,6 +177,7 @@ end
 % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
 % 不等式の大小を変えるために両辺マイナスをかけている。
 A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
+A2(:,end-N+1:end) = diag(calculate_norms(C2 * C1 * nominal_s));
 b2 = -d_avoid2 * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
 % 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
 % s - (PU + Qs0 + R) < δ
@@ -188,7 +189,7 @@ b3 = [delta_r * ones(6*N*num, 1) - s + Q * s0 + R; delta_r * ones(6*N*num, 1) + 
 % 不等式制約4 (磁気モーメントの変化量はδ2以下)
 % U2 - U1 < δ
 % U1 - U2 < δ
-A4 = [-eye(N*3); eye(N*3)];
+A4 = [[-eye(N*3),zeros(N*3,N)]; [eye(N*3),zeros(N*3,N)]];
 b4 = [delta_myu * ones(3*N, 1) - u_myu; delta_myu * ones(3*N, 1) + u_myu];
 %A = [A2; A3; A4];
 %b = [b2; b3; b4];
@@ -208,8 +209,8 @@ mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
        0,0,0,-1/(n*tan(thetaP)),0,1/n;
        -1/(n*tan(thetaP)),0,1/n, 0,0,0];
 
-[x, fval, exitflag, output] = solveOptimizationProblem(n, u_myu, N, myu_max, P, Q, R, s0, d_avoid, A, b);
-disp(exitflag)
+[x, fval, exitflag, output] = solveOptimizationProblem(n, [u_myu;dist_list], N, myu_max, P, Q, R, s0, d_avoid, A, b);
+disp(fval)
 %{
 % 解はnum×N×3自由度
 cvx_begin quiet
@@ -247,8 +248,8 @@ cvx_status
 % 衛星の状態
 s = P * x + Q * s0 + R;
 s1 = s;
-u_myu = x;
-myu_mat = reshape(x, 3, N).'; 
+u_myu = x(1:3*N);
+myu_mat = reshape(u_myu, 3, N).'; 
 disp("最大磁気モーメント myu_max")
 disp(max(vecnorm(myu_mat,2,2)))
 
@@ -287,7 +288,7 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
                        'StepTolerance', 1e-6);
 
 
-    fun =  @(x) objectiveFunction(n, x, P, Q, R, s0);
+    fun =  @(x) objectiveFunction(n, x, P, Q, R, s0, N);
 
     c_ceq = @(x) nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid);
 
@@ -295,7 +296,7 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
     [x, fval, exitflag, output] = fmincon(fun, x0, A, b, Aeq, beq, lb, ub, c_ceq, options);
 end
 
-function f = objectiveFunction(n, x, P, Q, R, s0)
+function f = objectiveFunction(n, x, P, Q, R, s0, N)
     % 目的関数の計算
     kA = 2e-3;
     thetaP = pi/6;
@@ -304,8 +305,9 @@ function f = objectiveFunction(n, x, P, Q, R, s0)
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+    w1 = 1000;
     
-    f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))); % xを用いた計算
+    f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(x(end-N+1:end))); % xを用いた計算
 end
 
 function [c, ceq] = nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid)

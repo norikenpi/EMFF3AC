@@ -83,12 +83,10 @@ energy_base_4sat.mでエナジーベースの4衛星の展開を実装。動的�
 L119~L122を変えるとエナジーベースと最適化ベースで変えられる。
 L1031~L1033で何回scpするかを変えられる。
 L864でペア決めをやってる
-\
+energy_base_4sat_parallel.mでenergy_base_4sat.m の並列化。
 
+scp_mpc_EMFF_nonl_optimal_input_trust_region.mはtrust regionを動的に変更するscp。検証するために毎回PQRを計算してるの良くない。
+energy_base_4sat.mでエナジーベースの4衛星の展開を実装。動的なペア決めも実装。
 
-
-
-
-
-.l,
-,'
+scp_mpc_EMFF_nonl_optimal_input_trust_region_func.mはscp_mpc_EMFF_nonl_optimal_input_trust_region.mを関数化。
+energy_base_4sat_parallel_trust_region.mは、energy_base_4sat_parallel.mでenergy_base_4sat.mのtrust regionを動的に変更。avoidの処理も変更。検証するために毎回PQRを計算してるの良くない。

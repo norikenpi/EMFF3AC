@@ -1,35 +1,12 @@
-%% num基の衛星のSCP-MPC（線形不等式制約線形計画問題 linprog）
-% 最大入力を最小化
-% 進入禁止範囲を設定可能
-% 初めて実行する場合はR = -1にして進入禁止範囲制約を外してください。
-% 2回目以降の実行は、既にある軌道をノミナル軌道としてSCP-MPCを行います。
-% Daniel Morgan, et. al., “Spacecraft Swarm Guidance Using a Sequence of Decentralized Convex Optimizations”
-
-%% パラメータ設定
-% 進入禁止範囲(m)（進入禁止制約を設定しない場合は-1にしてください）
-tic;
-
-%これを外すと以下のエラーが出る。
-%cvx から double に変換できません。
-clearvars myu_mat
-clearvars s_mat
-
-% 最終衛星間距離
-d_target = 0.925;
-
-% 衛星数　2基or5基or9基
+%satteliteというcell 配列を入れてそこに位置を記録していこう。
+%高橋座標系になっていることに注意。
+clear;
+rng(1);
+dt = 30;
+N = 30;
 num = 2;
-
-% 衛星質量
+n = 0.0011; % 0.0011
 m = 1; % 1
-%m = 0.38; % 1
- 
-% タイムステップ(s)
-dt = 10;
-
-% 時間 シミュレーション時間はN×dt秒250
-N = 50;
-
 %u_max = 1e-9;
 coilN = 140;
 radius = 0.05;
@@ -40,6 +17,23 @@ wire_S = (0.2e-3)^2*pi;
 R_rho = rho * wire_length/wire_S; 
 I_max = sqrt(P_max/R_rho);
 myu_max = I_max * coilN * radius^2 * pi;
+func_cell = create_func_cell();
+
+% trust region
+delta_r = 1;
+delta_myu = myu_max*2;
+
+% 成功時の拡大係数
+beta_succ = 1.1;  
+
+% 失敗時の縮小係数
+beta_fail = 0.5; 
+
+% 成功の閾値
+alpha = 0.1;  
+
+
+
 disp("最大電力設定")
 disp(P_max)
 disp("最大電流設定")
@@ -47,28 +41,23 @@ disp(I_max)
 disp("最大磁気モーメント設定")
 disp(myu_max)
 
-d_avoid = radius*6;
-d_avoid2 = radius*9;
+d_avoid = radius*6; %0.30
+%d_avoid_nominal = d_avoid*1.5; %0.45
+d_max = 1;
 % 初期衛星間距離
 d_initial = d_avoid/2;
-s01 = [d_initial; d_initial; -0.00005; 0; 0; 0];
-s02 = [-d_initial; -d_initial; 0.00005; 0; 0; 0];
-s0 = adjust_cog([s01, s02], num); % 6num×1
 
-%dt=10の10ステップぐらいの最適化だったらこれくらいのtrust regionでいい。
-%delta_r = d_avoid/10;
-%delta_myu = myu_max/10;
+position0 = rand(3, 1);
+velocity0 = rand(3, 1);
+position0 = 1.414*d_initial * position0/norm(position0);
+velocity0 = 1e-4 * velocity0/norm(velocity0);
 
-delta_r = d_avoid/10;
-delta_myu = myu_max/10;
-%% Hill方程式 宇宙ステーション入門 P108
+s0 = [d_initial; d_initial; -0.00005; 0; 0; 0];
+%s0 = [position0;velocity0];
+u_list = zeros(3*N,1);
+myu_list = zeros(3*N,1);
+myu_list2 = zeros(3*N,1);
 
-% 地球を周回する衛星の角速度
-% n = sqrt(myu/r_star^3); % 地球を周回する衛星の角速度 宇宙ステーション入門 p107
-n = 0.0011; % 0.0011
-
-% 1衛星に関する状態方程式の係数行列
-% x_dot = A_ x + B_ u
 A = [0, 0, 0, 1/2, 0, 0;
      0, 0, 0, 0, 1/2, 0;
      0, 0, 0, 0, 0, 1/2;
@@ -80,7 +69,7 @@ A = [0, 0, 0, 1/2, 0, 0;
      0, 0, -n^2, 0, 0, 1;
      0, 0, 0, 0, 0, 0;
      0, 0, 0, 0, 0, 0;
-     0, 0, 0, 0, 0, 0]/2; % 6×6
+     0, 0, 0, 0, 0, 0]/2; 
 
 B = [0, 0, 0;
      0, 0, 0;
@@ -89,130 +78,160 @@ B = [0, 0, 0;
      0, 1/m, 0;
      0, 0, 1/m]; % 6×3
 
-%2衛星に関する状態方程式の係数行
-A_ = A;
-B_ = B;
-
-for i = 2:num
-    A_ = blkdiag(A_, A); % BにAを対角に追加
-    B_ = [B_; B]; % BにAを対角に追加
-end
-
 % 2衛星に関する離散時間状態方程式の係数行列
-A_d = eye(6*num) + dt*A_; % 6num×6num
-B_d = dt*B_; % 6num×3num
+A_d = eye(6)+ dt*A; % 6num×6num
+B_d = dt*B; % 6num×3num
 
-rr1 = d_target/4;
+
+
+d_target = 0.925;
+
+rr1 = d_target/(2*sqrt(3));
 rr2 = sqrt(2)*d_target/2;
+
 rr = [rr1,rr2];
 
-% 微分式のセル
-func_cell = create_func_cell();
-%u_myu = myu_list;
-
-% ノミナル軌道sによってPとQが変わる
-A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
-B_list = create_B_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
-C_list = create_C_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {C1, C2, ... ,CN}
-
-A_mat = create_A_mat(A_list, num, N);
-B_mat = create_B_mat(B_list, num, N);
-A_mat2 = create_A_mat2(A_list, num, N);
-C_mat = create_C_mat(C_list, num, N);
-
-P = A_mat*B_mat; %6Nnum×3Nnum
-Q = A_mat2; 
-R = A_mat*C_mat; 
-%{
-format long
-disp("1ステップ検証")
-F = F_func(s0, myu_max, func_cell);
-s11 = A_d * s0 + B_d*F*u_myu(3*N-2:3*N);
-disp(s11)
-F = F_func(s11, myu_max, func_cell);
-s12 = A_d * s11 + B_d*F*u_myu(3*N-5:3*N-3);
-disp(s12)
-F = F_func(s12, myu_max, func_cell);
-s13 = A_d * s12 + B_d*F*u_myu(3*N-8:3*N-6);
-disp(s13)
-F = F_func(s13, myu_max, func_cell);
-s14 = A_d * s13 + B_d*F*u_myu(3*N-11:3*N-9);
-disp(s14)
-%}
-disp("線形化したEMFFダイナミクスを用いて、線形誤差を計算。小さかったら問題なし")
-l_s = P * u_myu + Q * s0 + R;
-disp(l_s(1:6) - s(1:6))
-
-
-
-%% 評価関数
-
-%% 不等式制約
-
-
-
-% 不等式制約1(全ての入力は最大入力以下)
-% 最大入力との差が0より大きくなければならない。
-%A1 = [eye(3*N*num), -ones(3*N*num,1); -eye(3*N*num), -ones(3*N*num, 1)]; %6N×3Nnum+1
-%b1 = zeros(6*N*num, 1);%6Nnum×1
-
-
-% 不等式制約2 (衛星間距離はd_avoid以上)
-% ノミナルの状態プロファイルを設定
-nominal_s = s;
-% 状態ベクトルから位置ベクトルのみを抽出
-C01 = [eye(3),zeros(3)];
-C1 = [];
-for i = 1:num*N
-    C1 = blkdiag(C1, C01);
-end
-
-% 相対位置ベクトルを計算する行列
-C02 = [eye(3),-eye(3)];
-C2 = [];
-for i = 1:N
-    C2 = blkdiag(C2, C02);
-end
-
-% create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
-% 不等式の大小を変えるために両辺マイナスをかけている。
-A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
-b2 = -d_avoid2 * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
-% 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
-% s - (PU + Qs0 + R) < δ
-% -s + (PU + Qs0 + R) < δ
-
-A3 = [-P; P];
-b3 = [delta_r * ones(6*N*num, 1) - s + Q * s0 + R; delta_r * ones(6*N*num, 1) + s - Q * s0 - R];
-
-% 不等式制約4 (磁気モーメントの変化量はδ2以下)
-% U2 - U1 < δ
-% U1 - U2 < δ
-A4 = [-eye(N*3); eye(N*3)];
-b4 = [delta_myu * ones(3*N, 1) - u_myu; delta_myu * ones(3*N, 1) + u_myu];
-%A = [A2; A3; A4];
-%b = [b2; b3; b4];
-A = [A2; A3; A4];
-b = [b2; b3; b4];
-
-%% 等式制約
-
-
-%% 線形不等式制約線形計画問題 
-
-kA = 2e-3;
+state = zeros(N,6);
+state(1,:) = s0.';
+s = zeros(6*N*2,1);
 thetaP = pi/6;
-relative_mat = [eye(6),-eye(6)];
-mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
-       2,0,0,0,1/n,0;
-       0,0,0,-1/(n*tan(thetaP)),0,1/n;
-       -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+rd = 0;
 
-[x, fval, exitflag, output] = solveOptimizationProblem(n, u_myu, N, myu_max, P, Q, R, s0, d_avoid, A, b);
-disp(exitflag)
+for i = 1:N
+    X = state(i,:).';
+    if norm(X(1:3)) > d_avoid/2
+        disp("距離")
+        disp(norm(X(1:3))*2)
+        %disp("速度")
+        %disp(norm(X(4:6)))
+        C110 = coord2const(X, n);
+        kA = 2e-3;%2e-3;
+        kB = 1e-3;%1e-3;
+        C1 = C110(1); C4 = C110(4); C5 = C110(5);
+        C2 = C110(2); C3 = C110(3);
+        r_xy = C110(7); phi_xy = C110(8); %phi_xy = atan2(o_r_ji(1),o_r_ji(2)/2);
+        C4d = 3*n*C1/kA; %目標値
+        dC4 = C4-C4d; %C4偏差
+        C5d = C2/tan(thetaP);
+        u_A = n*[1/2*dC4;-C1];  
+        u = [kA*u_A;-kB*n*(C5-C5d)];
+        r = state(i,1:3).'*2; % 2衛星を考慮して2倍にする
+        [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max);
+        %u = [0;0;0];
+        if norm(myu1) > myu_max
+            u = myu_max* u/norm(myu1);
+            myu1 = myu_max * myu1/norm(myu1);
+            %disp("over myu1")
+        end
+    
+    elseif d_avoid/2 >= norm(X(1:3))
+        disp("回避")
+        %disp("位置")
+        %disp(X(1:3))
+        disp("距離")
+        disp(norm(X(1:3))*2)
+        %disp("速度")
+        %disp(X(4:6))
+        %disp("距離方向速度")
+        %disp(dot(X(1:3),X(4:6))/(norm(X(1:3))))
+       
+        func_cell = create_func_cell();
+        s_val = [X;-X];
+        F = F_func(s_val, myu_max, func_cell);
+        myu1 = - (d_avoid/2 - norm(X(1:3)))/(d_avoid/2) * myu_max * X(1:3)/norm(X(1:3));
+            %- dot(X(1:3),X(4:6))/(norm(X(1:3))) * X(1:3)/norm(X(1:3));
+        u = F * myu1;
+        %}
+        
+        %u = state(i,1:3).'/norm(state(i,1:3)) - dot(X(1:3),X(4:6))/(norm(X(1:3))) * X(1:3)/norm(X(1:3));
+        %disp(u)
+        r = state(i,1:3).'*2; % 2衛星を考慮して2倍にする
+        [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max);
+        %u = [0;0;0];
+        if norm(myu1) > myu_max
+            u = myu_max* u/norm(myu1);
+            myu1 = myu_max * myu1/norm(myu1);
+            disp("over myu1")
+        end
+
 %{
+    elseif norm(X(1:3)) > d_max/2
+        disp("距離")
+        disp(norm(X(1:3))*2)
+        disp("遠すぎるので引っ張る")
+        func_cell = create_func_cell();
+        s_val = [X;-X];
+        F = F_func(s_val, myu_max, func_cell);
+        myu1 = - (norm(X(1:3)) - d_max/2)/(d_max/2) * myu_max * X(1:3)/norm(X(1:3));
+        %- dot(X(1:3),X(4:6))/(norm(X(1:3))) * X(1:3)/norm(X(1:3));
+        u = F * myu1;
+        %}
+    end
+    
+    %u = [0;0;0];
+    myu_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
+    state(i+1,:) = (A_d * state(i,:).' + B_d * u).';
+    s(6*N*2 - 6*2*(i-1)-11:6*N*2 - 6*2*(i-1)-6) = (A_d * state(i,:).' + B_d * u);
+    s(6*N*2 - 6*2*(i-1)-5:6*N*2 - 6*2*(i-1)) = -(A_d * state(i,:).' + B_d * u);
+
+end
+
+param.d_target = d_target;
+param.num = num;
+param.m = m; 
+param.dt = dt;
+param.N = N;
+param.n = n;
+param.coilN = coilN;
+param.radius = radius;
+param.P_max = P_max; % W
+param.rho = rho; % Ω/m
+param.wire_length = wire_length;
+param.wire_S = wire_S;
+param.R_rho = R_rho; 
+param.I_max = I_max;
+param.myu_max = myu_max;
+param.d_avoid = d_avoid;
+param.d_initial = d_initial;
+param.rr = rr;
+param.s0 = s0;
+param.delta_r = delta_r;
+param.delta_myu = delta_myu;
+param.beta_succ = beta_succ;
+param.beta_fail = beta_fail;
+param.alpha = alpha;
+
+satellites{1} = state(:,1:3);
+
+u_myu = myu_list;
+u_myu_best = myu_list;
+s_best = s;
+
+x_r = state(N+1,:);
+
+E_data = calc_E(x_r, param);
+f_best = E_data(1);
+disp("エネルギー総和")
+disp(f_best)
+
+%% 最適化2
+
+tic;
+
+
+
+
+
+
+
+%% 検証
+% 最大10回のscp
+[u_myu, s] = calc_scp(s0, s, u_myu, f_best, param, func_cell);
+
+%% cvxの残骸
 % 解はnum×N×3自由度
-cvx_begin quiet
+%{
+cvx_begin
     variable x(3*N)
     minimize(sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))))
 
@@ -227,46 +246,257 @@ cvx_begin quiet
 
         % 太陽光パネルの発電量拘束
         for i = 1:N
-            norm(x(3*(i-1)+1:3*i)) <= myu_max ;
-            
-            %[myu_max^2, x(3*(i-1)+1:3*i).';
-            %x(3*(i-1)+1:3*i), eye(3)] >= 0;
+            norm(x(3*(i-1)+1:3*i)) <= myu_max;
+
 
         end
-        %{
-        [myu_max^2*eye(N), myu_mat.';
-         myu_mat, eye(3)] >= 0;
-            %}
-        
-       
-        
 cvx_end
 cvx_status
 %}
 
+%% 結果
 % 衛星の状態
-s = P * x + Q * s0 + R;
-s1 = s;
-u_myu = x;
-myu_mat = reshape(x, 3, N).'; 
-disp("最大磁気モーメント myu_max")
-disp(max(vecnorm(myu_mat,2,2)))
+myu_mat = reshape(u_myu, 3, N).'; 
+
 
 disp("最大電力")
 disp(R_rho*(max(vecnorm(myu_mat,2,2))/(coilN * radius^2 * pi))^2)
 
-disp("安定チェック")
-error = mat * s(1:6);
-disp(error)
+disp("最大電流")
+disp(max(vecnorm(myu_mat,2,2))/(coilN * radius^2 * pi))
 
-disp("最小化したい評価値")
-disp(sum(abs(error)))
+disp("最大磁気モーメント myu_max")
+disp(max(vecnorm(myu_mat,2,2)))
+
+E_data = calc_E(s(1:6).', param);
+disp(s(1:6).')
+f_best = E_data(1);
+disp("エネルギー総和")
+disp(f_best)
+
+
 time = toc
 %% 図示
 
 plot_s(s, num, N, rr, d_target)
 
-%% 関数リスト
+%% 関数リスト1
+
+function [u_myu, s] = calc_scp(s0, s, u_myu, f_best, param, func_cell)
+    d_avoid = param.d_avoid;
+    n = param.n;
+    num = param.num;
+    N = param.N;
+    myu_max = param.myu_max;
+    m = param.m;
+    dt = param.dt;
+
+    delta_r = param.delta_r;
+    delta_myu = param.delta_myu;
+    beta_succ = param.beta_succ;
+    beta_fail = param.beta_fail;
+    alpha = param.alpha;
+
+
+    s0 = param.s0;
+    s01 = s0;
+    s02 = -s0;
+    disp("S0[;l.';k 'lpk'plplplp")
+    disp(s02)
+    s0 = adjust_cog([s0, -s0], num); % 6num×1
+
+    A = [0, 0, 0, 1/2, 0, 0;
+         0, 0, 0, 0, 1/2, 0;
+         0, 0, 0, 0, 0, 1/2;
+         3*n^2, 0, 0, 0, 2*n, 0;
+         0, 0, 0, -2*n, 0, 0;
+         0, 0, -n^2, 0, 0, 0]+...
+        [3*n^2, 0, 0, 1, 2*n, 0;
+         0, 0, 0, -2*n, 1, 0;
+         0, 0, -n^2, 0, 0, 1;
+         0, 0, 0, 0, 0, 0;
+         0, 0, 0, 0, 0, 0;
+         0, 0, 0, 0, 0, 0]/2; 
+
+    B = [0, 0, 0;
+         0, 0, 0;
+         0, 0, 0;
+         1/m, 0, 0;
+         0, 1/m, 0;
+         0, 0, 1/m]; % 6×3
+
+    A_ = A;
+    B_ = B;
+    
+    for i = 2:num
+        A_ = blkdiag(A_, A); % BにAを対角に追加
+        B_ = [B_; B]; % BにAを対角に追加
+    end
+    
+    % 2衛星に関する離散時間状態方程式の係数行列
+    A_d = eye(6*num) + dt*A_; % 6num×6num
+    B_d = dt*B_; % 6num×3num
+
+    for k = 1:10   
+        disp("scp開始")
+        % ノミナル軌道sによってPとQが変わる
+        A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
+        B_list = create_B_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
+        C_list = create_C_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {C1, C2, ... ,CN}
+        
+        A_mat = create_A_mat(A_list, num, N);
+        B_mat = create_B_mat(B_list, num, N);
+        A_mat2 = create_A_mat2(A_list, num, N);
+        C_mat = create_C_mat(C_list, num, N);
+        
+        P = A_mat*B_mat; %6Nnum×3Nnum
+        Q = A_mat2; 
+        R = A_mat*C_mat; 
+        
+        
+        nominal_s = s;
+        % 状態ベクトルから位置ベクトルのみを抽出
+        C01 = [eye(3),zeros(3)];
+        C1 = [];
+        for i = 1:num*N
+            C1 = blkdiag(C1, C01);
+        end
+        
+        % 相対位置ベクトルを計算する行列
+        C02 = [eye(3),-eye(3)];
+        C2 = [];
+        for i = 1:N
+            C2 = blkdiag(C2, C02);
+        end
+        
+        % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
+        % 不等式の大小を変えるために両辺マイナスをかけている。
+        A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
+        b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
+        % 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
+        % s - (PU + Qs0 + R) < δ
+        % -s + (PU + Qs0 + R) < δ
+        
+        A3 = [-P; P];
+        b3 = [delta_r * ones(6*N*num, 1) - s + Q * s0 + R; delta_r * ones(6*N*num, 1) + s - Q * s0 - R];
+        
+        % 不等式制約4 (磁気モーメントの変化量はδ2以下)
+        % U2 - U1 < δ
+        % U1 - U2 < δ
+        A4 = [-eye(N*3); eye(N*3)];
+        b4 = [delta_myu * ones(3*N, 1) - u_myu; delta_myu * ones(3*N, 1) + u_myu];
+        A = [A2;A3;A4];
+        b = [b2;b3;b4];
+         
+        % 最適化
+        [u_myu_approx, f_approx, exitflag, output] = solveOptimizationProblem(n, u_myu, N, myu_max, P, Q, R, s0, d_avoid, A, b);
+        s_approx = P * u_myu_approx + Q * s0 + R;
+    
+    
+        
+        %delta_tilde = l_s(1:6) - s(1:6);
+        %f_approx = objectiveFunction(n, x, P, Q, R, s0);
+    
+        
+        A_list = create_A_list(num, N, s_approx, s0, u_myu_approx, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
+        B_list = create_B_list(num, N, s_approx, s0, u_myu_approx, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
+        C_list = create_C_list(num, N, s_approx, s0, u_myu_approx, B_d, myu_max, func_cell); % {C1, C2, ... ,CN}
+        
+        A_mat = create_A_mat(A_list, num, N);
+        B_mat = create_B_mat(B_list, num, N);
+        A_mat2 = create_A_mat2(A_list, num, N);
+        C_mat = create_C_mat(C_list, num, N);
+        
+        P_real = A_mat*B_mat; %6Nnum×3Nnum
+        Q_real = A_mat2; 
+        R_real = A_mat*C_mat; 
+        
+        s_new = P_real * u_myu_approx + Q_real * s0 + R_real;
+        
+        
+        % far-fieldで時系列状態を計算しなおしたもの評価関数を計算。
+        f_real = objectiveFunction(n, u_myu_approx, P_real, Q_real, R_real, s0);
+        disp(s_approx(1:6).')
+    
+        disp("最適化前評価関数")
+        disp(f_best)
+        disp("最適化後予想評価関数")
+        disp(f_approx)
+        disp("最適化後実際評価関数")
+        disp(f_real)
+        disp("予想評価関数減少")
+        delta_tilde = f_best - f_approx;
+        disp(delta_tilde)
+    
+        disp("実際評価関数減少")
+        delta = f_best - f_real;
+        disp(delta)
+        % 減少比の計算
+        rho_k = delta / delta_tilde;
+    
+        % 信頼領域の更新
+        % 線形化誤差が大きかったらtrust regionを狭めてやり直し。
+        if exitflag < 0
+            disp("fmincon失敗")
+            delta_r = delta_r * beta_succ; % 成功時、信頼領域を拡大
+            delta_myu = delta_myu * beta_succ; % 成功時、信頼領域を拡大
+            disp("更新された trust region")
+            disp("位置trust region")
+            disp(delta_r)
+            disp("磁気モーメント　trust region")
+            disp(delta_myu)
+        elseif delta > alpha * delta_tilde
+            disp("最適化成功")
+            delta_r = delta_r * beta_succ; % 成功時、信頼領域を拡大
+            delta_myu = delta_myu * beta_succ; % 成功時、信頼領域を拡大
+            disp("更新された trust region")
+            disp("位置trust region")
+            disp(delta_r)
+            disp("磁気モーメント　trust region")
+            disp(delta_myu)
+            disp("解更新")
+            s = s_new; % より良い解が見つかった場合、更新
+            u_myu = u_myu_approx; % より良い解が見つかった場合、更新
+            f_best = f_real;
+            disp("ベスト評価関数")
+            disp(f_best)
+        else
+            disp("最適化失敗 trust region大きすぎ")
+            delta_r = delta_r * beta_fail; % 成功時、信頼領域を拡大
+            delta_myu = delta_myu * beta_fail; % 成功時、信頼領域を拡大
+            disp("更新された trust region")
+            disp("位置trust region")
+            disp(delta_r)
+            disp("磁気モーメント　trust region")
+            disp(delta_myu)
+        end
+        
+        % 収束判定（任意の閾値に基づく）
+        if abs(delta) < 1e-6
+            disp("最適化終了")
+            disp("評価関数の減少率が閾値以下")
+            break; % 収束したと見なしてループを抜ける
+        end
+    
+    end
+
+end
+
+function E_data = calc_E(state, param)
+    n = param.n;
+    kA = 2e-3;
+    thetaP = pi/6;
+    %relative_mat = [eye(6),-eye(6)];
+    
+    mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+           2,0,0,0,1/n,0;
+           0,0,0,-1/(n*tan(thetaP)),0,1/n;
+           -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+    E = sum(abs(mat * state.'));
+    Cs = abs(mat * state.');
+    E_data = [E; Cs];
+end
+
 function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_max, P, Q, R, s0, d_avoid, A, b)
     % 初期化
     %A = [];  % 不等式制約 A*x <= b の A
@@ -282,7 +512,6 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
                        'TolFun', 1e-6, ...
                        'TolX', 1e-6, ...
                        'TolCon', 1e-6, ...
-                       'Display', 'iter', ...
                        'MaxIterations', 400, ...
                        'StepTolerance', 1e-6);
 
@@ -320,17 +549,19 @@ function [c, ceq] = nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid)
     
 
     % 進入禁止制約
+    %{
     dist_margin_list = zeros(N,1);
     relative_mat = [eye(6),-eye(6)];
     s = P * x + Q * s0;
     for i = 1:N
         dist_margin_list(i) = d_avoid/2 - norm(s(6*(i-1)+1:6*(i-1)+3));   
     end
+    %}
 
     % 制御可能範囲制約
     %%%%%%%%%%%%%%%%%%%
     
-    c = [P_list];  % 不等式制約 c(x) <= 0 進入禁止制約、発電量拘束90-iop[k
+    c = P_list;  % 不等式制約 c(x) <= 0 進入禁止制約、発電量拘束90-iop[k
     ceq = [];% 等式制約 ceq(x) = 0
 end
 
@@ -682,4 +913,71 @@ function B = reorderMatrix2(A)
         B = [B; flip(sub_vector)];
     end
 end
+
+
+
+%% 関数リスト2
+function C = coord2const(X, w)
+    %% HCW constants calculated from the free motion equation
+    C(1) = 2*X(1)+X(5)/w;
+    C(2) = X(4)/w;
+    C(3) = -3*X(1)-2*X(5)/w;
+    C(4) = X(2)-2*X(4)/w;
+    C(5) = X(6)/w;
+    C(6) = X(3);
+    %%
+    r_xy = sqrt(C(2)^2+C(3)^2);
+    theta_xy = atan2(C(3),C(2));
+    r_z = sqrt(C(5)^2+C(6)^2);
+    theta_z = atan2(C(6),C(5));
+    C(7) = r_xy;
+    C(8) = theta_xy;
+    C(9) = r_z;
+    C(10) = theta_z;
+end
+
+
+
+
+
+
+
+
+function [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max)
+    % 原点の2倍の距離で計算
+    r_norm = norm(r); 
+    myu01 = coilN * pi * radius^2 * I_max * r/r_norm;
+    myu0 = 4*pi*1e-7; % 真空の透磁率
+    
+    D = calculateD(r, myu01);
+    %myu02 = 4*pi*r_norm^5/(3*myu0)*inv(D)*u*mass;
+    myu02 = 4*pi*r_norm^5/(3*myu0)*inv(D)*u;
+    myu1 = myu02;
+    myu2 = myu01;
+end
+
+
+function D = calculateD(r, m1)
+    x = r(1);
+    y = r(2);
+    z = r(3);
+    r_norm = norm(r);
+    D11 = 2*m1(1)*x + dot(m1, r) - 5*dot(m1, r)*x^2/r_norm^2;
+    D12 = m1(2)*x + m1(1)*y - 5*dot(m1, r)*y*x/r_norm^2;
+    D13 = m1(3)*x + m1(1)*z - 5*dot(m1, r)*z*x/r_norm^2;
+    D21 = D12;
+    D22 = 2*m1(2)*y + dot(m1, r) - 5*dot(m1, r)*y^2/r_norm^2;
+    D23 = m1(3)*y + m1(2)*z - 5*dot(m1, r)*z*y/r_norm^2;
+    D31 = D13;
+    D32 = D23;
+    D33 = 2*m1(3)*z + dot(m1, r) - 5*dot(m1, r)*z^2/r_norm^2;
+
+
+    D = [D11,D21,D31;
+         D12,D22,D32;
+         D13,D23,D33;];
+
+end
+
+
 

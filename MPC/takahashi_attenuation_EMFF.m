@@ -1,9 +1,9 @@
 %satteliteというcell 配列を入れてそこに位置を記録していこう。
 %高橋座標系になっていることに注意。
-
+clear
 num = 1;
 dt = 10;
-N = 10;
+N = 100;
 n = 0.0011; % 0.0011
 m = 1; % 1
 %u_max = 1e-9;
@@ -18,6 +18,7 @@ I_max = sqrt(P_max/R_rho);
 myu_max = I_max * coilN * radius^2 * pi;
 
 d_avoid = radius*6;
+d_avoid2 = radius*9;
 % 初期衛星間距離
 d_initial = d_avoid/2;
 
@@ -67,10 +68,13 @@ state(1,:) = s0.';
 s = zeros(6*N*2,1);
 thetaP = pi/6;
 rd = 0;
+dist_list = zeros(N,1);
 
 for i = 1:N
+    disp(i)
     X = state(i,:).';
-    if norm(X(1:3)) > d_avoid/2
+    dist_list(end-i+1) = d_avoid2/2 - norm(X(1:3));
+    if norm(X(1:3)) > 0%d_avoid2/2 %進入禁止範囲を設定しない場合は0
         C110 = coord2const(X, n);
         kA = 2;%2e-3;
         kB = 1;%1e-3;
@@ -92,9 +96,15 @@ for i = 1:N
         end
         
     else 
-        k_avoid = 1e-1;
-        u = k_avoid * u_max * X(1:3)/norm(X(1:3));
-        disp("avoid")
+        %k_avoid = 1e-1;
+        %u = k_avoid * u_max * X(1:3)/norm(X(1:3));
+        %disp("avoid")
+        func_cell = create_func_cell();
+        s_val = [X;-X];
+        F = F_func(s_val, myu_max, func_cell);
+        myu1 = -myu_max * X(1:3)/norm(X(1:3));
+        u = F * myu1;
+        disp("nominal_avoid")
     end
     %u = [0;0;0];
     myu_list(3*N-3*(i-1)-2:3*N-3*(i-1)) = myu1;
@@ -121,6 +131,44 @@ disp(error)
 disp("エネルギー総和")
 disp(sum(abs(error)))
 
+function func_cell = create_func_cell()
+    syms x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max
+     
+    r = [x1 - x2; y1 - y2; z1 - z2];
+    myu = [myu11; myu12; myu13];
+    myu0 = 4*pi*1e-7; % 真空の透磁率
+    
+    %f = 3*myu0/(4*pi)*(dot(myu1, myu2)/norm(r)^5 * r + dot(myu1, r)/norm(r)^5 * myu2 + dot(myu2, r)/norm(r)^5 * myu1 - 5*dot(myu1, r)*dot(myu2, r)/norm(r)^7*r);
+    f = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6) * myu;
+    F = 3*myu0*myu_max/(4*pi)*(1/norm(r)^4 * eye(3) - 3 * (r * r.')/norm(r)^6);
+
+    df_dx1 = diff(f, x1);
+    df_dy1 = diff(f, y1);
+    df_dz1 = diff(f, z1);
+    df_dx2 = diff(f, x2);
+    df_dy2 = diff(f, y2);
+    df_dz2 = diff(f, z2);
+    df_dx1_func = matlabFunction(df_dx1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dy1_func = matlabFunction(df_dy1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dz1_func = matlabFunction(df_dz1, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dx2_func = matlabFunction(df_dx2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dy2_func = matlabFunction(df_dy2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    df_dz2_func = matlabFunction(df_dz2, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    f_func0 = matlabFunction(f, 'vars', [x1 y1 z1 x2 y2 z2 myu11 myu12 myu13 myu_max]);
+    F_func0 = matlabFunction(F, 'vars', [x1 y1 z1 x2 y2 z2 myu_max]);
+    func_cell = {df_dx1_func, df_dy1_func, df_dz1_func, df_dx2_func, df_dy2_func, df_dz2_func, f_func0, F_func0};
+end
+
+function F = F_func(s_val, myu_max_val, func_cell)
+    F_func0 = func_cell{8};
+    x1_val = s_val(1);
+    y1_val = s_val(2); 
+    z1_val = s_val(3); 
+    x2_val = s_val(7);
+    y2_val = s_val(8); 
+    z2_val = s_val(9);
+    F = F_func0(x1_val, y1_val, z1_val, x2_val, y2_val, z2_val, myu_max_val);
+end
 
 function C = coord2const(X, w)
     %% HCW constants calculated from the free motion equation

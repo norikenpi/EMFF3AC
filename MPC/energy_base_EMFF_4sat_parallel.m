@@ -298,7 +298,7 @@ function [u, u_myu, s] = calc_nominal_input(s0, param)
             func_cell = create_func_cell();
             s_val = [X;-X];
             F = F_func(s_val, myu_max, func_cell);
-            myu1 = -myu_max * X(1:3)/norm(X(1:3));
+            myu1 = - k_avoid * myu_max * X(1:3)/norm(X(1:3));
             u = F * myu1;
             disp("nominal_avoid")
         end
@@ -950,6 +950,7 @@ end
 function pair_mat_thrust = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, 4);
     parfor i = 1:4
+    %for i = 1:4
         sat1 = pair_mat(i,1);
         sat2 = pair_mat(i,2);
         X = state_mat(sat1,:).' - state_mat(sat2,:).';
@@ -1068,9 +1069,9 @@ function u = calc_optimal_u(X, param)
     myu_max = param.myu_max;
     s0 = X/2;
     [u, u_myu, s] = calc_nominal_input(s0, param);
-    [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
-    [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
-    [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
+    %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
+    %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
+    %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     myu1 = u_myu(end-2:end);
     func_cell = create_func_cell();
     s0 = [X/2;-X/2];
