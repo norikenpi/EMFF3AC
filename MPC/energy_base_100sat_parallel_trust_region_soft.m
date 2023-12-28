@@ -369,7 +369,7 @@ while E_all > E_border
 
 
     
-    if N_step == 1000
+    if N_step == 465
         %ペアを組んでいる衛星が
         break
     end

@@ -6,7 +6,7 @@ d_target = 0.925;
 rng(1)
 
 % 衛星数　2基or5基or9基
-num = 20;
+num = 4;
 
 % 衛星質量
 m = 1; % 1
@@ -46,13 +46,6 @@ beta_fail = 0.5;
 % 成功の閾値
 alpha = 0.1;  
 
-
-% ゲインはすごい大事。最大ステップ数を1にして、最大電流をしっかり使い切るぐらいのゲインを設定する必要がある。
-kA = 2;%2e-3;
-kB = 1;%1e-3;
-
-axis_ratio = 1.2;
-
 rr1 = d_target/(2*sqrt(3));
 rr2 = sqrt(2)*d_target/2;
 rr = [rr1,rr2];
@@ -88,58 +81,24 @@ param.delta_myu = delta_myu;
 param.beta_succ = beta_succ;
 param.beta_fail = beta_fail;
 param.alpha = alpha;
-param.kA = kA;
-param.kB = kB;
 
 
 
 satellites = cell(1, num);
-pair_set = zeros(num, 2, N);  % 4x2xTのゼロ配列の初期化
-
-grid_num = 5;
-% 3x3のグリッドの座標を生成
-[X, Y] = meshgrid(0:d_initial:4*d_initial, 0:d_initial:4*d_initial);
-Z = zeros(grid_num,grid_num);
-pos_rand = (2*rand(size([X(:) Y(:), Z(:)]))-1)*1e-3;
-vel = (2*rand(size([X(:) Y(:), Z(:)]))-1)*1e-5;
-% 7点分の座標を選択
-pos = [X(:) Y(:), Z(:)] + pos_rand;
-s0 = [pos(1:num, :, :), vel(1:num, :, :)].';
-s0 = adjust_cog(s0, num); % 6num×1
+pair_set = zeros(4, 2, N);  % 4x2xTのゼロ配列の初期化
 
 
-%{
 s01 = [-d_initial+(2*rand-1)*1e-4; -d_initial+(2*rand-1)*1e-4;  0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 s02 = [-d_initial+(2*rand-1)*1e-4;  d_initial+(2*rand-1)*1e-4; -0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 s03 = [ d_initial+(2*rand-1)*1e-4;  d_initial+(2*rand-1)*1e-4;  0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 s04 = [ d_initial+(2*rand-1)*1e-4; -d_initial+(2*rand-1)*1e-4; -0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s05 = [ 3*d_initial+(2*rand-1)*1e-4;  d_initial+(2*rand-1)*1e-4; -0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s0 = adjust_cog([s01, s02, s03, s04, s05], num); % 6num×1
-%}
-
-
+s0 = adjust_cog([s01, s02, s03, s04], num); % 6num×1
 
 %各衛星初期状態決定
 s01 = s0(1:6);
 s02 = s0(7:12);
 s03 = s0(13:18);
 s04 = s0(19:24);
-s05 = s0(25:30);
-s06 = s0(31:36);
-s07 = s0(37:42);
-s08 = s0(43:48);
-s09 = s0(49:54);
-s10 = s0(55:60);
-s11 = s0(61:66);
-s12 = s0(67:72);
-s13 = s0(73:78);
-s14 = s0(79:84);
-s15 = s0(85:90);
-s16 = s0(91:96);
-s17 = s0(97:102);
-s18 = s0(103:108);
-s19 = s0(109:114);
-s20 = s0(115:120);
 
 E_border = 20*num;
 %E_border =0.0001;
@@ -149,47 +108,13 @@ state1 = zeros(N,6);
 state2 = zeros(N,6);
 state3 = zeros(N,6);
 state4 = zeros(N,6);
-state5 = zeros(N,6);
-state6 = zeros(N,6);
-state7 = zeros(N,6);
-state8 = zeros(N,6);
-state9 = zeros(N,6);
-state10 = zeros(N,6);
-state11 = zeros(N,6);
-state12 = zeros(N,6);
-state13 = zeros(N,6);
-state14 = zeros(N,6);
-state15 = zeros(N,6);
-state16 = zeros(N,6);
-state17 = zeros(N,6);
-state18 = zeros(N,6);
-state19 = zeros(N,6);
-state20 = zeros(N,6);
 
 state1(1,:) = s01.';
 state2(1,:) = s02.';
 state3(1,:) = s03.';
 state4(1,:) = s04.';
-state5(1,:) = s05.';
-state6(1,:) = s06.';
-state7(1,:) = s07.';
-state8(1,:) = s08.';
-state9(1,:) = s09.';
-state10(1,:) = s10.';
-state11(1,:) = s11.';
-state12(1,:) = s12.';
-state13(1,:) = s13.';
-state14(1,:) = s14.';
-state15(1,:) = s15.';
-state16(1,:) = s16.';
-state17(1,:) = s17.';
-state18(1,:) = s18.';
-state19(1,:) = s19.';
-state20(1,:) = s20.';
-state_mat  = [s01.';s02.';s03.';s04.';s05.';s06.';s07.';s08.';s09.';s10.';s11.';s12.';s13.';s14.';s15.';s16.';s17.';s18.';s19.';s20.'];
+state_mat  = [s01.';s02.';s03.';s04.'];
 state_mat0 = state_mat;
-
-
 %% シミュレーション
 %エネルギーの総和がE_border以下だったら問題ない。
 i = 0;
@@ -205,12 +130,13 @@ while E_all > E_border
     N_step = i; 
     % ペア組み
     
+    
     pair_mat = make_pair(state_mat, param, N_step);
     pair_set(:,:,i) = pair_mat;
 
     % 最大電力割り当て
     % ペアごとに割り振る感じがいいのかな。
-    counts = count_pair_num(pair_mat, param);
+    counts = count_pair_num(pair_mat);
 
     % 各ペア制御入力計算（for ペアlist　座標平行移動）
     % ペアでforを回して、一発で現在の状態と最大磁気モーメントから制御入力とペア間に働く力が出る関数がほしい。
@@ -220,9 +146,13 @@ while E_all > E_border
     %pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param);
 
     % 最適化を行った入力を計算
-    pair_mat_thrust = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
-    
+    [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
+    if break_end > 0
+        break
+    end
     %disp(pair_mat_thrust1)
+    %disp(pair_mat_thrust)
+
     % 推力計算
     % ペアでforを回して、各衛星に働く力を計算。
     thrust_mat = calc_thrust(pair_mat, pair_mat_thrust, param);
@@ -236,22 +166,6 @@ while E_all > E_border
     state2(i+1,:) = state_mat(2,:);
     state3(i+1,:) = state_mat(3,:);
     state4(i+1,:) = state_mat(4,:);
-    state5(i+1,:) = state_mat(5,:);
-    state6(i+1,:) = state_mat(6,:);
-    state7(i+1,:) = state_mat(7,:);
-    state8(i+1,:) = state_mat(8,:);
-    state9(i+1,:) = state_mat(9,:);
-    state10(i+1,:) = state_mat(10,:);
-    state11(i+1,:) = state_mat(11,:);
-    state12(i+1,:) = state_mat(12,:);
-    state13(i+1,:) = state_mat(13,:);
-    state14(i+1,:) = state_mat(14,:);
-    state15(i+1,:) = state_mat(15,:);
-    state16(i+1,:) = state_mat(16,:);
-    state17(i+1,:) = state_mat(17,:);
-    state18(i+1,:) = state_mat(18,:);
-    state19(i+1,:) = state_mat(19,:);
-    state20(i+1,:) = state_mat(20,:);
 
     %総エネルギー計算
     %次の時刻の状態から総エネルギーを計算
@@ -269,7 +183,7 @@ while E_all > E_border
 
 
     
-    if N_step == 465
+    if N_step == 100
         %ペアを組んでいる衛星が
         break
     end
@@ -300,24 +214,8 @@ satellites{1} = state1(:,1:3);
 satellites{2} = state2(:,1:3);
 satellites{3} = state3(:,1:3);
 satellites{4} = state4(:,1:3);
-satellites{5} = state5(:,1:3);
-satellites{6} = state6(:,1:3);
-satellites{7} = state7(:,1:3);
-satellites{8} = state8(:,1:3);
-satellites{9} = state9(:,1:3);
-satellites{10} = state10(:,1:3);
-satellites{11} = state11(:,1:3);
-satellites{12} = state12(:,1:3);
-satellites{13} = state13(:,1:3);
-satellites{14} = state14(:,1:3);
-satellites{15} = state15(:,1:3);
-satellites{16} = state16(:,1:3);
-satellites{17} = state17(:,1:3);
-satellites{18} = state18(:,1:3);
-satellites{19} = state19(:,1:3);
-satellites{20} = state20(:,1:3);
 
-plot_s(satellites, num, N_step, rr, d_target, pair_set, axis_ratio)
+plot_s(satellites, num, N_step, rr, d_target, pair_set)
 
 %% 関数リスト
 
@@ -409,8 +307,8 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
             %disp("速度")
             %disp(norm(X(4:6)))
             C110 = coord2const(X, n);
-            kA = param.kA;%2e-3;
-            kB = param.kB;%1e-3;
+            kA = 2e-2;%2e-3;
+            kB = 1e-2;%1e-3;
             C1 = C110(1); C4 = C110(4); C5 = C110(5);
             C2 = C110(2); C3 = C110(3);
             r_xy = C110(7); phi_xy = C110(8); %phi_xy = atan2(o_r_ji(1),o_r_ji(2)/2);
@@ -621,7 +519,7 @@ function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
     A = [A2;A3;A4];
     b = [b2;b3;b4];
     
-    [x, fval, exitflag, output] = solveOptimizationProblem(n, u_myu, N, myu_max, P, Q, R, s0, d_avoid, A, b, param);
+    [x, fval, exitflag, output] = solveOptimizationProblem(n, u_myu, N, myu_max, P, Q, R, s0, d_avoid, A, b);
     % 解はnum×N×3自由度
     %{
     cvx_begin
@@ -673,7 +571,7 @@ function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
 end
 
 
-function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_max, P, Q, R, s0, d_avoid, A, b, param)
+function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_max, P, Q, R, s0, d_avoid, A, b)
     % 初期化
     %A = [];  % 不等式制約 A*x <= b の A
     %b = [];  % 不等式制約 A*x <= b の b
@@ -702,9 +600,9 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
 
 end
 
-function f = objectiveFunction(n, x, P, Q, R, s0, N, param)
+function f = objectiveFunction(n, x, P, Q, R, s0, N)
     % 目的関数の計算
-    kA = 2;
+    kA = 2e-3;
     thetaP = pi/6;
     %relative_mat = [eye(6),-eye(6)];
     
@@ -1040,17 +938,10 @@ end
 
 
 function pair_mat = make_pair(state_mat, param, N_step)
-        % 行数を定義
-    
-    % 行列を初期化
-    pair_mat = zeros(param.num, 2);
-    
-    % 各行に値を設定
-    for i = 1:param.num
-        pair_mat(i, :) = [i, i];
-    end
-
-
+    pair_mat = [1,1;
+                2,2;
+                3,3;
+                4,4];
     pair_candidate = calc_pair_candidate(state_mat, param);
     for i = 1:param.num
         delta_E_max = 0;
@@ -1063,6 +954,7 @@ function pair_mat = make_pair(state_mat, param, N_step)
                 delta_E_max = delta_E;
                 pair = j;
             end
+            
         end
         pair_mat(i,2) = pair;
     end
@@ -1101,7 +993,7 @@ function pair_candidate = calc_pair_candidate(state_mat, param)
     X = state_mat(:,1:3);
     % KDツリーを構築
     tree = KDTreeSearcher(X);
-    pair_candidate = cell(1, 5);
+    pair_candidate = cell(1, 4);
     for i = 1:param.num
         queryIndex = i;
         queryPoint = X(queryIndex, :);
@@ -1109,23 +1001,21 @@ function pair_candidate = calc_pair_candidate(state_mat, param)
         range = 1;
     
         % 最小距離を設定（例：0.05）
-        %minDistance = radius*6;
-        minDistance = 0;
+        minDistance = radius*6;
         % 検索範囲内の点のインデックスを取得
         idx = rangesearch(tree, queryPoint, range);
-
+        
         % 最小距離よりも遠い点をフィルタリング
         pair_candidate{i} = idx{1}(vecnorm(X(idx{1}, :) - queryPoint, 2, 2) > minDistance);
-      
         
     end
 end
 
 
-function counts = count_pair_num(pair_mat, param)
-    counts = histcounts(pair_mat, 1:param.num+1); 
+function counts = count_pair_num(pair_mat)
+    counts = histcounts(pair_mat, 1:5); 
 end
-%{
+
 function pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, 4);
     for i = 1:param.num
@@ -1169,6 +1059,7 @@ function u = calc_u(X, param)
             myu1 = myu_max * myu1/norm(myu1);
             %disp("over myu1")
         end
+        disp(norm(X(1:3)))
         
     else 
         k_avoid = 1e-1;
@@ -1183,7 +1074,7 @@ function u = calc_u(X, param)
         
     end
 end
-%}
+
 function thrust_mat = calc_thrust(pair_mat, pair_mat_thrust, param)
     thrust_mat = zeros(3,4);
     for i = 1:param.num
@@ -1196,24 +1087,24 @@ function thrust_mat = calc_thrust(pair_mat, pair_mat_thrust, param)
     end
 end
 
-function pair_mat_thrust = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
-    pair_mat_thrust = zeros(3, 2, param.num);
-    parfor i = 1:param.num
-    %for i = 1:param.num
-        
+function [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
+    pair_mat_thrust = zeros(3, 2, 4);
+    break_end = 0;
+    %parfor i = 1:param.num
+    for i = 1:param.num
         sat1 = pair_mat(i,1);
-        
         sat2 = pair_mat(i,2);
         X = state_mat(sat1,:).' - state_mat(sat2,:).';
-        u = calc_optimal_u(X, param);
+        [u, break_end2] = calc_optimal_u(X, param);
+        break_end = break_end2; 
+        disp("jkljmlnklj")
+        disp(break_end)
         
         thrust = u/(counts(sat1)*counts(sat2));
         pair_mat_thrust(:,:,i) = [thrust,-thrust];
-       
         % pair_mat_thrust(:,1,i) = u/(counts(sat1)*counts(sat2));
         % pair_mat_thrust(:,2,i) = -u/(counts(sat1)*counts(sat2));
     end
-    
 end
 
 function state_mat = update_state(state_mat, thrust_mat, param)
@@ -1254,14 +1145,13 @@ function E_all = calc_E_all(state_mat, param)
     %E_all = [0;0;0;0];
     for i = 1:param.num
         state = state_mat(i,:);
-        E_all = E_all + calc_E(state, param);
-
+        E_all = E_all + calc_E(state, param); 
     end
 end
 
 function E_data = calc_E(state, param)
     n = param.n;
-    kA = param.kA;
+    kA = 2e-3;
     thetaP = pi/6;
     %relative_mat = [eye(6),-eye(6)];
     
@@ -1282,14 +1172,15 @@ end
 
 
 
-function u = calc_optimal_u(X, param)
+function [u, break_end] = calc_optimal_u(X, param)
     % Xは相対位置ベクトル
     myu_max = param.myu_max;
     s0 = X/2;
     func_cell = create_func_cell();
+    
     [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param);
 
-    [u_myu, s] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
+    [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
@@ -1301,8 +1192,9 @@ function u = calc_optimal_u(X, param)
     
 end
 
-function [u_myu, s] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell)  
+function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell)  
     num = 2;
+    break_end = 0;
     d_avoid = param.d_avoid;
     n = param.n;
     N = param.N;
@@ -1490,6 +1382,7 @@ function [u_myu, s] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell
             
             delta_r = delta_r * beta_succ; % 成功時、信頼領域を拡大
             delta_myu = delta_myu * beta_succ; % 成功時、信頼領域を拡大
+            break_end = 1;
             %disp("更新された trust region")
             %disp("位置trust region")
             %disp(delta_r)
@@ -1573,7 +1466,7 @@ end
 
 
 
-function plot_s(satellites, num, N, rr, d_target, pair_set, axis_ratio)
+function plot_s(satellites, num, N, rr, d_target, pair_set)
     % 2衛星の動画を表示。
     %3次元座標
 
@@ -1586,9 +1479,9 @@ function plot_s(satellites, num, N, rr, d_target, pair_set, axis_ratio)
     % フィギュアの作成
     figure;
     axis equal;
-    xlim([-d_target*axis_ratio, d_target*axis_ratio]); % x軸の範囲を調整
-    ylim([-d_target*axis_ratio, d_target*axis_ratio]); % y軸の範囲を調整
-    zlim([-d_target*axis_ratio, d_target*axis_ratio]); % z軸の範囲を調整
+    xlim([-d_target*1.5, d_target*1.5]/3); % x軸の範囲を調整
+    ylim([-d_target*1.5, d_target*1.5]/3); % y軸の範囲を調整
+    zlim([-d_target*1.5, d_target*1.5]/3); % z軸の範囲を調整
     hold on;
     grid on; % グリッドを表示
     
