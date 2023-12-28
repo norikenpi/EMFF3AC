@@ -147,9 +147,11 @@ while E_all > E_border
 
     % 最適化を行った入力を計算
     [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
+    
     if break_end > 0
         break
     end
+    
     %disp(pair_mat_thrust1)
     %disp(pair_mat_thrust)
 
@@ -183,7 +185,7 @@ while E_all > E_border
 
 
     
-    if N_step == 100
+    if N_step == 1000
         %ペアを組んでいる衛星が
         break
     end
@@ -202,11 +204,7 @@ seconds = mod(total_seconds, 60);
 disp(['時間: ' num2str(hours) ' 時間 ' num2str(minutes) ' 分 ' num2str(seconds) ' 秒']);
 
 %　エネルギー推移
-figure_E_all(E_all_list, param)
-figure_E_all(C4_list, param)
-figure_E_all(C1_list, param)
-figure_E_all(C5_list, param)
-figure_E_all(C6_list, param)
+
 
 time = toc
 %% 図示
@@ -216,7 +214,11 @@ satellites{3} = state3(:,1:3);
 satellites{4} = state4(:,1:3);
 
 plot_s(satellites, num, N_step, rr, d_target, pair_set)
-
+figure_E_all(E_all_list, param)
+figure_E_all(C4_list, param)
+figure_E_all(C1_list, param)
+figure_E_all(C5_list, param)
+figure_E_all(C6_list, param)
 %% 関数リスト
 
 function figure_E_all(E_all_list, param)
@@ -298,7 +300,7 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
     
     for i = 1:N
         X = state(i,:).';
-        dist_list(end-i+1) = d_avoid/2 - norm(X(1:3));
+        dist_list(end-i+1) = abs(d_avoid/2 - norm(X(1:3)))*1.3;
         %disp("sdfsg")
         %disp(dist_list(end-i+1))
         if norm(X(1:3)) > 0 %d_avoid/2
@@ -405,6 +407,7 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
 end
 
 % 昔使ってた繰り返し使うscp
+%{
 function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
     d_target = param.d_target;
     num = 2;
@@ -569,7 +572,7 @@ function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
     
 
 end
-
+%}
 
 function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_max, P, Q, R, s0, d_avoid, A, b)
     % 初期化
@@ -581,6 +584,7 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
     ub = []; % 変数の上限
 
     % オプションの設定
+    %{
     options = optimoptions('fmincon', ...
                        'Algorithm', 'sqp', ...
                        'TolFun', 1e-6, ...
@@ -589,14 +593,18 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
                        'TolCon', 1e-6, ...
                        'MaxIterations', 400, ...
                        'StepTolerance', 1e-6);
+    %}
 
-
+    options = optimoptions('fmincon',...
+                       'Display', 'off');
     fun =  @(x) objectiveFunction(n, x, P, Q, R, s0, N);
 
     c_ceq = @(x) nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid);
 
     % fminconの呼び出し
    [x, fval, exitflag, output] = fmincon(fun, x0, A, b, Aeq, beq, lb, ub, c_ceq, options);
+   %[x, fval, exitflag, output] = fmincon(fun, x0, A, b, Aeq, beq, lb, ub, c_ceq);
+
 
 end
 
@@ -617,7 +625,7 @@ function f = objectiveFunction(n, x, P, Q, R, s0, N)
            0,0,0,-1/(n*tan(thetaP)),0,1/n];
     %}
 
-    w1 = 100000/N;
+    w1 = 1000/N;
     
     f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(x(end-N+1:end))); % xを用いた計算
 end
@@ -976,14 +984,14 @@ function pair_mat = make_pair(state_mat, param, N_step)
     end
     %}
 
-    %{
+    
     pair_mat = [1,2;
                     2,3;
                     3,4;
                     4,1];
-    %}
     
     
+        
     
 
 end
@@ -1002,6 +1010,7 @@ function pair_candidate = calc_pair_candidate(state_mat, param)
     
         % 最小距離を設定（例：0.05）
         minDistance = radius*6;
+        minDistance = 0;
         % 検索範囲内の点のインデックスを取得
         idx = rangesearch(tree, queryPoint, range);
         
@@ -1090,15 +1099,15 @@ end
 function [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, 4);
     break_end = 0;
-    %parfor i = 1:param.num
-    for i = 1:param.num
+    parfor i = 1:param.num
+    %for i = 1:param.num
         sat1 = pair_mat(i,1);
         sat2 = pair_mat(i,2);
         X = state_mat(sat1,:).' - state_mat(sat2,:).';
         [u, break_end2] = calc_optimal_u(X, param);
-        break_end = break_end2; 
-        disp("jkljmlnklj")
-        disp(break_end)
+        %break_end = break_end + break_end2; 
+        %disp("jkljmlnklj")
+        %disp(break_end)
         
         thrust = u/(counts(sat1)*counts(sat2));
         pair_mat_thrust(:,:,i) = [thrust,-thrust];
@@ -1295,9 +1304,26 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
         %A4 = [-eye(N*3); eye(N*3)];
         A4 = [[-eye(N*3),zeros(N*3,N)]; [eye(N*3),zeros(N*3,N)]];
         b4 = [delta_myu * ones(3*N, 1) - u_myu; delta_myu * ones(3*N, 1) + u_myu];
-        A = [A2;A3;A4];
-        b = [b2;b3;b4];
-         
+
+        A5 = -eye(N, 3*N+N);
+        A5(:, 1:3*N) = zeros(N, 3*N);
+        b5 = zeros(N,1);
+
+
+        A = [A2;A3;A4;A5];
+        b = [b2;b3;b4;b5];
+        
+        %{
+        disp("拘束条件チェック")
+        disp(k)
+        disp("回")
+        disp(min(b - A*[u_myu;dist_list]))
+        disp(max(b - A*[u_myu;dist_list]))
+        disp(b - A*[u_myu;dist_list])
+        disp("dist_list")
+        disp(dist_list)
+        %}
+
         % 最適化
         [u_myu_approx, f_approx, exitflag, output] = solveOptimizationProblem(n, [u_myu;dist_list], N, myu_max, P, Q, R, s0, d_avoid, A, b);
         
@@ -1329,7 +1355,7 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
                     norm(u_myu_approx(3*(i-1)+1:3*i)) <= myu_max;
                 end
         cvx_end
-        %cvx_status
+        cvx_status
         f_approx = sum(abs(mat * (P(1:6,:) * u_myu_approx + Q(1:6,:) * s0 + R(1:6,:))));
         %}
 
