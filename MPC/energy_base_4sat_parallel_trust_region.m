@@ -519,8 +519,6 @@ function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
             % 太陽光パネルの発電量拘束
             for i = 1:N
                 norm(x(3*(i-1)+1:3*i)) <= myu_max;
-    
-    
             end
     cvx_end
     cvx_status
