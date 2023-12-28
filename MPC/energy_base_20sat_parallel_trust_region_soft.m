@@ -269,7 +269,7 @@ while E_all > E_border
 
 
     
-    if N_step == 465
+    if N_step == 1
         %ペアを組んでいる衛星が
         break
     end
@@ -618,6 +618,11 @@ function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
     % U1 - U2 < δ
     A4 = [-eye(N*3); eye(N*3)];
     b4 = [delta_myu * ones(3*N, 1) - u_myu; delta_myu * ones(3*N, 1) + u_myu];
+
+    A5 = -eye(N, 3*N+N);
+    A5(:, 1:3*N) = zeros(N, 3*N);
+    b5 = zeros(N,1);
+
     A = [A2;A3;A4];
     b = [b2;b3;b4];
     
@@ -1089,12 +1094,28 @@ function pair_mat = make_pair(state_mat, param, N_step)
     end
     %}
 
-    %{
-    pair_mat = [1,2;
+    
+        pair_mat = [1,2;
                     2,3;
                     3,4;
-                    4,1];
-    %}
+                    4,5;
+                    5,6;
+                    6,7;
+                    7,8;
+                    8,9;
+                    9,9;
+                    10,10;
+                    11,11;
+                    12,12;
+                    13,13;
+                    14,14;
+                    15,15;
+                    16,16;
+                    17,17;
+                    18,18;
+                    19,19;
+                    20,20];
+    
     
     
     

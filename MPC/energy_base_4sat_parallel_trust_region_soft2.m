@@ -34,17 +34,17 @@ func_cell = create_func_cell();
 d_avoid = radius*6;
 d_initial = d_avoid/2;
 
-delta_r = d_avoid/10;
-delta_myu = myu_max/10;
+delta_r = d_avoid/100;
+delta_myu = myu_max;
 
 % 成功時の拡大係数
-beta_succ = 1.1;  
+beta_succ = 1.5;  
 
 % 失敗時の縮小係数
 beta_fail = 0.5; 
 
 % 成功の閾値
-alpha = 0.1;  
+alpha = 0.02;  
 
 rr1 = d_target/(2*sqrt(3));
 rr2 = sqrt(2)*d_target/2;
@@ -88,10 +88,10 @@ satellites = cell(1, num);
 pair_set = zeros(4, 2, N);  % 4x2xTのゼロ配列の初期化
 
 
-s01 = [-d_initial+(2*rand-1)*1e-4; -d_initial+(2*rand-1)*1e-4;  0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s02 = [-d_initial+(2*rand-1)*1e-4;  d_initial+(2*rand-1)*1e-4; -0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s03 = [ d_initial+(2*rand-1)*1e-4;  d_initial+(2*rand-1)*1e-4;  0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s04 = [ d_initial+(2*rand-1)*1e-4; -d_initial+(2*rand-1)*1e-4; -0.00005+(2*rand-1)*1e-4; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s01 = [-d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s02 = [-d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s03 = [ d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s04 = [ d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 s0 = adjust_cog([s01, s02, s03, s04], num); % 6num×1
 
 %各衛星初期状態決定
@@ -100,7 +100,7 @@ s02 = s0(7:12);
 s03 = s0(13:18);
 s04 = s0(19:24);
 
-E_border = 20*num;
+E_border = 2*num;
 %E_border =0.0001;
 E_all = 1000;
 
@@ -115,8 +115,7 @@ state3(1,:) = s03.';
 state4(1,:) = s04.';
 state_mat  = [s01.';s02.';s03.';s04.'];
 state_mat0 = state_mat;
-%% シミュレーション
-%エネルギーの総和がE_border以下だったら問題ない。
+
 i = 0;
 
 E_all_list = [];
@@ -124,7 +123,8 @@ C4_list = [];
 C1_list = [];
 C5_list = [];
 C6_list = [];
-
+%% シミュレーション
+%エネルギーの総和がE_border以下だったら問題ない。
 while E_all > E_border
     i = i + 1;
     N_step = i; 
@@ -300,7 +300,7 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
     
     for i = 1:N
         X = state(i,:).';
-        dist_list(end-i+1) = abs(d_avoid/2 - norm(X(1:3)))*1.3;
+        dist_list(end-i+1) = d_avoid/2 - norm(X(1:3));
         %disp("sdfsg")
         %disp(dist_list(end-i+1))
         if norm(X(1:3)) > 0 %d_avoid/2
@@ -971,7 +971,7 @@ function pair_mat = make_pair(state_mat, param, N_step)
         pair_mat = [1,2;
                     2,1;
                     3,4;
-                    4,3];
+                    4,3];cvx
     else
         pair_mat = [1,3;
                     2,4;
@@ -982,17 +982,17 @@ function pair_mat = make_pair(state_mat, param, N_step)
                     3,4;
                     4,3];
     end
-    %}
-
-    
-    pair_mat = [1,2;
+  %}      
+        pair_mat = [1,4;
+                    2,3;
+                    3,2;
+                    4,1];
+        
+        pair_mat = [1,2;
                     2,3;
                     3,4;
                     4,1];
-    
-    
-        
-    
+      
 
 end
 
@@ -1101,6 +1101,8 @@ function [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, count
     break_end = 0;
     parfor i = 1:param.num
     %for i = 1:param.num
+        %disp("衛星i")
+        %disp(i)
         sat1 = pair_mat(i,1);
         sat2 = pair_mat(i,2);
         X = state_mat(sat1,:).' - state_mat(sat2,:).';
@@ -1305,13 +1307,13 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
         A4 = [[-eye(N*3),zeros(N*3,N)]; [eye(N*3),zeros(N*3,N)]];
         b4 = [delta_myu * ones(3*N, 1) - u_myu; delta_myu * ones(3*N, 1) + u_myu];
 
-        A5 = -eye(N, 3*N+N);
+        A5 = eye(N, 3*N+N);
         A5(:, 1:3*N) = zeros(N, 3*N);
         b5 = zeros(N,1);
 
 
-        A = [A2;A3;A4;A5];
-        b = [b2;b3;b4;b5];
+        A = [A2;A3;A4];
+        b = [b2;b3;b4];
         
         %{
         disp("拘束条件チェック")
@@ -1326,9 +1328,10 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
 
         % 最適化
         [u_myu_approx, f_approx, exitflag, output] = solveOptimizationProblem(n, [u_myu;dist_list], N, myu_max, P, Q, R, s0, d_avoid, A, b);
-        
         %{
-       % cvxが遅すぎる。　 
+        
+       % cvxが遅すぎる。
+        
         exitflag = 2;
         % 解はnum×N×3自由度
         n = param.n;
@@ -1348,16 +1351,24 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
                 % 進入禁止制約
                 % 位置trust region
                 % 磁気モーメントtrust region
-                A * u_myu_approx <= b;
+                A * u_myu_approx <= b;                                
         
                 % 太陽光パネルの発電量拘束
                 for i = 1:N
                     norm(u_myu_approx(3*(i-1)+1:3*i)) <= myu_max;
                 end
         cvx_end
-        cvx_status
+        disp(cvx_status)
         f_approx = sum(abs(mat * (P(1:6,:) * u_myu_approx + Q(1:6,:) * s0 + R(1:6,:))));
         %}
+        %{
+        if cvx_status ~= 'Solved'
+            disp("Unsolved")
+        end
+        %}
+        
+        
+        
 
         s_approx = P * u_myu_approx + Q * s0 + R;
     
@@ -1404,7 +1415,7 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
         % 信頼領域の更新
         % 線形化誤差が大きかったらtrust regionを狭めてやり直し。
         if exitflag < 0
-            disp("fmincon失敗")
+            %disp("fmincon失敗")
             
             delta_r = delta_r * beta_succ; % 成功時、信頼領域を拡大
             delta_myu = delta_myu * beta_succ; % 成功時、信頼領域を拡大
