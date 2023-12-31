@@ -102,7 +102,7 @@ s02 = s0(7:12);
 %s04 = s0(19:24);
 
 E_border = 20*num;
-%E_border =0.0001;
+E_border = 1;
 E_all = 1000;
 
 state1 = zeros(N,6);
@@ -116,17 +116,23 @@ state2(1,:) = s02.';
 %state4(1,:) = s04.';
 state_mat  = [s01.';s02.'];
 state_mat0 = state_mat;
+EandCs= calc_E_all(state_mat, param);
+C1_border = 0.1;
 
 i = 0;
 
-E_all_list = [];
-C4_list = [];
-C1_list = [];
-C5_list = [];
-C6_list = [];
+E_all_list = [EandCs(1)];
+C4_list = [EandCs(2)];
+C1_list = [EandCs(3)];
+C5_list = [EandCs(4)];
+C6_list = [EandCs(5)];
+u_myu_norm_list = [];
 %% シミュレーション
 %エネルギーの総和がE_border以下だったら問題ない。
-while E_all > E_border
+while EandCs(1) > E_border || EandCs(3) > C1_border
+    disp("判定")
+    disp(EandCs(1))
+    disp(EandCs(3))
     i = i + 1;
     N_step = i; 
     % ペア組み
@@ -145,14 +151,16 @@ while E_all > E_border
     % 最適化ベースになるとここが変わるだけ。
 
     % エナジーベースのFB制御 %noninal_inputと使ってる関数が違うというバグ。
-    %pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param);
+    [pair_mat_thrust, myu1] = calc_pair_thrust(pair_mat, counts, state_mat, param);
 
     % 最適化を行った入力を計算
-    [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
-    
+    %[pair_mat_thrust, break_end, myu1] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
+    %{
+
     if break_end > 0
         break
     end
+    %}
     
     %disp(pair_mat_thrust1)
     %disp(pair_mat_thrust)
@@ -175,19 +183,18 @@ while E_all > E_border
     %次の時刻の状態から総エネルギーを計算
 
     EandCs= calc_E_all(state_mat, param);
-    E_all = EandCs(1);
     disp("エネルギー総和")
     disp(N_step)
     disp(E_all)
-    E_all_list = [E_all_list;E_all];
+    E_all_list = [E_all_list;EandCs(1)];
     C4_list = [C4_list;EandCs(2)];
     C1_list = [C1_list;EandCs(3)];
     C5_list = [C5_list;EandCs(4)];
     C6_list = [C6_list;EandCs(5)];
-
+    u_myu_norm_list = [u_myu_norm_list;norm(myu1)];
 
     
-    if N_step == 2
+    if N_step == 5
         %ペアを組んでいる衛星が
         break
     end
@@ -214,14 +221,15 @@ satellites{1} = state1(:,1:3);
 satellites{2} = state2(:,1:3);
 
 plot_s(satellites, num, N_step, rr, d_target, pair_set)
-figure_E_all(E_all_list, param)
-figure_E_all(C4_list, param)
-figure_E_all(C1_list, param)
-figure_E_all(C5_list, param)
-figure_E_all(C6_list, param)
+figure_E_all(E_all_list, param, "評価関数の大きさ", "評価関数の大きさの推移")
+figure_E_all(C4_list, param, "C4の大きさ", "C4の大きさの推移")
+figure_E_all(C1_list, param, "C1の大きさ", "C1の大きさの推移")
+figure_E_all(C5_list, param, "C5-C5dの大きさ", "C5-C5dの大きさの推移")
+figure_E_all(C6_list, param, "C6-C6dの大きさ", "C6-C6dの大きさの推移")
+figure_E_all(u_myu_norm_list, param, "磁気モーメントの大きさ", "磁気モーメントの大きさの推移")
 %% 関数リスト
 
-function figure_E_all(E_all_list, param)
+function figure_E_all(E_all_list, param, ylabel_name, title_name)
     figure
     % 時間軸を生成（ここでは1から250までの整数を使用）
     time = (1:length(E_all_list))*param.dt;
@@ -229,8 +237,9 @@ function figure_E_all(E_all_list, param)
     % データをプロット
     plot(time, E_all_list);
     xlabel('Time');
-    ylabel('Value');
-    title('Time Series Plot');
+    title(title_name);
+    ylabel(ylabel_name);
+    grid on; % グリッド線の表示
 end
 
 function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
@@ -410,7 +419,8 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
     x_r = state(N+1,:);
     E_data = calc_E(x_r, param);
     f_best = sum(abs(E_data(1)) + w1 * norm(dist_list));
-    %disp(f_best)
+    disp("nominal f_best")
+    disp(f_best)
 end
 
 % 昔使ってた繰り返し使うscp
@@ -1032,13 +1042,13 @@ function counts = count_pair_num(pair_mat)
     counts = histcounts(pair_mat, 1:5); 
 end
 
-function pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param)
+function [pair_mat_thrust, myu1] = calc_pair_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, 4);
-    for i = 1:param.num
+    for i = 1:1
         sat1 = pair_mat(i,1);
         sat2 = pair_mat(i,2);
         X = state_mat(sat1,:).' - state_mat(sat2,:).';
-        u = calc_u(X, param);
+        [u, myu1] = calc_u(X, param);
         thrust = u/(counts(sat1)*counts(sat2));
         % pair_mat_thrust(:,:,i) = [thrust,-thrust];
         pair_mat_thrust(:,1,i) = thrust;
@@ -1046,7 +1056,7 @@ function pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param)
     end
 end
 
-function u = calc_u(X, param)
+function [u, myu1] = calc_u(X, param)
     d_avoid = param.d_avoid;
     n = param.n;
     coilN = param.coilN;
@@ -1103,7 +1113,7 @@ function thrust_mat = calc_thrust(pair_mat, pair_mat_thrust, param)
     end
 end
 
-function [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
+function [pair_mat_thrust, break_end, myu1] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, 4);
     break_end = 0;
     %parfor i = 1:param.num
@@ -1113,7 +1123,7 @@ function [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, count
         sat1 = pair_mat(i,1);
         sat2 = pair_mat(i,2);
         X = state_mat(sat1,:).' - state_mat(sat2,:).';
-        u = calc_optimal_u(X, param);
+        [u, myu1] = calc_optimal_u(X, param);
         %break_end = break_end + break_end2; 
         %disp("jkljmlnklj")
         %disp(break_end)
@@ -1190,7 +1200,7 @@ end
 
 
 
-function u = calc_optimal_u(X, param)
+function [u, myu1] = calc_optimal_u(X, param)
     % Xは相対位置ベクトル
     myu_max = param.myu_max;
     s0 = X/2;
@@ -1198,7 +1208,7 @@ function u = calc_optimal_u(X, param)
     
     [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param);
 
-    [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
+    %[u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
@@ -1262,7 +1272,7 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
     %disp("最適化前dist_list)")
     %disp(dist_list)
 
-    for k = 1:10   
+    for k = 1:30   
         % ノミナル軌道sによってPとQが変わる
         A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
         B_list = create_B_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
@@ -1346,7 +1356,7 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-        w1 = 10000/N;
+        w1 = 10000;
         cvx_begin quiet
             variable u_myu_approx(3*N+N)
             minimize(sum(abs(mat * (P(1:6,:) * u_myu_approx + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(u_myu_approx(end-N+1:end))))
@@ -1370,6 +1380,8 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
         end
         %disp(cvx_status)
         f_approx = sum(abs(mat * (P(1:6,:) * u_myu_approx + Q(1:6,:) * s0 + R(1:6,:))));
+        disp("f_approx")
+        disp(f_approx)
         %}
         %{
         if cvx_status ~= 'Solved'
