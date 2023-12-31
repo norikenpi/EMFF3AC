@@ -19,7 +19,7 @@ dt = 10;
 N = 10; %入力最適化の最適化ステップ
 n = 0.0011; % 0.0011
 %u_max = 1e-9;
-coilN = 140;
+coilN = 1400;
 radius = 0.05;
 P_max = 10; % W
 rho = 1.68e-7; % Ω/m
@@ -48,8 +48,8 @@ alpha = 0.1;
 
 
 % ゲインはすごい大事。最大ステップ数を1にして、最大電流をしっかり使い切るぐらいのゲインを設定する必要がある。
-kA = 2;%2e-3;
-kB = 1;%1e-3;
+kA = 2e-2;%2e-3;
+kB = 1e-2;%1e-3;
 
 axis_ratio = 1.2;
 
@@ -258,7 +258,7 @@ while E_all > E_border
 
     EandCs= calc_E_all(state_mat, param);
     E_all = EandCs(1);
-    disp("エネルギー総和")
+    %disp("エネルギー総和")
     disp(N_step)
     disp(E_all)
     E_all_list = [E_all_list;E_all];
@@ -269,7 +269,7 @@ while E_all > E_border
 
 
     
-    if N_step == 10
+    if N_step == 1000
         %ペアを組んでいる衛星が
         break
     end
@@ -318,7 +318,11 @@ satellites{19} = state19(:,1:3);
 satellites{20} = state20(:,1:3);
 
 plot_s(satellites, num, N_step, rr, d_target, pair_set, axis_ratio)
-
+figure_E_all(E_all_list, param)
+figure_E_all(C4_list, param)
+figure_E_all(C1_list, param)
+figure_E_all(C5_list, param)
+figure_E_all(C6_list, param)
 %% 関数リスト
 
 function figure_E_all(E_all_list, param)
@@ -507,6 +511,7 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
 end
 
 % 昔使ってた繰り返し使うscp
+%{
 function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
     d_target = param.d_target;
     num = 2;
@@ -676,7 +681,7 @@ function [u_myu, s] = calc_optimal_myu(s0, s, u_myu, param)
     
 
 end
-
+%}
 
 function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_max, P, Q, R, s0, d_avoid, A, b, param)
     % 初期化
@@ -1224,8 +1229,8 @@ end
 
 function pair_mat_thrust = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, param.num);
-    %parfor i = 1:param.num
-    for i = 1:param.num
+    parfor i = 1:param.num
+    %for i = 1:param.num
         
         sat1 = pair_mat(i,1);
         
@@ -1433,9 +1438,9 @@ function [u_myu, s] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell
         b = [b2;b3;b4];
          
         % 最適化
-        [u_myu_approx, f_approx, exitflag, output] = solveOptimizationProblem(n, [u_myu;dist_list], N, myu_max, P, Q, R, s0, d_avoid, A, b);
+        %[u_myu_approx, f_approx, exitflag, output] = solveOptimizationProblem(n, [u_myu;dist_list], N, myu_max, P, Q, R, s0, d_avoid, A, b);
         
-        %{
+        
        % cvxが遅すぎる。　 
         exitflag = 2;
         % 解はnum×N×3自由度
@@ -1465,7 +1470,7 @@ function [u_myu, s] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell
         cvx_end
         %cvx_status
         f_approx = sum(abs(mat * (P(1:6,:) * u_myu_approx + Q(1:6,:) * s0 + R(1:6,:))));
-        %}
+        
 
         s_approx = P * u_myu_approx + Q * s0 + R;
     
@@ -1512,7 +1517,7 @@ function [u_myu, s] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell
         % 信頼領域の更新
         % 線形化誤差が大きかったらtrust regionを狭めてやり直し。
         if exitflag < 0
-            disp("fmincon失敗")
+            %disp("fmincon失敗")
             
             delta_r = delta_r * beta_succ; % 成功時、信頼領域を拡大
             delta_myu = delta_myu * beta_succ; % 成功時、信頼領域を拡大

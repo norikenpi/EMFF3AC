@@ -2,7 +2,7 @@
 %高橋座標系になっていることに注意。
 clear;
 %rng(1);
-dt = 30;
+dt = 10;
 N = 30;
 num = 2;
 n = 0.0011; % 0.0011
@@ -32,7 +32,7 @@ d_avoid = radius*6; %0.30
 %d_avoid_nominal = d_avoid*1.5; %0.45
 d_max = 1;
 % 初期衛星間距離
-d_initial = d_avoid/2;
+d_initial = d_avoid;
 
 position0 = rand(3, 1);
 velocity0 = rand(3, 1);
@@ -83,10 +83,11 @@ state(1,:) = s0.';
 s = zeros(6*N*2,1);
 thetaP = pi/6;
 rd = 0;
-
+dist_list = zeros(N,1);
 for i = 1:N
     X = state(i,:).';
-    if norm(X(1:3)) > d_avoid/2
+    dist_list(end-i+1) = -d_avoid + norm(X(1:3))*2;
+    if norm(X(1:3)) > 0%d_avoid/2
         disp("距離")
         disp(norm(X(1:3))*2)
         %disp("速度")
@@ -193,11 +194,6 @@ s_best = s;
 
 x_r = state(N+1,:);
 
-E_data = calc_E(x_r, param);
-f_old = E_data(1);
-f_best = E_data(1);
-disp("エネルギー総和")
-disp(f_old)
 
 %% 最適化2
 
@@ -208,8 +204,8 @@ s02 = -s0;
 s0 = adjust_cog([s01, s02], num); % 6num×1
 
 % trust region
-delta_r = 1;
-delta_myu = myu_max*2;
+delta_r = 5;
+delta_myu = myu_max*4;
 
 % 成功時の拡大係数
 beta_succ = 1.1;  
@@ -218,7 +214,7 @@ beta_succ = 1.1;
 beta_fail = 0.5; 
 
 % 成功の閾値
-alpha = 0.1;  
+alpha = 0.001;  
 
 A_ = A;
 B_ = B;
@@ -247,10 +243,10 @@ B_mat = create_B_mat(B_list, num, N);
 A_mat2 = create_A_mat2(A_list, num, N);
 C_mat = create_C_mat(C_list, num, N);
 
-P = A_mat*B_mat; %6Nnum×3Nnum
+P = [A_mat*B_mat, zeros(2*6*N,N)]; %6Nnum×3Nnum
 Q = A_mat2; 
 R = A_mat*C_mat; 
-sss = P *u_myu + Q*s0 + R;
+sss = P *[u_myu;dist_list] + Q*s0 + R;
 nominal_s = s;
 C01 = [eye(3),zeros(3)];
 C1 = [];
@@ -265,23 +261,41 @@ for i = 1:N
     C2 = blkdiag(C2, C02);
 end
 A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
+A2(:,end-N+1:end) = diag(calculate_norms(C2 * C1 * nominal_s));
 b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
 
-a = b2 - A2*myu_list;
+a = b2 - A2*[u_myu;dist_list] ;
 %{
 aa = create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * nominal_s./calculate_norms(C2 * C1 * nominal_s) ;
 disp("sdfasdfsdfas")
 disp(calculate_norms(C2 * C1 * nominal_s))
 %}
+
+E_data = calc_E(x_r, param);
+
+n = param.n;
+kA = 2e-3;
+thetaP = pi/6;
+mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+   2,0,0,0,1/n,0;
+   0,0,0,-1/(n*tan(thetaP)),0,1/n;
+   -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+w1 = 10000/N;
+f_old = sum(abs(mat * (P(1:6,:) * [u_myu;dist_list] + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(dist_list));
+f_best = sum(abs(mat * (P(1:6,:) * [u_myu;dist_list] + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(dist_list));
+disp("エネルギー総和")
+disp(f_old)
+%sum(abs(mat * (P(1:6,:) * [u_myu;dist_list] + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(dist_list)
 %% 検証
 delta_r_list = [];
 delta_myu_list = [];
-f_list = [];
+f_list = [f_old];
 exitflag_list = [];
 optim_success = [];
 input_myu_list = [];
-for k = 1:10
+for k = 1:30
     disp("scp開始")
+    disp(k)
     % ノミナル軌道sによってPとQが変わる
     A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
     B_list = create_B_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
@@ -292,7 +306,7 @@ for k = 1:10
     A_mat2 = create_A_mat2(A_list, num, N);
     C_mat = create_C_mat(C_list, num, N);
     
-    P = A_mat*B_mat; %6Nnum×3Nnum
+    P = [A_mat*B_mat, zeros(2*6*N,N)]; %6Nnum×3Nnum
     Q = A_mat2; 
     R = A_mat*C_mat; 
     
@@ -315,6 +329,7 @@ for k = 1:10
     % create_matrixは複数の相対位置ベクトルの内積をまとめて行うための行列を作っている。
     % 不等式の大小を変えるために両辺マイナスをかけている。
     A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
+    A2(:,end-N+1:end) = diag(calculate_norms(C2 * C1 * nominal_s));
     b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
     % 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
     % s - (PU + Qs0 + R) < δ
@@ -326,12 +341,55 @@ for k = 1:10
     % 不等式制約4 (磁気モーメントの変化量はδ2以下)
     % U2 - U1 < δ
     % U1 - U2 < δ
-    A4 = [-eye(N*3); eye(N*3)];
+    A4 = [[-eye(N*3),zeros(N*3,N)]; [eye(N*3),zeros(N*3,N)]];
+    
     b4 = [delta_myu * ones(3*N, 1) - u_myu; delta_myu * ones(3*N, 1) + u_myu];
     A = [A2;A3;A4];
     b = [b2;b3;b4];
      
-    [x_new, f_approx, exitflag, output] = solveOptimizationProblem(n, u_myu, N, myu_max, P, Q, R, s0, d_avoid, A, b);
+    %[x_new, f_approx, exitflag, output] = solveOptimizationProblem(n, [u_myu;dist_list], N, myu_max, P, Q, R, s0, d_avoid, A, b);
+
+    
+        
+   % cvxが遅すぎる。
+    
+    exitflag = 2;
+    % 解はnum×N×3自由度
+    n = param.n;
+    kA = 2e-3;
+    thetaP = pi/6;
+    mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+       2,0,0,0,1/n,0;
+       0,0,0,-1/(n*tan(thetaP)),0,1/n;
+       -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+    w1 = 10000/N;
+    cvx_begin quiet
+        variable u_myu_approx(3*N+N)
+        minimize(sum(abs(mat * (P(1:6,:) * u_myu_approx + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(u_myu_approx(end-N+1:end))))
+    
+        subject to
+            % 不等式制約
+            % 進入禁止制約
+            % 位置trust region
+            % 磁気モーメントtrust region
+            A * u_myu_approx <= b;                                
+    
+            % 太陽光パネルの発電量拘束
+            for i = 1:N
+                norm(u_myu_approx(3*(i-1)+1:3*i)) <= myu_max;
+            end
+    cvx_end
+    disp(cvx_status)
+    f_approx = sum(abs(mat * (P(1:6,:) * u_myu_approx + Q(1:6,:) * s0 + R(1:6,:))));
+
+    exitflag = -2;
+    if strcmp(cvx_status, 'Solved')
+        exitflag = 2;
+        %disp("Unsolved")
+    end
+    x_new = u_myu_approx;
+    
+
     s_new = P * x_new + Q * s0 + R;
     u_myu_new = x_new;
 
@@ -351,7 +409,7 @@ for k = 1:10
     A_mat2 = create_A_mat2(A_list, num, N);
     C_mat = create_C_mat(C_list, num, N);
     
-    P_real = A_mat*B_mat; %6Nnum×3Nnum
+    P_real = [A_mat*B_mat, zeros(2*6*N,N)]; %6Nnum×3Nnum
     Q_real = A_mat2; 
     R_real = A_mat*C_mat; 
     
@@ -359,8 +417,10 @@ for k = 1:10
     
     
     % far-fieldで時系列状態を計算しなおしたもの評価関数を計算。
-    f_real = objectiveFunction(n, x_new, P_real, Q_real, R_real, s0);
-    
+    f_real = objectiveFunction(n, x_new, P_real, Q_real, R_real, s0, N);
+    disp("trust region")
+    disp(delta_myu)
+
 
     disp("最適化前評価関数")
     disp(f_old)
@@ -382,9 +442,9 @@ for k = 1:10
     % 線形化誤差が大きかったらtrust regionを狭めてやり直し。
     delta_r_list = [delta_r_list; delta_r];
     delta_myu_list = [delta_myu_list; delta_myu];
-    f_list = [f_list; f_real];
+    
     exitflag_list = [exitflag_list; exitflag];
-    if exitflag == 0 || exitflag == -1 || exitflag == -2
+    if exitflag == -1 || exitflag == -2 %exitflag == 0 || exitflag == -1 || exitflag == -2 ~strcmp(cvx_status, 'Solved')%
         optim_success = [optim_success; 0];
         disp("fmincon失敗")
         disp("exitflag")
@@ -396,7 +456,7 @@ for k = 1:10
         %disp(delta_r)
         %disp("磁気モーメント　trust region")
         %disp(delta_myu)
-    elseif delta > alpha * delta_tilde
+    elseif delta > 0%alpha * delta_tilde
         optim_success = [optim_success; 1];
         disp("最適化成功")
         disp("exitflag")
@@ -409,7 +469,8 @@ for k = 1:10
         %disp("磁気モーメント　trust region")
         %disp(delta_myu)
         s = s_new; % 新しい点を更新
-        u_myu = u_myu_new; % 新しい点を更新
+        u_myu = u_myu_new(1:3*N);% 新しい点を更新
+        dist_list = u_myu_new(end-N+1:end);
         f_old = f_real;
         if f_real < f_best
             %disp("解更新")
@@ -432,13 +493,16 @@ for k = 1:10
     end
     
     % 収束判定（任意の閾値に基づく）
-    if abs(delta) < 1e-6
+
+    if delta_tilde < 1e-6
         disp("最適化終了")
         disp("最適化回数")
         disp(k)
         disp("評価関数の減少率が閾値以下")
         break; % 収束したと見なしてループを抜ける
     end
+
+    f_list = [f_list; f_best];
 
 end
 
@@ -477,8 +541,8 @@ myu_norm = vecnorm(myu_mat,2,2);
 plot_list(delta_myu_list, "磁気モーメントtrust region", "磁気モーメントtrust regionの推移")
 plot_list(delta_r_list, "位置trust region", "位置trust regionの推移")
 plot_list(f_list, "評価関数の値", "評価関数の値の推移")
-plot_list(exitflag_list, "exitflagの値", "exitflagの値の推移")
-plot_list(optim_success, "最適化成功可否", "最適化が成功した場合1。最適化が失敗した場合0")
+plot_list(exitflag_list, "exitflagの値", "2→Solved -2→それ以外(Inaccurate/Solved)")
+plot_list(optim_success, "最適化採用結果", "最適化を採用した場合1。採用しなかった場合0")
 plot_list(flip(myu_norm), "磁気モーメントの大きさ", "磁気モーメントの大きさの推移")
 
 disp("最大電力")
@@ -541,7 +605,7 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
     options = optimoptions('fmincon',...
                        'Display', 'off');
 
-    fun =  @(x) objectiveFunction(n, x, P, Q, R, s0);
+    fun =  @(x) objectiveFunction(n, x, P, Q, R, s0, N);
 
     c_ceq = @(x) nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid);
 
@@ -549,7 +613,7 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
     [x, fval, exitflag, output] = fmincon(fun, x0, A, b, Aeq, beq, lb, ub, c_ceq, options);
 end
 
-function f = objectiveFunction(n, x, P, Q, R, s0)
+function f = objectiveFunction(n, x, P, Q, R, s0, N)
     % 目的関数の計算
     kA = 2e-3;
     thetaP = pi/6;
@@ -558,11 +622,11 @@ function f = objectiveFunction(n, x, P, Q, R, s0)
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    
-    f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))); % xを用いた計算
+    w1 = 10000/N;
+    f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(x(end-N+1:end)));
 end
 
-function [c, ceq] = nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid)
+function [c, ceq] = nonlinearConstraints(x, N, myu_max, P, Q, ~, d_avoid)
     
     % 非線形制約の計算
     % 発電量拘束
