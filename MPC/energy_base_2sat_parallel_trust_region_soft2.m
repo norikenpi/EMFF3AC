@@ -1,12 +1,13 @@
-clear
 %% パラメータ設定
+clear
+
 % 最終衛星間距離
 tic;
 d_target = 0.925;
 rng(1)
 
 % 衛星数　2基or5基or9基
-num = 4;
+num = 2;
 
 % 衛星質量
 m = 1; % 1
@@ -85,20 +86,20 @@ param.alpha = alpha;
 
 
 satellites = cell(1, num);
-pair_set = zeros(4, 2, N);  % 4x2xTのゼロ配列の初期化
+pair_set = zeros(1, 2, N);  % 4x2xTのゼロ配列の初期化
 
 
-s01 = [-d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s01 = [d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 s02 = [-d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s03 = [ d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s04 = [ d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s0 = adjust_cog([s01, s02, s03, s04], num); % 6num×1
+%s03 = [ d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+%s04 = [ d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s0 = adjust_cog([s01, s02], num); % 6num×1
 
 %各衛星初期状態決定
 s01 = s0(1:6);
 s02 = s0(7:12);
-s03 = s0(13:18);
-s04 = s0(19:24);
+%s03 = s0(13:18);
+%s04 = s0(19:24);
 
 E_border = 20*num;
 %E_border =0.0001;
@@ -106,14 +107,14 @@ E_all = 1000;
 
 state1 = zeros(N,6);
 state2 = zeros(N,6);
-state3 = zeros(N,6);
-state4 = zeros(N,6);
+%state3 = zeros(N,6);
+%state4 = zeros(N,6);
 
 state1(1,:) = s01.';
 state2(1,:) = s02.';
-state3(1,:) = s03.';
-state4(1,:) = s04.';
-state_mat  = [s01.';s02.';s03.';s04.'];
+%state3(1,:) = s03.';
+%state4(1,:) = s04.';
+state_mat  = [s01.';s02.'];
 state_mat0 = state_mat;
 
 i = 0;
@@ -132,12 +133,13 @@ while E_all > E_border
     
     
     pair_mat = make_pair(state_mat, param, N_step);
+    pair_mat = [1,2];
     pair_set(:,:,i) = pair_mat;
 
     % 最大電力割り当て
     % ペアごとに割り振る感じがいいのかな。
-    counts = count_pair_num(pair_mat);
-
+    %counts = count_pair_num(pair_mat);
+    counts = [1,1];
     % 各ペア制御入力計算（for ペアlist　座標平行移動）
     % ペアでforを回して、一発で現在の状態と最大磁気モーメントから制御入力とペア間に働く力が出る関数がほしい。
     % 最適化ベースになるとここが変わるだけ。
@@ -166,8 +168,8 @@ while E_all > E_border
     
     state1(i+1,:) = state_mat(1,:);
     state2(i+1,:) = state_mat(2,:);
-    state3(i+1,:) = state_mat(3,:);
-    state4(i+1,:) = state_mat(4,:);
+    %state3(i+1,:) = state_mat(3,:);
+    %state4(i+1,:) = state_mat(4,:);
 
     %総エネルギー計算
     %次の時刻の状態から総エネルギーを計算
@@ -409,7 +411,7 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
     w1 = 10000/N;
     x_r = state(N+1,:);
     E_data = calc_E(x_r, param);
-    f_best = sum(abs(mat * (P(1:6,:) * [u_myu;dist_list] + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(dist_list));
+    f_best = sum(abs(E_data(1)) + w1 * norm(dist_list));
     %disp(f_best)
 end
 
@@ -1106,8 +1108,8 @@ end
 function [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, 4);
     break_end = 0;
-    parfor i = 1:param.num
-    %for i = 1:param.num
+    %parfor i = 1:param.num
+    for i = 1:1
         %disp("衛星i")
         %disp(i)
         sat1 = pair_mat(i,1);
