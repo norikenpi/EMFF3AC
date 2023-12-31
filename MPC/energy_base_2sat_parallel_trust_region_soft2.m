@@ -187,7 +187,7 @@ while E_all > E_border
 
 
     
-    if N_step == 1000
+    if N_step == 2
         %ペアを組んでいる衛星が
         break
     end
@@ -212,8 +212,6 @@ time = toc
 %% 図示
 satellites{1} = state1(:,1:3);
 satellites{2} = state2(:,1:3);
-satellites{3} = state3(:,1:3);
-satellites{4} = state4(:,1:3);
 
 plot_s(satellites, num, N_step, rr, d_target, pair_set)
 figure_E_all(E_all_list, param)
@@ -1365,6 +1363,11 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
                     norm(u_myu_approx(3*(i-1)+1:3*i)) <= myu_max;
                 end
         cvx_end
+        exitflag = -2;
+        if strcmp(cvx_status, 'Solved')
+            exitflag = 2;
+            %disp("Unsolved")
+        end
         %disp(cvx_status)
         f_approx = sum(abs(mat * (P(1:6,:) * u_myu_approx + Q(1:6,:) * s0 + R(1:6,:))));
         %}
@@ -1418,16 +1421,11 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
         %disp(delta)
         % 減少比の計算
         rho_k = delta / delta_tilde;
-        delta_r_list = [delta_r_list; delta_r];
-        delta_myu_list = [delta_myu_list; delta_myu];
-        
-        exitflag_list = [exitflag_list; exitflag];
     
         % 信頼領域の更新
         % 線形化誤差が大きかったらtrust regionを狭めてやり直し。
         if exitflag == -1 || exitflag == -2 %exitflag == 0 || exitflag == -1 || exitflag == -2 ~strcmp(cvx_status, 'Solved')%
             %disp("fmincon失敗")
-            optim_success = [optim_success; 0];
             delta_r = delta_r * beta_succ; % 成功時、信頼領域を拡大
             delta_myu = delta_myu * beta_succ; % 成功時、信頼領域を拡大
             break_end = 1;
@@ -1438,7 +1436,6 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
             %disp(delta_myu)
             
         elseif delta > 0%alpha * delta_tilde
-            optim_success = [optim_success; 1];
             %disp("最適化成功")
             delta_r = delta_r * beta_succ; % 成功時、信頼領域を拡大
             delta_myu = delta_myu * beta_succ; % 成功時、信頼領域を拡大
@@ -1457,7 +1454,6 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
             %disp(f_best)
         else
             %disp("最適化失敗 trust region大きすぎ")
-            optim_success = [optim_success; 0];
             delta_r = delta_r * beta_fail; % 成功時、信頼領域を拡大
             delta_myu = delta_myu * beta_fail; % 成功時、信頼領域を拡大
             %disp("更新された trust region")
@@ -1475,8 +1471,6 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
             disp("評価関数の減少率が閾値以下")
             break; % 収束したと見なしてループを抜ける
         end
-
-        f_list = [f_list; f_best];
     
     end
 
@@ -1578,7 +1572,7 @@ function plot_s(satellites, num, N, rr, d_target, pair_set)
             plot3(satellites{j}(1,1), satellites{j}(1,2), satellites{j}(1,3), 'o', 'MarkerSize', 5, 'Color', colors(j,:));
         end
 
-        for j = 1:num
+        for j = 1:1
             % ペアリングを表示
             sat1 = pair_set(j,1,i);
             sat2 = pair_set(j,2,i);
