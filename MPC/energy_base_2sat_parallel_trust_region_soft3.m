@@ -33,7 +33,7 @@ func_cell = create_func_cell();
 
 
 d_avoid = radius*6;
-d_initial = d_avoid/2;
+d_initial = d_avoid/1.5;
 
 delta_r = d_avoid/100;
 delta_myu = myu_max;
@@ -89,11 +89,8 @@ satellites = cell(1, num);
 pair_set = zeros(1, 2, N);  % 4x2xTのゼロ配列の初期化
 
 
-s01 = [d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s02 = [-d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-
-s01 = [0.00005+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s02 = [-0.00005+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s01 = [0.00005+(2*rand-1)*1e-3; d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s02 = [  0.00005+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3;-0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 %s03 = [ d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 %s04 = [ d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 s0 = adjust_cog([s01, s02], num); % 6num×1
@@ -106,7 +103,6 @@ s02 = s0(7:12);
 
 E_border = 20*num;
 E_border = 0.1;
-E_all = 1000;
 
 state1 = zeros(N,6);
 state2 = zeros(N,6);
@@ -130,10 +126,12 @@ C1_list = [EandCs(3)];
 C5_list = [EandCs(4)];
 C6_list = [EandCs(5)];
 u_myu_norm_list = [];
+u_list = [];
+rel_list = [];
 %% シミュレーション
 %エネルギーの総和がE_border以下だったら問題ない。
 while EandCs(1) > E_border || EandCs(3) > C1_border
-    disp("判定")
+    disp("C判定")
     disp(EandCs(1))
     disp(EandCs(3))
     i = i + 1;
@@ -154,10 +152,10 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     % 最適化ベースになるとここが変わるだけ。
 
     % エナジーベースのFB制御 %noninal_inputと使ってる関数が違うというバグ。
-    [pair_mat_thrust, myu1] = calc_pair_thrust(pair_mat, counts, state_mat, param);
+    %[pair_mat_thrust, myu1] = calc_pair_thrust(pair_mat, counts, state_mat, param);
 
     % 最適化を行った入力を計算
-    %[pair_mat_thrust, break_end, myu1] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
+    [pair_mat_thrust, break_end, myu1] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
     %{
 
     if break_end > 0
@@ -172,6 +170,7 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     % ペアでforを回して、各衛星に働く力を計算。
     thrust_mat = calc_thrust(pair_mat, pair_mat_thrust, param);
     %
+    
 
     % 状態量更新
     % 現在の状態量と推力を入れたら次の時刻の状態量が出てくる関数
@@ -182,13 +181,16 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     %state3(i+1,:) = state_mat(3,:);
     %state4(i+1,:) = state_mat(4,:);
 
+    u_list = [u_list,thrust_mat(:,1)];
+    rel_list = [rel_list, state_mat(1,1:3).'*2];
+
     %総エネルギー計算
     %次の時刻の状態から総エネルギーを計算
 
     EandCs= calc_E_all(state_mat, param);
     disp("エネルギー総和")
     disp(N_step)
-    disp(E_all)
+    disp(EandCs(1))
     E_all_list = [E_all_list;EandCs(1)];
     C4_list = [C4_list;EandCs(2)];
     C1_list = [C1_list;EandCs(3)];
@@ -197,7 +199,7 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     u_myu_norm_list = [u_myu_norm_list;norm(myu1)];
 
     
-    if N_step == 1000
+    if N_step == 500
         %ペアを組んでいる衛星が
         break
     end
@@ -220,6 +222,8 @@ disp(['時間: ' num2str(hours) ' 時間 ' num2str(minutes) ' 分 ' num2str(seco
 
 time = toc
 %% 図示
+% NNモデルを作るためのデータ
+data_mat = [rel_list; u_list];
 satellites{1} = state1(:,1:3);
 satellites{2} = state2(:,1:3);
 
@@ -239,7 +243,7 @@ function figure_E_all(E_all_list, param, ylabel_name, title_name)
     
     % データをプロット
     plot(time, E_all_list);
-    xlabel('Time');
+    xlabel('Time(sec)');
     title(title_name);
     ylabel(ylabel_name);
     grid on; % グリッド線の表示
@@ -315,7 +319,7 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
         dist_list(end-i+1) = - d_avoid + norm(X(1:3))*2;
         %disp("sdfsg")
         %disp(dist_list(end-i+1))
-        if norm(X(1:3)) > 0 %d_avoid/2
+        if norm(X(1:3)) > d_avoid/2
             %disp("距離")
             %disp(norm(X(1:3))*2)
             %disp("速度")
@@ -422,8 +426,7 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
     x_r = state(N+1,:);
     E_data = calc_E(x_r, param);
     f_best = sum(abs(E_data(1)) + w1 * norm(dist_list));
-    disp("nominal f_best")
-    disp(f_best)
+
 end
 
 % 昔使ってた繰り返し使うscp
@@ -638,12 +641,12 @@ function f = objectiveFunction(n, x, P, Q, R, s0, N)
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    %{
+    
     
     mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n];
-    %}
+    
 
     w1 = 1000/N;
     
@@ -1190,14 +1193,14 @@ function E_data = calc_E(state, param)
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    %{
+    
     mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n];
-    %}
+    
     E = sum(abs(mat * state.'));
     Cs = abs(mat * state.');
-    E_data = [E; Cs];
+    E_data = [E; Cs; 0];
 end
 
 
@@ -1210,7 +1213,6 @@ function [u, myu1] = calc_optimal_u(X, param)
     func_cell = create_func_cell();
     
     [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param);
-
     %[u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
@@ -1275,7 +1277,7 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
     %disp("最適化前dist_list)")
     %disp(dist_list)
 
-    for k = 1:30   
+    for k = 1:30
         % ノミナル軌道sによってPとQが変わる
         A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
         B_list = create_B_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
@@ -1359,6 +1361,9 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+        mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+           2,0,0,0,1/n,0;
+           0,0,0,-1/(n*tan(thetaP)),0,1/n];
         w1 = 10000;
         cvx_begin quiet
             variable u_myu_approx(3*N+N)
@@ -1383,8 +1388,6 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
         end
         %disp(cvx_status)
         f_approx = sum(abs(mat * (P(1:6,:) * u_myu_approx + Q(1:6,:) * s0 + R(1:6,:))));
-        disp("f_approx")
-        disp(f_approx)
         %}
         %{
         if cvx_status ~= 'Solved'
