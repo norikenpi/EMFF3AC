@@ -107,7 +107,6 @@ s04 = s0(19:24);
 
 E_border = 20*num;
 E_border =0.01;
-E_all = 1000;
 
 state1 = zeros(N,6);
 state2 = zeros(N,6);
@@ -121,16 +120,26 @@ state4(1,:) = s04.';
 state_mat  = [s01.';s02.';s03.';s04.'];
 state_mat0 = state_mat;
 
+EandCs= calc_E_all(state_mat, param);
+C1_border = 0.01;
+
 i = 0;
 
-E_all_list = [];
-C4_list = [];
-C1_list = [];
-C5_list = [];
-C6_list = [];
+E_all_list = [EandCs(1)];
+C4_list = [EandCs(2)];
+C1_list = [EandCs(3)];
+C5_list = [EandCs(4)];
+C6_list = [EandCs(5)];
+u_myu_norm_list = [];
+u_list = [];
+rel_list = [];
 %% シミュレーション
-%エネルギーの総和がE_border以下だったら問題ない
-while E_all > E_border
+%エネルギーの総和がE_border以下かつC1がC1_borderだったら問題ない
+while EandCs(1) > E_border || EandCs(3) > C1_border
+    disp("C判定")
+    disp(EandCs(1))
+    disp(EandCs(3))
+    
     i = i + 1;
     N_step = i; 
     % ペア組み
@@ -151,7 +160,7 @@ while E_all > E_border
     %pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param);
 
     % 最適化を行った入力を計算
-    [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
+    [pair_mat_thrust, break_end, myu1] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
     
     if break_end > 0
         break
@@ -174,23 +183,26 @@ while E_all > E_border
     state3(i+1,:) = state_mat(3,:);
     state4(i+1,:) = state_mat(4,:);
 
+    u_list = [u_list,thrust_mat(:,1)];
+    rel_list = [rel_list, state_mat(1,1:3).'*2];
+
     %総エネルギー計算
     %次の時刻の状態から総エネルギーを計算
 
     EandCs= calc_E_all(state_mat, param);
-    E_all = EandCs(1);
     disp("エネルギー総和")
     disp(N_step)
-    disp(E_all)
-    E_all_list = [E_all_list;E_all];
+    disp(EandCs(1))
+    E_all_list = [E_all_list;EandCs(1)];
     C4_list = [C4_list;EandCs(2)];
     C1_list = [C1_list;EandCs(3)];
     C5_list = [C5_list;EandCs(4)];
-    %C6_list = [C6_list;EandCs(5)];
+    C6_list = [C6_list;EandCs(5)];
+    u_myu_norm_list = [u_myu_norm_list;norm(myu1)];
 
 
     
-    if N_step == 10
+    if N_step == 500
         %ペアを組んでいる衛星が
         break
     end
@@ -1107,9 +1119,10 @@ function thrust_mat = calc_thrust(pair_mat, pair_mat_thrust, param)
     end
 end
 
-function [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
+function [pair_mat_thrust, break_end, myu1] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, 4);
     break_end = 0;
+    myu1 = [1;1;1];
     parfor i = 1:param.num
     %for i = 1:param.num
         %disp("衛星i")
@@ -1117,7 +1130,7 @@ function [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, count
         sat1 = pair_mat(i,1);
         sat2 = pair_mat(i,2);
         X = state_mat(sat1,:).' - state_mat(sat2,:).';
-        u = calc_optimal_u(X, param);
+        [u, ~] = calc_optimal_u(X, param); %[u, myu1] = calc_optimal_u(X, param);
         %break_end = break_end + break_end2; 
         %disp("jkljmlnklj")
         %disp(break_end)
@@ -1164,7 +1177,7 @@ end
 
 function E_all = calc_E_all(state_mat, param)
     E_all = [0;0;0;0;0];
-    E_all = [0;0;0;0];
+    %E_all = [0;0;0;0];
     for i = 1:param.num
         state = state_mat(i,:);
         E_all = E_all + calc_E(state, param); 
@@ -1188,13 +1201,13 @@ function E_data = calc_E(state, param)
     
     E = sum(abs(mat * state.'));
     Cs = abs(mat * state.');
-    E_data = [E; Cs];
+    E_data = [E; Cs; 0];
 end
 
 
 
 
-function u = calc_optimal_u(X, param)
+function [u, myu1] = calc_optimal_u(X, param)
     % Xは相対位置ベクトル
     myu_max = param.myu_max;
     s0 = X/2;
@@ -1202,7 +1215,7 @@ function u = calc_optimal_u(X, param)
     
     [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param);
 
-    %[u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
+    [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
@@ -1267,7 +1280,7 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
     %disp("最適化前dist_list)")
     %disp(dist_list)
 
-    for k = 1:10   
+    for k = 1:30   
         % ノミナル軌道sによってPとQが変わる
         A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
         B_list = create_B_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
