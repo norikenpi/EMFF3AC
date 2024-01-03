@@ -92,6 +92,11 @@ s01 = [-d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-
 s02 = [-d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 s03 = [ d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 s04 = [ d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+
+s01 = [0.00005+(2*rand-1)*1e-3; -3*d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s02 = [-0.00005+(2*rand-1)*1e-3;  -d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s03 = [0.00005+(2*rand-1)*1e-3; d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s04 = [-0.00005+(2*rand-1)*1e-3; 3*d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5]; 
 s0 = adjust_cog([s01, s02, s03, s04], num); % 6num×1
 
 %各衛星初期状態決定
@@ -101,7 +106,7 @@ s03 = s0(13:18);
 s04 = s0(19:24);
 
 E_border = 20*num;
-%E_border =0.0001;
+E_border =0.01;
 E_all = 1000;
 
 state1 = zeros(N,6);
@@ -137,8 +142,6 @@ while E_all > E_border
     % 最大電力割り当て
     % ペアごとに割り振る感じがいいのかな。
     counts = count_pair_num(pair_mat);
-    disp("count")
-    disp(counts)
 
     % 各ペア制御入力計算（for ペアlist　座標平行移動）
     % ペアでforを回して、一発で現在の状態と最大磁気モーメントから制御入力とペア間に働く力が出る関数がほしい。
@@ -183,11 +186,11 @@ while E_all > E_border
     C4_list = [C4_list;EandCs(2)];
     C1_list = [C1_list;EandCs(3)];
     C5_list = [C5_list;EandCs(4)];
-    C6_list = [C6_list;EandCs(5)];
+    %C6_list = [C6_list;EandCs(5)];
 
 
     
-    if N_step == 1000
+    if N_step == 10
         %ペアを組んでいる衛星が
         break
     end
@@ -216,23 +219,30 @@ satellites{3} = state3(:,1:3);
 satellites{4} = state4(:,1:3);
 
 plot_s(satellites, num, N_step, rr, d_target, pair_set)
-figure_E_all(E_all_list, param)
-figure_E_all(C4_list, param)
-figure_E_all(C1_list, param)
-figure_E_all(C5_list, param)
-figure_E_all(C6_list, param)
-%% 関数リスト
+%figure_E_all(E_all_list, param)
+%figure_E_all(C4_list, param)
+%figure_E_all(C1_list, param)
+%figure_E_all(C5_list, param)
+%figure_E_all(C6_list, param)
 
-function figure_E_all(E_all_list, param)
+figure_E_all(E_all_list, param, "評価関数の大きさ", "評価関数の大きさの推移")
+figure_E_all(C4_list, param, "C4の大きさ", "C4の大きさの推移")
+figure_E_all(C1_list, param, "C1の大きさ", "C1の大きさの推移")
+figure_E_all(C5_list, param, "C5-C5dの大きさ", "C5-C5dの大きさの推移")
+%figure_E_all(C6_list, param, "C6-C6dの大きさ", "C6-C6dの大きさの推移")
+%figure_E_all(u_myu_norm_list, param, "磁気モーメントの大きさ", "磁気モーメントの大きさの推移")
+%% 関数リスト
+function figure_E_all(E_all_list, param, ylabel_name, title_name)
     figure
     % 時間軸を生成（ここでは1から250までの整数を使用）
     time = (1:length(E_all_list))*param.dt;
     
     % データをプロット
     plot(time, E_all_list);
-    xlabel('Time');
-    ylabel('Value');
-    title('Time Series Plot');
+    xlabel('Time(sec)');
+    title(title_name);
+    ylabel(ylabel_name);
+    grid on; % グリッド線の表示
 end
 
 function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
@@ -404,14 +414,10 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
     n = param.n;
     kA = 2e-3;
     thetaP = pi/6;
-    mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
-       2,0,0,0,1/n,0;
-       0,0,0,-1/(n*tan(thetaP)),0,1/n;
-       -1/(n*tan(thetaP)),0,1/n, 0,0,0];
     w1 = 10000/N;
     x_r = state(N+1,:);
     E_data = calc_E(x_r, param);
-    f_best = sum(abs(E_data(1)) + w1 * norm(dist_list));
+    f_best = E_data(1);
     %disp(f_best)
 end
 
@@ -627,12 +633,12 @@ function f = objectiveFunction(n, x, P, Q, R, s0, N)
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    %{
+    
     
     mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n];
-    %}
+    
 
     w1 = 1000/N;
     
@@ -975,23 +981,19 @@ function pair_mat = make_pair(state_mat, param, N_step)
         end
         pair_mat(i,2) = pair;
     end
-    %{
+    
     if mod(N_step, 2)
         pair_mat = [1,2;
                     2,1;
                     3,4;
-                    4,3];cvx
+                    4,3];
     else
         pair_mat = [1,3;
                     2,4;
                     3,1;
                     4,2];
-        pair_mat = [1,2;
-                    2,1;
-                    3,4;
-                    4,3];
     end
-  %}      
+    %{     
         pair_mat = [1,4;
                     2,3;
                     3,2;
@@ -1000,8 +1002,8 @@ function pair_mat = make_pair(state_mat, param, N_step)
         pair_mat = [1,2;
                     2,3;
                     3,4;
-                    4,1];
-      
+                    4,3];
+    %}
 
 end
 
@@ -1108,8 +1110,8 @@ end
 function [pair_mat_thrust, break_end] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, 4);
     break_end = 0;
-    %parfor i = 1:param.num
-    for i = 1:param.num
+    parfor i = 1:param.num
+    %for i = 1:param.num
         %disp("衛星i")
         %disp(i)
         sat1 = pair_mat(i,1);
@@ -1162,7 +1164,7 @@ end
 
 function E_all = calc_E_all(state_mat, param)
     E_all = [0;0;0;0;0];
-    %E_all = [0;0;0;0];
+    E_all = [0;0;0;0];
     for i = 1:param.num
         state = state_mat(i,:);
         E_all = E_all + calc_E(state, param); 
@@ -1179,11 +1181,11 @@ function E_data = calc_E(state, param)
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    %{
+    
     mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n];
-    %}
+    
     E = sum(abs(mat * state.'));
     Cs = abs(mat * state.');
     E_data = [E; Cs];
@@ -1200,7 +1202,7 @@ function u = calc_optimal_u(X, param)
     
     [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param);
 
-    [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
+    %[u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
@@ -1211,6 +1213,7 @@ function u = calc_optimal_u(X, param)
     u = F*myu1;
     
 end
+
 
 function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell)  
     num = 2;
@@ -1348,6 +1351,9 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
+        mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+           2,0,0,0,1/n,0;
+           0,0,0,-1/(n*tan(thetaP)),0,1/n];
         w1 = 10000/N;
         cvx_begin quiet
             variable u_myu_approx(3*N+N)
@@ -1468,7 +1474,7 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
         end
         
         % 収束判定（任意の閾値に基づく）
-        if delta_tilde < 1e-6
+        if abs(delta_tilde) < 1e-6
             disp("最適化終了")
             disp("最適化回数")
             disp(k)
@@ -1532,9 +1538,9 @@ function plot_s(satellites, num, N, rr, d_target, pair_set)
     % フィギュアの作成
     figure;
     axis equal;
-    xlim([-d_target*1.5, d_target*1.5]/3); % x軸の範囲を調整
-    ylim([-d_target*1.5, d_target*1.5]/3); % y軸の範囲を調整
-    zlim([-d_target*1.5, d_target*1.5]/3); % z軸の範囲を調整
+    xlim([-d_target*1.5, d_target*1.5]/2); % x軸の範囲を調整
+    ylim([-d_target*1.5, d_target*1.5]/2); % y軸の範囲を調整
+    zlim([-d_target*1.5, d_target*1.5]/2); % z軸の範囲を調整
     hold on;
     grid on; % グリッドを表示
     

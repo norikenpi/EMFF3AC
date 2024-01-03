@@ -1213,7 +1213,7 @@ function [u, myu1] = calc_optimal_u(X, param)
     func_cell = create_func_cell();
     
     [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param);
-    %[u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
+    [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
@@ -1435,7 +1435,7 @@ function [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param
         %disp(delta_tilde)
     
         %disp("実際評価関数減少")
-        delta = f_best - f_real;
+        delta = f_best - f_rneal;
         %disp(delta)
         % 減少比の計算
         rho_k = delta / delta_tilde;
