@@ -95,4 +95,5 @@ energy_base_4sat.mでエナジーベースの4衛星の展開を実装。動的�
 scp_mpc_EMFF_nonl_optimal_input_trust_region_func.mはscp_mpc_EMFF_nonl_optimal_input_trust_region.mを関数化。
 energy_base_4sat_parallel_trust_region.mは、energy_base_4sat_parallel.mでenergy_base_4sat.mのtrust regionを動的に変更。avoidの処理も変更。検証するために毎回PQRを計算してるの良くない。
 
-energy_base_2sat_parallel_trust_region_soft3.mは2衛星でどこまで最大電流を減らせるかを試したもの。
+★energy_base_2sat_parallel_trust_region_soft3.mは2衛星のcvxを用いた距離最大最小のソフト制約条件、動的に変更されるtrust regionなどが完全に実装されている。
+energy_base_4sat_parallel_trust_region_soft3.mはenergy_base_4sat_parallel_trust_region_soft2とenergy_base_2sat_parallel_trust_region_soft3をもとに4衛星バージョンを完成させた。
