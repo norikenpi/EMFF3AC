@@ -1,5 +1,6 @@
-clear
 %% パラメータ設定
+
+clear
 % 最終衛星間距離
 tic;
 d_target = 0.925;
@@ -30,9 +31,13 @@ I_max = sqrt(P_max/R_rho);
 myu_max = I_max * coilN * radius^2 * pi;
 func_cell = create_func_cell();
 
+w1 = 100/N;
+w2 = 100/N;
 
-d_avoid = radius*6;
-d_initial = d_avoid/2;
+% d_avoidとd_initialの境界ｎ
+d_avoid = radius*6; %0.3
+dist_max = 0.4;
+d_initial = d_avoid/1.7;
 
 delta_r = d_avoid/100;
 delta_myu = myu_max;
@@ -73,6 +78,7 @@ param.wire_S = wire_S;
 param.R_rho = R_rho; 
 param.I_max = I_max;
 param.myu_max = myu_max;
+param.dist_max = dist_max;
 param.d_avoid = d_avoid;
 param.d_initial = d_initial;
 param.rr = rr;
@@ -81,7 +87,8 @@ param.delta_myu = delta_myu;
 param.beta_succ = beta_succ;
 param.beta_fail = beta_fail;
 param.alpha = alpha;
-
+param.w1 = w1;
+param.w2 = w2;
 
 
 satellites = cell(1, num);
@@ -125,7 +132,7 @@ C1_border = 0.01;
 
 i = 0;
 
-E_all_list = [EandCs(1)];
+f_list = [];
 C4_list = [EandCs(2)];
 C1_list = [EandCs(3)];
 C5_list = [EandCs(4)];
@@ -139,18 +146,19 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     disp("CsとC1を用いた終了判定")
     disp(EandCs(1))
     disp(EandCs(3))
-    
     i = i + 1;
     N_step = i; 
     % ペア組み
     
     
     pair_mat = make_pair(state_mat, param, N_step);
+
     pair_set(:,:,i) = pair_mat;
 
     % 最大電力割り当て
     % ペアごとに割り振る感じがいいのかな。
     counts = count_pair_num(pair_mat);
+
 
     % 各ペア制御入力計算（for ペアlist　座標平行移動）
     % ペアでforを回して、一発で現在の状態と最大磁気モーメントから制御入力とペア間に働く力が出る関数がほしい。
@@ -160,11 +168,13 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     %pair_mat_thrust = calc_pair_thrust(pair_mat, counts, state_mat, param);
 
     % 最適化を行った入力を計算
-    [pair_mat_thrust, break_end, myu1] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
-    
+    [pair_mat_thrust, break_end, myu1, f_best] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param);
+    %{
+
     if break_end > 0
         break
     end
+    %}
     
     %disp(pair_mat_thrust1)
     %disp(pair_mat_thrust)
@@ -193,16 +203,15 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     disp("エネルギー総和")
     disp(N_step)
     disp(EandCs(1))
-    E_all_list = [E_all_list;EandCs(1)];
+    f_list = [f_list;f_best];
     C4_list = [C4_list;EandCs(2)];
     C1_list = [C1_list;EandCs(3)];
     C5_list = [C5_list;EandCs(4)];
     C6_list = [C6_list;EandCs(5)];
-    u_myu_norm_list = [u_myu_norm_list;norm(myu1)];
+    u_myu_norm_list = [u_myu_norm_list;vecnorm(myu1)];
 
 
-    
-    if N_step == 500
+    if N_step == 10
         %ペアを組んでいる衛星が
         break
     end
@@ -221,33 +230,27 @@ seconds = mod(total_seconds, 60);
 disp(['時間: ' num2str(hours) ' 時間 ' num2str(minutes) ' 分 ' num2str(seconds) ' 秒']);
 
 %　エネルギー推移
-
-
 time = toc
 %% 図示
+% NNモデルを作るためのデータ
+data_mat = [rel_list; u_list];
 satellites{1} = state1(:,1:3);
 satellites{2} = state2(:,1:3);
 satellites{3} = state3(:,1:3);
 satellites{4} = state4(:,1:3);
 
 plot_s(satellites, num, N_step, rr, d_target, pair_set)
-%figure_E_all(E_all_list, param)
-%figure_E_all(C4_list, param)
-%figure_E_all(C1_list, param)
-%figure_E_all(C5_list, param)
-%figure_E_all(C6_list, param)
-
-figure_E_all(E_all_list, param, "評価関数の大きさ", "評価関数の大きさの推移")
+figure_E_all(f_list, param, "評価関数の大きさ", "評価関数の大きさの推移")
 figure_E_all(C4_list, param, "C4の大きさ", "C4の大きさの推移")
 figure_E_all(C1_list, param, "C1の大きさ", "C1の大きさの推移")
 figure_E_all(C5_list, param, "C5-C5dの大きさ", "C5-C5dの大きさの推移")
-%figure_E_all(C6_list, param, "C6-C6dの大きさ", "C6-C6dの大きさの推移")
-%figure_E_all(u_myu_norm_list, param, "磁気モーメントの大きさ", "磁気モーメントの大きさの推移")
+figure_E_all(C6_list, param, "C6-C6dの大きさ", "C6-C6dの大きさの推移")
+figure_E_all(u_myu_norm_list, param, "磁気モーメントの大きさ", "磁気モーメントの大きさの推移")
 %% 関数リスト
 function figure_E_all(E_all_list, param, ylabel_name, title_name)
     figure
     % 時間軸を生成（ここでは1から250までの整数を使用）
-    time = (1:length(E_all_list))*param.dt;
+    time = (1:size(E_all_list, 1))*param.dt;
     
     % データをプロット
     plot(time, E_all_list);
@@ -257,7 +260,7 @@ function figure_E_all(E_all_list, param, ylabel_name, title_name)
     grid on; % グリッド線の表示
 end
 
-function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
+function [u, u_myu, dist_min_list, dist_max_list, s, f_best] = calc_nominal_input(s0, param)
     d_target = param.d_target;
     num = param.num;
     m = param.m; 
@@ -276,6 +279,7 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
     d_avoid = param.d_avoid;
     d_initial = param.d_initial;
     rr = param.rr;
+    dist_max = param.dist_max;
 
     myu_list = zeros(3*N,1);
     u_list = zeros(3*N,1);
@@ -320,11 +324,13 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
     s = zeros(6*N*2,1);
     thetaP = pi/6;
     rd = 0;
-    dist_list = zeros(N,1);
-    
+    dist_min_list = zeros(N,1);
+    dist_max_list = zeros(N,1);
+
     for i = 1:N
         X = state(i,:).';
-        dist_list(end-i+1) = - d_avoid + norm(X(1:3))*2;
+        dist_min_list(end-i+1) = - d_avoid + norm(X(1:3))*2;
+        dist_max_list(end-i+1) = - dist_max + norm(X(1:3))*2;
         %disp("sdfsg")
         %disp(dist_list(end-i+1))
         if norm(X(1:3)) > 0 %d_avoid/2
@@ -423,10 +429,17 @@ function [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param)
     u_myu =  myu_list;
     u =  u_list;
     %plot_s(satellites, num, N, rr, d_target)
-    w1 = 1000/N;
+    w1 = param.w1;
     x_r = state(N+1,:);
     E_data = calc_E(x_r, param);
-    f_best = E_data(1);
+    %f_best = sum(abs(E_data(1)) + w1 * norm(dist_list));x(end-N+1:end)
+    f_best = abs(E_data(1)) + w1 * norm(dist_min_list);
+    %disp("評価関数")
+    %disp("エネルギー")
+    %disp(abs(E_data(1)) )
+    %disp("slack変数")
+    %disp(norm(dist_min_list))
+    %disp(w1 * norm(dist_min_list))
     %disp(f_best)
 end
 
@@ -632,7 +645,7 @@ function [x, fval, exitflag, output] = solveOptimizationProblem(n, x0, N, myu_ma
 
 end
 
-function f = objectiveFunction(n, x, P, Q, R, s0, N)
+function f = objectiveFunction(n, x, P, Q, R, s0, N, param)
     % 目的関数の計算
     kA = 2e-3;
     thetaP = pi/6;
@@ -649,9 +662,12 @@ function f = objectiveFunction(n, x, P, Q, R, s0, N)
            0,0,0,-1/(n*tan(thetaP)),0,1/n];
     
 
-    w1 = 1000/N;
+    w1 = param.w1;
+    w2 = param.w2;
     
-    f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))) + w1 * norm(x(3*N+1:4*N)); % xを用いた計算
+
+    f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))) + w1 * norm(x(3*N+1:4*N)) + w2 * norm(x(4*N+1:5*N)); % xを用いた計算
+    %f = sum(abs(mat * (P(1:6,:) * x + Q(1:6,:) * s0 + R(1:6,:)))) + w1 * norm(x(3*N+1:4*N));
 end
 
 function [c, ceq] = nonlinearConstraints(x, N, myu_max, P, Q, s0, d_avoid)
@@ -1088,7 +1104,7 @@ function u = calc_u(X, param)
             myu1 = myu_max * myu1/norm(myu1);
             %disp("over myu1")
         end
-        disp(norm(X(1:3)))
+        %disp(norm(X(1:3)))
         
     else 
         k_avoid = 1e-1;
@@ -1116,10 +1132,12 @@ function thrust_mat = calc_thrust(pair_mat, pair_mat_thrust, param)
     end
 end
 
-function [pair_mat_thrust, break_end, myu1] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
-    pair_mat_thrust = zeros(3, 2, 4);
+function [pair_mat_thrust, break_end, myu1, f_best] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
+    pair_mat_thrust = zeros(3, 2, param.num);
+    myu1 = zeros(3, param.num);
+    f_best = zeros(1, param.num);
     break_end = 0;
-    myu1 = [1;1;1];
+    
     parfor i = 1:param.num
     %for i = 1:param.num
         %disp("衛星i")
@@ -1127,7 +1145,7 @@ function [pair_mat_thrust, break_end, myu1] = calc_pair_optimal_thrust(pair_mat,
         sat1 = pair_mat(i,1);
         sat2 = pair_mat(i,2);
         X = state_mat(sat1,:).' - state_mat(sat2,:).';
-        [u, ~] = calc_optimal_u(X, param); %[u, myu1] = calc_optimal_u(X, param);
+        [u, myu1(:,i), f_best(:,i)] = calc_optimal_u(X, param);
         %break_end = break_end + break_end2; 
         %disp("jkljmlnklj")
         %disp(break_end)
@@ -1204,18 +1222,24 @@ end
 
 
 
-function [u, myu1] = calc_optimal_u(X, param)
+function [u, myu1, f_best] = calc_optimal_u(X, param)
     % Xは相対位置ベクトル
     myu_max = param.myu_max;
     s0 = X/2;
     func_cell = create_func_cell();
     
-    [u, u_myu, dist_list, s, f_best] = calc_nominal_input(s0, param);
+    [u, u_myu, dist_min_list, dist_max_list, s, f_best] = calc_nominal_input(s0, param);
+    [u_myu, dist_min_list, dist_max_list, s, break_end, f_best] = calc_scp(s0, s, u_myu, dist_min_list, dist_max_list, f_best, param, func_cell);
+    %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
+    %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
+    %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
 
-    [u_myu, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell);
-    %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
-    %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
-    %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
+    %最初に採用する入力
+    disp("ans")
+    %disp(length(u_myu))
+    disp(u_myu)
+    disp(dist_min_list)
+    disp(dist_max_list)
     myu1 = u_myu(end-2:end);
     
     s0 = [X/2;-X/2];
@@ -1224,14 +1248,14 @@ function [u, myu1] = calc_optimal_u(X, param)
     
 end
 
-
-function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best, param, func_cell)  
+function [u_myu, dist_min_list, dist_max_list, s, break_end, f_best] = calc_scp(s0, s, u_myu, dist_min_list, dist_max_list, f_best, param, func_cell)  
     num = 2;
     break_end = 0;
     d_avoid = param.d_avoid;
     n = param.n;
     N = param.N;
     myu_max = param.myu_max;
+    dist_max = param.dist_max;
     m = param.m;
     dt = param.dt;
 
@@ -1277,7 +1301,9 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
     %disp("最適化前dist_list)")
     %disp(dist_list)
 
-    for k = 1:30   
+    for k = 1:30
+        disp("最適化回数")
+        disp(k)
         % ノミナル軌道sによってPとQが変わる
         A_list = create_A_list(num, N, s, s0, u_myu, A_d, B_d, myu_max, func_cell); % {A1, A2, ... ,AN}
         B_list = create_B_list(num, N, s, s0, u_myu, B_d, myu_max, func_cell); % {B1, B2, ... ,BN}
@@ -1288,7 +1314,7 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
         A_mat2 = create_A_mat2(A_list, num, N);
         C_mat = create_C_mat(C_list, num, N);
         
-        P = [A_mat*B_mat, zeros(2*6*N,N)]; %6Nnum×3Nnum
+        P = [A_mat*B_mat, zeros(2*6*N,N*2)]; %6Nnum×3Nnum
         Q = A_mat2; 
         R = A_mat*C_mat; 
         
@@ -1313,7 +1339,7 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
         %A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
         %b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
         A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
-        A2(:,end-N+1:end) = diag(calculate_norms(C2 * C1 * nominal_s));
+        A2(:,3*N+1:4*N) = diag(calculate_norms(C2 * C1 * nominal_s));
         b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
         % 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
         % s - (PU + Qs0 + R) < δ
@@ -1326,7 +1352,7 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
         % U2 - U1 < δ
         % U1 - U2 < δ
         %A4 = [-eye(N*3); eye(N*3)];
-        A4 = [[-eye(N*3),zeros(N*3,N)]; [eye(N*3),zeros(N*3,N)]];
+        A4 = [[-eye(N*3),zeros(N*3,N*2)]; [eye(N*3),zeros(N*3,N*2)]];
         b4 = [delta_myu * ones(3*N, 1) - u_myu; delta_myu * ones(3*N, 1) + u_myu];
 
         A5 = eye(N, 3*N+N);
@@ -1353,7 +1379,7 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
         
         
        % cvxが遅すぎる。
-        
+        %{
         n = param.n;
         kA = 2e-3;
         thetaP = pi/6;
@@ -1364,11 +1390,12 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
         mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n];
-        w1 = 1000/N;
+        w1 = 1000;
+        %}
         cvx_begin quiet
-            variable u_myu_approx(3*N+N)
-            minimize(objectiveFunction(n, u_myu_approx, P, Q, R, s0, N))
-        
+            variable u_myu_approx(3*N+N+N)
+            minimize(objectiveFunction(n, u_myu_approx, P, Q, R, s0, N, param))
+            %minimize(sum(abs(mat * (P(1:6,:) * u_myu_approx + Q(1:6,:) * s0 + R(1:6,:))) + w1 * norm(u_myu_approx(end-N+1:end))))
             subject to
                 % 不等式制約
                 % 進入禁止制約
@@ -1380,14 +1407,25 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
                 for i = 1:N
                     norm(u_myu_approx(3*(i-1)+1:3*i)) <= myu_max;
                 end
+                
+                % 最大距離のソフト制約
+                s_approx = P * u_myu_approx + Q * s0 + R;
+                for i = 1:N
+                    norm(s_approx(6*(i-1)+1:6*(i-1)+3)) - u_myu_approx(4*N+i) <= dist_max/2;
+                end
+                
         cvx_end
-    
-        exitflag = -2;
+
         if strcmp(cvx_status, 'Solved')
             exitflag = 2;
+        elseif strcmp(cvx_status, 'Infeasible')
+            exitflag = -2;
+        elseif strcmp(cvx_status, 'Inaccurate/Solved')
+            exitflag = 2;
         end
-        %disp(cvx_status)
-        f_approx = objectiveFunction(n, u_myu_approx, P, Q, R, s0, N);
+        disp(cvx_status)
+        f_approx = objectiveFunction(n, u_myu_approx, P, Q, R, s0, N, param);
+        disp(f_best)
         %}
         %{
         if cvx_status ~= 'Solved'
@@ -1413,7 +1451,7 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
         A_mat2 = create_A_mat2(A_list, num, N);
         C_mat = create_C_mat(C_list, num, N);
         
-        P_real = [A_mat*B_mat, zeros(2*6*N,N)]; %6Nnum×3Nnum
+        P_real = [A_mat*B_mat, zeros(2*6*N,N*2)]; %6Nnum×3Nnum
         Q_real = A_mat2; 
         R_real = A_mat*C_mat; 
         
@@ -1421,7 +1459,7 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
         
         
         % far-fieldで時系列状態を計算しなおしたもの評価関数を計算。
-        f_real = objectiveFunction(n, u_myu_approx, P_real, Q_real, R_real, s0, N);
+        f_real = objectiveFunction(n, u_myu_approx, P_real, Q_real, R_real, s0, N, param);
         %disp(s_approx(1:6).')
     
         %disp("最適化前評価関数")
@@ -1439,11 +1477,11 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
         %disp(delta)
         % 減少比の計算
         rho_k = delta / delta_tilde;
-    
+        
         % 信頼領域の更新
         % 線形化誤差が大きかったらtrust regionを狭めてやり直し。
-        if exitflag == -1 || exitflag == -2 %exitflag == 0 || exitflag == -1 || exitflag == -2 ~strcmp(cvx_status, 'Solved')%
-            %disp("fmincon失敗")
+        if exitflag == -1 || exitflag == -2%exitflag == 0 || exitflag == -1 || exitflag == -2 ~strcmp(cvx_status, 'Solved')%
+            disp("fmincon失敗")
             delta_r = delta_r * beta_succ; % 成功時、信頼領域を拡大
             delta_myu = delta_myu * beta_succ; % 成功時、信頼領域を拡大
             break_end = 1;
@@ -1452,9 +1490,9 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
             %disp(delta_r)
             %disp("磁気モーメント　trust region")
             %disp(delta_myu)
-            
+
         elseif delta > 0%alpha * delta_tilde
-            %disp("最適化成功")
+            disp("最適化成功")
             delta_r = delta_r * beta_succ; % 成功時、信頼領域を拡大
             delta_myu = delta_myu * beta_succ; % 成功時、信頼領域を拡大
             %disp("更新された trust region")
@@ -1465,13 +1503,14 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
             %disp("解更新")
             s = s_new; % より良い解が見つかった場合、更新
             u_myu = u_myu_approx(1:3*N); % より良い解が見つかった場合、更新
-            dist_list = u_myu_approx(end-N+1:end);
+            dist_min_list = u_myu_approx(3*N+1:4*N);
+            dist_max_list = u_myu_approx(4*N+1:5*N);
             %disp(dist_list)
             f_best = f_real;
             %disp("ベスト評価関数")
             %disp(f_best)
         else
-            %disp("最適化失敗 trust region大きすぎ")
+            disp("最適化失敗 trust region大きすぎ")
             delta_r = delta_r * beta_fail; % 成功時、信頼領域を拡大
             delta_myu = delta_myu * beta_fail; % 成功時、信頼領域を拡大
             %disp("更新された trust region")
@@ -1481,15 +1520,15 @@ function [u_myu_approx, s, break_end] = calc_scp(s0, s, u_myu, dist_list, f_best
             %disp(delta_myu)
         end
         
+        
         % 収束判定（任意の閾値に基づく）
-        if abs(delta_tilde) < 1e-5
+        if delta_tilde < 1e-5
             disp("最適化終了")
             disp("最適化回数")
             disp(k)
             disp("評価関数の減少率が閾値以下")
             break; % 収束したと見なしてループを抜ける
         end
-
     
     end
 
@@ -1529,9 +1568,6 @@ function D = calculateD(r, m1)
          D13,D23,D33;];
 
 end
-
-
-
 
 function plot_s(satellites, num, N, rr, d_target, pair_set)
     % 2衛星の動画を表示。

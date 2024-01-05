@@ -29,7 +29,6 @@ wire_S = (0.2e-3)^2*pi;
 R_rho = rho * wire_length/wire_S; 
 I_max = sqrt(P_max/R_rho);
 myu_max = I_max * coilN * radius^2 * pi;
-
 func_cell = create_func_cell();
 
 w1 = 100/N;
@@ -91,8 +90,6 @@ param.w1 = w1;
 param.w2 = w2;
 
 
-
-
 satellites = cell(1, num);
 pair_set = zeros(1, 2, N);  % 4x2xTのゼロ配列の初期化
 
@@ -102,6 +99,11 @@ s02 = [  0.00005+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3;-0.00005+(2*rand-1)
 %s03 = [ d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 %s04 = [ d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 s0 = adjust_cog([s01, s02], num); % 6num×1
+
+
+
+
+
 
 %各衛星初期状態決定
 s01 = s0(1:6);
@@ -123,6 +125,7 @@ state2(1,:) = s02.';
 %state4(1,:) = s04.';
 state_mat  = [s01.';s02.'];
 state_mat0 = state_mat;
+
 EandCs= calc_E_all(state_mat, param);
 C1_border = 0.01;
 
@@ -155,6 +158,7 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     % ペアごとに割り振る感じがいいのかな。
     %counts = count_pair_num(pair_mat);
     counts = [1,1];
+    
     % 各ペア制御入力計算（for ペアlist　座標平行移動）
     % ペアでforを回して、一発で現在の状態と最大磁気モーメントから制御入力とペア間に働く力が出る関数がほしい。
     % 最適化ベースになるとここが変わるだけ。
@@ -178,7 +182,6 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     % ペアでforを回して、各衛星に働く力を計算。
     thrust_mat = calc_thrust(pair_mat, pair_mat_thrust, param);
     %
-    
 
     % 状態量更新
     % 現在の状態量と推力を入れたら次の時刻の状態量が出てくる関数
@@ -207,7 +210,7 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     u_myu_norm_list = [u_myu_norm_list;norm(myu1)];
 
     
-    if N_step == 50
+    if N_step == 10
         %ペアを組んでいる衛星が
         break
     end
@@ -233,6 +236,8 @@ data_mat = [rel_list; u_list];
 satellites{1} = state1(:,1:3);
 satellites{2} = state2(:,1:3);
 
+
+
 plot_s(satellites, num, N_step, rr, d_target, pair_set)
 figure_E_all(f_list, param, "評価関数の大きさ", "評価関数の大きさの推移")
 figure_E_all(C4_list, param, "C4の大きさ", "C4の大きさの推移")
@@ -241,7 +246,6 @@ figure_E_all(C5_list, param, "C5-C5dの大きさ", "C5-C5dの大きさの推移"
 figure_E_all(C6_list, param, "C6-C6dの大きさ", "C6-C6dの大きさの推移")
 figure_E_all(u_myu_norm_list, param, "磁気モーメントの大きさ", "磁気モーメントの大きさの推移")
 %% 関数リスト
-
 function figure_E_all(E_all_list, param, ylabel_name, title_name)
     figure
     % 時間軸を生成（ここでは1から250までの整数を使用）
@@ -328,7 +332,7 @@ function [u, u_myu, dist_min_list, dist_max_list, s, f_best] = calc_nominal_inpu
         dist_max_list(end-i+1) = - dist_max + norm(X(1:3))*2;
         %disp("sdfsg")
         %disp(dist_list(end-i+1))
-        if norm(X(1:3)) > 0
+        if norm(X(1:3)) > 0 %d_avoid/2
             %disp("距離")
             %disp(norm(X(1:3))*2)
             %disp("速度")
@@ -424,7 +428,6 @@ function [u, u_myu, dist_min_list, dist_max_list, s, f_best] = calc_nominal_inpu
     u_myu =  myu_list;
     u =  u_list;
     %plot_s(satellites, num, N, rr, d_target)
-    
     w1 = param.w1;
     x_r = state(N+1,:);
     E_data = calc_E(x_r, param);
@@ -1007,16 +1010,12 @@ function pair_mat = make_pair(state_mat, param, N_step)
         pair_mat = [1,2;
                     2,1;
                     3,4;
-                    4,3];cvx
+                    4,3];
     else
         pair_mat = [1,3;
                     2,4;
                     3,1;
                     4,2];
-        pair_mat = [1,2;
-                    2,1;
-                    3,4;
-                    4,3];
     end
   %}      
         pair_mat = [1,4;
@@ -1135,6 +1134,7 @@ end
 function [pair_mat_thrust, break_end, myu1, f_best] = calc_pair_optimal_thrust(pair_mat, counts, state_mat, param)
     pair_mat_thrust = zeros(3, 2, 4);
     break_end = 0;
+    
     %parfor i = 1:param.num
     for i = 1:1
         %disp("衛星i")
@@ -1426,7 +1426,7 @@ function [u_myu, dist_min_list, dist_max_list, s, break_end, f_best] = calc_scp(
         f_approx = objectiveFunction(n, u_myu_approx, P, Q, R, s0, N, param);
         disp(f_best)
         %}
-kl;/;/ n         %{
+        %{
         if cvx_status ~= 'Solved'
             disp("Unsolved")
         end
