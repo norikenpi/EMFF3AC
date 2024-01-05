@@ -37,7 +37,7 @@ w2 = 100/N;
 
 d_avoid = radius*6; %0.3
 dist_max = 0.4;
-d_initial = d_avoid;
+d_initial = d_avoid/3.02;
 
 delta_r = d_avoid/100;
 delta_myu = myu_max;
@@ -128,7 +128,7 @@ C1_border = 0.01;
 
 i = 0;
 
-f_list = [EandCs(1)];
+f_list = [];
 C4_list = [EandCs(2)];
 C1_list = [EandCs(3)];
 C5_list = [EandCs(4)];
@@ -226,8 +226,6 @@ seconds = mod(total_seconds, 60);
 disp(['時間: ' num2str(hours) ' 時間 ' num2str(minutes) ' 分 ' num2str(seconds) ' 秒']);
 
 %　エネルギー推移
-
-
 time = toc
 %% 図示
 % NNモデルを作るためのデータ
@@ -1340,7 +1338,7 @@ function [u_myu, dist_min_list, dist_max_list, s, break_end, f_best] = calc_scp(
         %A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
         %b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
         A2 = -create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * P; %500×3001
-        A2(:,end-N+1:end) = diag(calculate_norms(C2 * C1 * nominal_s));
+        A2(:,3*N+1:4*N) = diag(calculate_norms(C2 * C1 * nominal_s));
         b2 = -d_avoid * calculate_norms(C2 * C1 * nominal_s) + create_matrix(C2 * C1 * nominal_s).' * C2 * C1 * (Q * s0 + R);
         % 不等式制約3 (ノミナル軌道に対する変化量はδ以下 trust region)
         % s - (PU + Qs0 + R) < δ
@@ -1417,19 +1415,18 @@ function [u_myu, dist_min_list, dist_max_list, s, break_end, f_best] = calc_scp(
                 
         cvx_end
 
-        exitflag = -2;
         if strcmp(cvx_status, 'Solved')
             exitflag = 2;
         elseif strcmp(cvx_status, 'Infeasible')
             exitflag = -2;
-        else
-            exitflag = -1;
+        elseif strcmp(cvx_status, 'Inaccurate/Solved')
+            exitflag = 2;
         end
         disp(cvx_status)
         f_approx = objectiveFunction(n, u_myu_approx, P, Q, R, s0, N, param);
         disp(f_best)
         %}
-        %{
+kl;/;/ n         %{
         if cvx_status ~= 'Solved'
             disp("Unsolved")
         end
