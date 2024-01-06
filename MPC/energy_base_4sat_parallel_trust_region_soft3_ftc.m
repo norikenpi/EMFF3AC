@@ -113,7 +113,8 @@ s03 = s0(13:18);
 s04 = s0(19:24);
 
 E_border = 0.1*num;
-%E_border =0.01;
+%E_border =0.1;
+C1_border = E_border/3;
 
 state1 = zeros(N,6);
 state2 = zeros(N,6);
@@ -127,8 +128,7 @@ state4(1,:) = s04.';
 state_mat  = [s01.';s02.';s03.';s04.'];
 state_mat0 = state_mat;
 
-EandCs= calc_E_all(state_mat, param);
-C1_border = 0.01;
+EandCs= calc_E_all(state_mat, param);;
 
 i = 0;
 
@@ -200,13 +200,13 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     C4_list = [C4_list;EandCs(2)];
     C1_list = [C1_list;EandCs(3)];
     C5_list = [C5_list;EandCs(4)];
-    C6_list = [C6_list;EandCs(5)];
+    %C6_list = [C6_list;EandCs(5)];
     %u_myu_norm_list = [u_myu_norm_list;myu_sum];
     u_myu_norm_list2 = [u_myu_norm_list2;myu_sum2];
     %u_myu1_norm_list = [u_myu1_norm_list;vecnorm(myu1)+vecnorm(myu2)];
 
 
-    if N_step == 10
+    if N_step == 10000
         %ペアを組んでいる衛星が
         break
     end
@@ -235,13 +235,13 @@ satellites{3} = state3(:,1:3);
 satellites{4} = state4(:,1:3);
 
 plot_s(satellites, num, N_step, rr, d_target, pair_set)
-figure_E_all(f_list, param, "評価関数の大きさ[m]", "評価関数の大きさの推移", {'Pair 1', 'Pair 2', 'Pair 3', 'Pair 4'})
-figure_E_all(C4_list, param, "C4-C4dの大きさ[m]", "C4-C4dの大きさの推移", {'C4-C4d'})
-figure_E_all(C1_list, param, "C1の大きさ[m]", "C1の大きさの推移", {'C1'})
-figure_E_all(C5_list, param, "C5-C5dの大きさ[m]", "C5-C5dの大きさの推移", {'C5-C5d'})
-figure_E_all(C6_list, param, "C6-C6dの大きさ[m]", "C6-C6dの大きさの推移", {'C6-C6d'})
+figure_E_all(f_list, param, "評価関数の大きさ", "評価関数の大きさの推移", {'Pair 1', 'Pair 2', 'Pair 3', 'Pair 4'})
+figure_E_all(C4_list, param, "C4-C4dの大きさ", "C4-C4dの大きさの推移", {'C4-C4d'})
+figure_E_all(C1_list, param, "C1の大きさ", "C1の大きさの推移", {'C1'})
+figure_E_all(C5_list, param, "C5-C5dの大きさ", "C5-C5dの大きさの推移", {'C5-C5d'})
+%figure_E_all(C6_list, param, "C6-C6dの大きさ", "C6-C6dの大きさの推移")
 %figure_E_all(u_myu_norm_list, param, "磁気モーメントの大きさ", "磁気モーメントの大きさの推移")
-figure_E_all(u_myu_norm_list2, param, "磁気モーメントの大きさ[Am^2]", "磁気モーメントの大きさの推移", {'Sat 1', 'Sat 2', 'Sat 3', 'Sat 4'})
+figure_E_all(u_myu_norm_list2, param, "磁気モーメントの大きさ", "磁気モーメントの大きさの推移", {'Sat 1', 'Sat 2', 'Sat 3', 'Sat 4'})
 %figure_E_all(u_myu1_norm_list, param, "ペアごとの磁気モーメントの大きさ", "ペアごとの磁気モーメントの大きさの推移", {'Data Set 1', 'Data Set 2', 'Data Set 3', 'Data Set 4'})
 %% 関数リスト
 function figure_E_all(E_all_list, param, ylabel_name, title_name, legend_labels)
@@ -350,14 +350,6 @@ function [u, u_myu1, u_myu2, dist_min_list, dist_max_list, s, f_best] = calc_nom
             C5d = C2/tan(thetaP);
             u_A = n*[1/2*dC4;-C1];  
             u = [kA*u_A;-kB*n*(C5-C5d)];
-            mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
-                   2,0,0,0,1/n,0;
-                   0,0,0,-1/(n*tan(thetaP)),0,1/n];
-            %u2 = mat*X .* [n/2*kA;-n*kA;-kB*n];
-            %disp("u")
-            %disp(u)
-            %disp("u2")
-            %disp(u2)
             r = state(i,1:3).'*2; % 2衛星を考慮して2倍にする
             [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max/count2);
             %disp("計算された磁気モーメントと最大磁気モーメント")
@@ -1166,15 +1158,14 @@ function E_data = calc_E(state, param)
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    %{
+    
     mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n];
-    %}
     
     E = sum(abs(mat * state.'));
     Cs = abs(mat * state.');
-    E_data = [E; Cs];
+    E_data = [E; Cs; 0];
 end
 
 
@@ -1187,7 +1178,7 @@ function [u, myu1, myu2, f_best] = calc_optimal_u(X, param, count1, count2)
     func_cell = create_func_cell();
     
     [u, u_myu1, u_myu2, dist_min_list, dist_max_list, s, f_best] = calc_nominal_input(s0, param, count1, count2);
-    %[u_myu1, dist_min_list, dist_max_list, s, break_end, f_best] = calc_scp(s0, s, u_myu1, u_myu2, dist_min_list, dist_max_list, f_best, param, func_cell, count1, count2);
+    [u_myu1, dist_min_list, dist_max_list, s, break_end, f_best] = calc_scp(s0, s, u_myu1, u_myu2, dist_min_list, dist_max_list, f_best, param, func_cell, count1, count2);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
