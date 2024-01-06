@@ -338,8 +338,8 @@ function [u, u_myu, dist_min_list, dist_max_list, s, f_best] = calc_nominal_inpu
             %disp("速度")
             %disp(norm(X(4:6)))
             C110 = coord2const(X, n);
-            kA = 2e-2;%2e-3;
-            kB = 1e-2;%1e-3;
+            kA = 2;%2e-3;
+            kB = 1;%1e-3;
             C1 = C110(1); C4 = C110(4); C5 = C110(5);
             C2 = C110(2); C3 = C110(3);
             r_xy = C110(7); phi_xy = C110(8); %phi_xy = atan2(o_r_ji(1),o_r_ji(2)/2);
@@ -350,9 +350,9 @@ function [u, u_myu, dist_min_list, dist_max_list, s, f_best] = calc_nominal_inpu
             u = [kA*u_A;-kB*n*(C5-C5d)];
             r = state(i,1:3).'*2; % 2衛星を考慮して2倍にする
             [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max);
-            %disp("計算された磁気モーメントと最大磁気モーメント")
-            %disp(norm(myu1))
-            %disp(myu_max)
+            disp("計算された磁気モーメントと最大磁気モーメント")
+            disp(norm(myu1))
+            disp(myu_max)
             %u = [0;0;0];
             if norm(myu1) > myu_max
                 u = myu_max* u/norm(myu1);
