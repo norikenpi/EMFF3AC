@@ -31,13 +31,15 @@ I_max = sqrt(P_max/R_rho);
 myu_max = I_max * coilN * radius^2 * pi;
 func_cell = create_func_cell();
 
+scp = 1;
+
 w1 = 100/N;
 w2 = 100/N;
 
 % d_avoidとd_initialの境界ｎ
 d_avoid = radius*6; %0.3
-dist_max = 0.4;
-d_initial = d_avoid/1.7;
+dist_max = 0.6;
+d_initial = 0.35/2;
 
 delta_r = d_avoid/100;
 delta_myu = myu_max;
@@ -89,6 +91,7 @@ param.beta_fail = beta_fail;
 param.alpha = alpha;
 param.w1 = w1;
 param.w2 = w2;
+param.scp = scp;
 
 
 satellites = cell(1, num);
@@ -113,7 +116,7 @@ s03 = s0(13:18);
 s04 = s0(19:24);
 
 E_border = 0.1*num;
-%E_border =0.1;
+%E_border =0.01;
 C1_border = E_border/3;
 
 state1 = zeros(N,6);
@@ -128,11 +131,13 @@ state4(1,:) = s04.';
 state_mat  = [s01.';s02.';s03.';s04.'];
 state_mat0 = state_mat;
 
-EandCs= calc_E_all(state_mat, param);;
+EandCs= calc_E_all(state_mat, param);
+
 
 i = 0;
 
 f_list = [];
+Cs_list = [EandCs(1)];
 C4_list = [EandCs(2)];
 C1_list = [EandCs(3)];
 C5_list = [EandCs(4)];
@@ -145,7 +150,7 @@ rel_list = [];
 %% シミュレーション
 %エネルギーの総和がE_border以下かつC1がC1_borderだったら問題ない
 while EandCs(1) > E_border || EandCs(3) > C1_border
-    disp("Cの和")
+    disp("|C4-C4d|+C1+|C5-C5d|")
     disp(EandCs(1))
     disp("C1")
     disp(EandCs(3))
@@ -197,16 +202,17 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     disp("エネルギー総和")
     disp(N_step)
     f_list = [f_list;f_best];
+    Cs_list = [Cs_list;EandCs(1)];
     C4_list = [C4_list;EandCs(2)];
     C1_list = [C1_list;EandCs(3)];
     C5_list = [C5_list;EandCs(4)];
-    %C6_list = [C6_list;EandCs(5)];
+    C6_list = [C6_list;EandCs(5)];
     %u_myu_norm_list = [u_myu_norm_list;myu_sum];
     u_myu_norm_list2 = [u_myu_norm_list2;myu_sum2];
     %u_myu1_norm_list = [u_myu1_norm_list;vecnorm(myu1)+vecnorm(myu2)];
 
 
-    if N_step == 10000
+    if N_step == 3000
         %ペアを組んでいる衛星が
         break
     end
@@ -235,13 +241,14 @@ satellites{3} = state3(:,1:3);
 satellites{4} = state4(:,1:3);
 
 plot_s(satellites, num, N_step, rr, d_target, pair_set)
-figure_E_all(f_list, param, "評価関数の大きさ", "評価関数の大きさの推移", {'Pair 1', 'Pair 2', 'Pair 3', 'Pair 4'})
-figure_E_all(C4_list, param, "C4-C4dの大きさ", "C4-C4dの大きさの推移", {'C4-C4d'})
-figure_E_all(C1_list, param, "C1の大きさ", "C1の大きさの推移", {'C1'})
-figure_E_all(C5_list, param, "C5-C5dの大きさ", "C5-C5dの大きさの推移", {'C5-C5d'})
-%figure_E_all(C6_list, param, "C6-C6dの大きさ", "C6-C6dの大きさの推移")
+figure_E_all(f_list, param, "評価関数の大きさ[m]", "評価関数の大きさの推移", {'Pair 1', 'Pair 2', 'Pair 3', 'Pair 4'})
+figure_E_all(C4_list, param, "C4-C4dの大きさ[m]", "C4-C4dの大きさの推移", {'C4-C4d'})
+figure_E_all(C1_list, param, "C1の大きさ[m]", "C1の大きさの推移", {'C1'})
+figure_E_all(C5_list, param, "C5-C5dの大きさ[m]", "C5-C5dの大きさの推移", {'C5-C5d'})
+figure_E_all(C6_list, param, "C6-C6dの大きさ[m]", "C6-C6dの大きさの推移", {'C6-C6d'})
+figure_E_all(Cs_list, param, "|C4-C4d|+C1+|C5-C5d|の大きさ[m]", "|C4-C4d|+C1+|C5-C5d|の大きさの推移", {'|C4-C4d|+C1+|C5-C5d|'})
 %figure_E_all(u_myu_norm_list, param, "磁気モーメントの大きさ", "磁気モーメントの大きさの推移")
-figure_E_all(u_myu_norm_list2, param, "磁気モーメントの大きさ", "磁気モーメントの大きさの推移", {'Sat 1', 'Sat 2', 'Sat 3', 'Sat 4'})
+figure_E_all(u_myu_norm_list2, param, "磁気モーメントの大きさ[Am^2]", "磁気モーメントの大きさの推移", {'Sat 1', 'Sat 2', 'Sat 3', 'Sat 4'})
 %figure_E_all(u_myu1_norm_list, param, "ペアごとの磁気モーメントの大きさ", "ペアごとの磁気モーメントの大きさの推移", {'Data Set 1', 'Data Set 2', 'Data Set 3', 'Data Set 4'})
 %% 関数リスト
 function figure_E_all(E_all_list, param, ylabel_name, title_name, legend_labels)
@@ -268,6 +275,10 @@ function [u, u_myu1, u_myu2, dist_min_list, dist_max_list, s, f_best] = calc_nom
     m = param.m; 
     dt = param.dt;
     N = param.N;
+    if param.scp == 0
+        N = 1;
+    end
+
     n = param.n;
     coilN = param.coilN;
     radius = param.radius;
@@ -327,14 +338,16 @@ function [u, u_myu1, u_myu2, dist_min_list, dist_max_list, s, f_best] = calc_nom
     rd = 0;
     dist_min_list = zeros(N,1);
     dist_max_list = zeros(N,1);
-
+    
+    
     for i = 1:N
         X = state(i,:).';
         dist_min_list(end-i+1) = - d_avoid + norm(X(1:3))*2;
         dist_max_list(end-i+1) = - dist_max + norm(X(1:3))*2;
         %disp("sdfsg")
         %disp(dist_list(end-i+1))
-        if norm(X(1:3)) > 0 %d_avoid/2
+        %if norm(X(1:3)) > d_avoid/2  && norm(X(1:3)) < dist_max/2
+        if norm(X(1:3)) > 0
             %disp("距離")
             %disp(norm(X(1:3))*2)
             %disp("速度")
@@ -350,6 +363,14 @@ function [u, u_myu1, u_myu2, dist_min_list, dist_max_list, s, f_best] = calc_nom
             C5d = C2/tan(thetaP);
             u_A = n*[1/2*dC4;-C1];  
             u = [kA*u_A;-kB*n*(C5-C5d)];
+            mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
+                   2,0,0,0,1/n,0;
+                   0,0,0,-1/(n*tan(thetaP)),0,1/n];
+            %u2 = mat*X .* [n/2*kA;-n*kA;-kB*n];
+            %disp("u")
+            %disp(u)
+            %disp("u2")
+            %disp(u2)
             r = state(i,1:3).'*2; % 2衛星を考慮して2倍にする
             [myu1, myu2] = ru2myu(r,u, coilN, radius, I_max/count2);
             %disp("計算された磁気モーメントと最大磁気モーメント")
@@ -361,14 +382,25 @@ function [u, u_myu1, u_myu2, dist_min_list, dist_max_list, s, f_best] = calc_nom
                 myu1 = myu_max/count1 * myu1/norm(myu1);
                 %disp("over myu1")
             end
+            if norm(X(1:3)) < d_avoid/2
+                disp("too near")
+            elseif norm(X(1:3)) > dist_max/2
+                disp("too far")
+            end
         else 
             k_avoid = 1e-1;
             func_cell = create_func_cell();
             s_val = [X;-X];
-            F = F_func(s_val, myu_max, func_cell);
-            myu1 = -myu_max * X(1:3)/norm(X(1:3));
+            F = F_func(s_val, myu_max/count2, func_cell);
+            if norm(X(1:3)) < d_avoid/2
+                myu1 = myu_max/count1 * X(1:3)/norm(X(1:3));
+                disp("too near")
+            elseif norm(X(1:3)) > dist_max/2
+                myu1 = -myu_max/count1 * X(1:3)/norm(X(1:3));
+                disp("too far")
+            end
+            myu2 = myu_max/count2 * X(1:3)/norm(X(1:3));
             u = F * myu1;
-            disp("nominal_avoid")
         end
 
      
@@ -978,12 +1010,12 @@ function pair_mat = make_pair(state_mat, param, N_step)
                     2,3;
                     3,2;
                     4,1];
-    
+    %}
     pair_mat = [1,2;
                 2,3;
                 3,4;
                 4,3];
-    %}    
+        
 
 end
 
@@ -1158,14 +1190,15 @@ function E_data = calc_E(state, param)
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n;
            -1/(n*tan(thetaP)),0,1/n, 0,0,0];
-    
+    %{
     mat = [-6*n/kA,1,0,-2/n,-3/kA,0;
            2,0,0,0,1/n,0;
            0,0,0,-1/(n*tan(thetaP)),0,1/n];
+    %}
     
-    E = sum(abs(mat * state.'));
+    E = sum(abs(mat(1:3,:) * state.'));
     Cs = abs(mat * state.');
-    E_data = [E; Cs; 0];
+    E_data = [E; Cs];
 end
 
 
@@ -1178,7 +1211,9 @@ function [u, myu1, myu2, f_best] = calc_optimal_u(X, param, count1, count2)
     func_cell = create_func_cell();
     
     [u, u_myu1, u_myu2, dist_min_list, dist_max_list, s, f_best] = calc_nominal_input(s0, param, count1, count2);
-    [u_myu1, dist_min_list, dist_max_list, s, break_end, f_best] = calc_scp(s0, s, u_myu1, u_myu2, dist_min_list, dist_max_list, f_best, param, func_cell, count1, count2);
+    if param.scp == 1
+        [u_myu1, dist_min_list, dist_max_list, s, break_end, f_best] = calc_scp(s0, s, u_myu1, u_myu2, dist_min_list, dist_max_list, f_best, param, func_cell, count1, count2);
+    end
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
     %[u_myu, s] = calc_optimal_myu(s0, s, u_myu, param);
@@ -1191,6 +1226,7 @@ function [u, myu1, myu2, f_best] = calc_optimal_u(X, param, count1, count2)
     %disp(dist_max_list)
     myu1 = u_myu1(end-2:end);
     myu2 = u_myu2(end-2:end);
+
 
     s0 = [X/2;-X/2];
     F = F_func(s0, myu_max, func_cell);

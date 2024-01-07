@@ -7,7 +7,7 @@ d_target = 0.925;
 rng(1)
 
 % 衛星数　2基or5基or9基
-num = 4;
+num = 8;
 
 % 衛星質量
 m = 1; % 1
@@ -95,7 +95,7 @@ param.scp = scp;
 
 
 satellites = cell(1, num);
-pair_set = zeros(4, 2, N);  % 4x2xTのゼロ配列の初期化
+pair_set = zeros(num, 2, N);  % 4x2xTのゼロ配列の初期化
 
 
 s01 = [-d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
@@ -103,17 +103,26 @@ s02 = [-d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-
 s03 = [ d_initial+(2*rand-1)*1e-3;  d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 s04 = [ d_initial+(2*rand-1)*1e-3; -d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
 
-s01 = [0.00005+(2*rand-1)*1e-3; -3*d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s02 = [-0.00005+(2*rand-1)*1e-3;  -d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s03 = [0.00005+(2*rand-1)*1e-3; d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
-s04 = [-0.00005+(2*rand-1)*1e-3; 3*d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5]; 
-s0 = adjust_cog([s01, s02, s03, s04], num); % 6num×1
+s01 = [-0.00005+(2*rand-1)*1e-3;  -7*d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s02 = [0.00005+(2*rand-1)*1e-3; -5*d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s03 = [0.00005+(2*rand-1)*1e-3; -3*d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s04 = [-0.00005+(2*rand-1)*1e-3;  -d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s05 = [0.00005+(2*rand-1)*1e-3; d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+s06 = [-0.00005+(2*rand-1)*1e-3; 3*d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5]; 
+s07 = [-0.00005+(2*rand-1)*1e-3; 5*d_initial+(2*rand-1)*1e-3; -0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5]; 
+s08 = [0.00005+(2*rand-1)*1e-3; 7*d_initial+(2*rand-1)*1e-3;  0.00005+(2*rand-1)*1e-3; (2*rand-1)*1e-5; (2*rand-1)*1e-5; (2*rand-1)*1e-5];
+
+s0 = adjust_cog([s01, s02, s03, s04, s05, s06, s07, s08], num); % 6num×1
 
 %各衛星初期状態決定
 s01 = s0(1:6);
 s02 = s0(7:12);
 s03 = s0(13:18);
 s04 = s0(19:24);
+s05 = s0(25:30);
+s06 = s0(31:36);
+s07 = s0(37:42);
+s08 = s0(43:48);
 
 E_border = 0.1*num;
 %E_border =0.01;
@@ -123,12 +132,21 @@ state1 = zeros(N,6);
 state2 = zeros(N,6);
 state3 = zeros(N,6);
 state4 = zeros(N,6);
+state5 = zeros(N,6);
+state6 = zeros(N,6);
+state7 = zeros(N,6);
+state8 = zeros(N,6);
 
 state1(1,:) = s01.';
 state2(1,:) = s02.';
 state3(1,:) = s03.';
 state4(1,:) = s04.';
-state_mat  = [s01.';s02.';s03.';s04.'];
+state5(1,:) = s05.';
+state6(1,:) = s06.';
+state7(1,:) = s07.';
+state8(1,:) = s08.';
+
+state_mat  = [s01.';s02.';s03.';s04.';s05.';s06.';s07.';s08.'];
 state_mat0 = state_mat;
 
 EandCs= calc_E_all(state_mat, param);
@@ -165,7 +183,7 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
 
     % 最大電力割り当て
     % ペアごとに割り振る感じがいいのかな。
-    counts = count_pair_num(pair_mat);
+    counts = count_pair_num(pair_mat, param);
 
 
     % 各ペア制御入力計算（for ペアlist　座標平行移動）
@@ -191,6 +209,10 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     state2(i+1,:) = state_mat(2,:);
     state3(i+1,:) = state_mat(3,:);
     state4(i+1,:) = state_mat(4,:);
+    state5(i+1,:) = state_mat(5,:);
+    state6(i+1,:) = state_mat(6,:);
+    state7(i+1,:) = state_mat(7,:);
+    state8(i+1,:) = state_mat(8,:);
 
     u_list = [u_list,thrust_mat(:,1)];
     rel_list = [rel_list, state_mat(1,1:3).'*2];
@@ -212,7 +234,7 @@ while EandCs(1) > E_border || EandCs(3) > C1_border
     %u_myu1_norm_list = [u_myu1_norm_list;vecnorm(myu1)+vecnorm(myu2)];
 
 
-    if N_step == 3000
+    if N_step == 10
         %ペアを組んでいる衛星が
         break
     end
@@ -239,16 +261,20 @@ satellites{1} = state1(:,1:3);
 satellites{2} = state2(:,1:3);
 satellites{3} = state3(:,1:3);
 satellites{4} = state4(:,1:3);
+satellites{5} = state5(:,1:3);
+satellites{6} = state6(:,1:3);
+satellites{7} = state7(:,1:3);
+satellites{8} = state8(:,1:3);
 
-plot_s(satellites, num, N_step, rr, d_target, pair_set)
-figure_E_all(f_list, param, "評価関数の大きさ[m]", "評価関数の大きさの推移", {'Pair 1', 'Pair 2', 'Pair 3', 'Pair 4'})
+plot_s(satellites, num, N_step, rr, d_target, pair_set, d_target*3)
+figure_E_all(f_list, param, "評価関数の大きさ[m]", "評価関数の大きさの推移", {'Pair 1', 'Pair 2', 'Pair 3', 'Pair 4', 'Pair 5', 'Pair 6', 'Pair 7', 'Pair 8'})
 figure_E_all(C4_list, param, "C4-C4dの大きさ[m]", "C4-C4dの大きさの推移", {'C4-C4d'})
 figure_E_all(C1_list, param, "C1の大きさ[m]", "C1の大きさの推移", {'C1'})
 figure_E_all(C5_list, param, "C5-C5dの大きさ[m]", "C5-C5dの大きさの推移", {'C5-C5d'})
 figure_E_all(C6_list, param, "C6-C6dの大きさ[m]", "C6-C6dの大きさの推移", {'C6-C6d'})
 figure_E_all(Cs_list, param, "|C4-C4d|+C1+|C5-C5d|の大きさ[m]", "|C4-C4d|+C1+|C5-C5d|の大きさの推移", {'|C4-C4d|+C1+|C5-C5d|'})
 %figure_E_all(u_myu_norm_list, param, "磁気モーメントの大きさ", "磁気モーメントの大きさの推移")
-figure_E_all(u_myu_norm_list2, param, "磁気モーメントの大きさ[Am^2]", "磁気モーメントの大きさの推移", {'Sat 1', 'Sat 2', 'Sat 3', 'Sat 4'})
+figure_E_all(u_myu_norm_list2, param, "磁気モーメントの大きさ[Am^2]", "磁気モーメントの大きさの推移", {'Sat 1', 'Sat 2', 'Sat 3', 'Sat 4', 'Sat 5', 'Sat 6', 'Sat 7', 'Sat 8'})
 %figure_E_all(u_myu1_norm_list, param, "ペアごとの磁気モーメントの大きさ", "ペアごとの磁気モーメントの大きさの推移", {'Data Set 1', 'Data Set 2', 'Data Set 3', 'Data Set 4'})
 %% 関数リスト
 function figure_E_all(E_all_list, param, ylabel_name, title_name, legend_labels)
@@ -977,7 +1003,11 @@ function pair_mat = make_pair(state_mat, param, N_step)
     pair_mat = [1,1;
                 2,2;
                 3,3;
-                4,4];
+                4,4;
+                5,5;
+                6,6;
+                7,7;
+                8,8];
     pair_candidate = calc_pair_candidate(state_mat, param);
     for i = 1:param.num
         delta_E_max = 0;
@@ -1014,7 +1044,11 @@ function pair_mat = make_pair(state_mat, param, N_step)
     pair_mat = [1,2;
                 2,3;
                 3,4;
-                4,3];
+                4,5;
+                5,6;
+                6,7;
+                7,8;
+                8,7];
         
 
 end
@@ -1029,7 +1063,7 @@ function pair_candidate = calc_pair_candidate(state_mat, param)
         queryIndex = i;
         queryPoint = X(queryIndex, :);
         % 検索範囲を設定（例：0.2）
-        range = 1;
+        range = 0.5;
     
         % 最小距離を設定（例：0.05）
         minDistance = radius*6;
@@ -1044,8 +1078,8 @@ function pair_candidate = calc_pair_candidate(state_mat, param)
 end
 
 
-function counts = count_pair_num(pair_mat)
-    counts = histcounts(pair_mat, 1:5); 
+function counts = count_pair_num(pair_mat, param)
+    counts = histcounts(pair_mat, 1:param.num+1); 
 end
 
 function thrust_mat = calc_thrust(pair_mat, pair_mat_thrust, param)
@@ -1084,7 +1118,7 @@ function myu_sum = calc_myu2(pair_mat, myu1, myu2, param)
     %disp(myu1)
     %disp("myu2")
     %disp(myu2)
-    myu_sum = zeros(1,4);
+    myu_sum = zeros(1,param.num);
     for i = 1:param.num
         [row, col] = find(pair_mat == i);
         %disp("sat")
@@ -1526,7 +1560,7 @@ function D = calculateD(r, m1)
 
 end
 
-function plot_s(satellites, num, N, rr, d_target, pair_set)
+function plot_s(satellites, num, N, rr, d_target, pair_set, axis_dist)
     % 2衛星の動画を表示。
     %3次元座標
 
@@ -1539,9 +1573,9 @@ function plot_s(satellites, num, N, rr, d_target, pair_set)
     % フィギュアの作成
     figure;
     axis equal;
-    xlim([-d_target*1.5, d_target*1.5]/2); % x軸の範囲を調整
-    ylim([-d_target*1.5, d_target*1.5]/2); % y軸の範囲を調整
-    zlim([-d_target*1.5, d_target*1.5]/2); % z軸の範囲を調整
+    xlim([-axis_dist, axis_dist]/2); % x軸の範囲を調整
+    ylim([-axis_dist, axis_dist]/2); % y軸の範囲を調整
+    zlim([-axis_dist, axis_dist]/2); % z軸の範囲を調整
     hold on;
     grid on; % グリッドを表示
     
